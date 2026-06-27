@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>INVENTIX — Plataforma de Inteligencia Operativa</title>
+<script src="https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/umd/index.min.js"></script>
+<style>
+:root{
+  --navy:#0F2747;--blue:#1E4DBC;--orange:#F5A623;--light:#F0F2F5;
+  --navy2:#0A1E38;--orange2:#E8920A;--white:#FFFFFF;
+  --success:#1A9A54;--danger:#D63031;--warn:#E17B00;--purple:#6C3FCB;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Arial',sans-serif;background:var(--navy2);color:var(--white);min-height:100vh;max-width:480px;margin:0 auto;overflow-x:hidden}
+@keyframes scanLine{0%{top:5%}50%{top:88%}100%{top:5%}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+
+/* ── INPUTS ── */
+input,select,textarea{width:100%;background:#0A1E38;border:1.5px solid #1E4DBC44;border-radius:10px;color:var(--white);font-size:13px;padding:11px 14px;font-family:Arial;outline:none;-webkit-appearance:none;transition:border-color .2s}
+input:focus,select:focus{border-color:var(--orange)}
+select option{background:#0F2747}
+
+/* ── BUTTONS ── */
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px;border:none;border-radius:12px;font-size:14px;font-weight:800;cursor:pointer;margin-bottom:10px;transition:all .15s;letter-spacing:.3px;font-family:Arial}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:linear-gradient(135deg,var(--orange),var(--orange2));color:var(--navy)}
+.btn-navy{background:var(--navy);color:var(--white);border:1.5px solid #1E4DBC44}
+.btn-outline{background:transparent;border:1.5px solid var(--orange);color:var(--orange)}
+.btn-green{background:var(--success);color:var(--white)}
+.btn-red{background:var(--danger);color:var(--white)}
+.btn-ghost{background:transparent;border:1.5px solid #333;color:#777}
+
+/* ── CARDS ── */
+.card{background:var(--navy);border:1px solid #1E4DBC22;border-radius:14px;padding:16px;margin-bottom:12px}
+.card-accent{border-left:4px solid var(--orange)}
+
+/* ── BADGES ── */
+.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:800;letter-spacing:.4px}
+
+/* ── LAYOUT ── */
+.lbl{display:block;font-size:10px;font-weight:800;color:#4A6FA5;text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px}
+.sep{display:flex;align-items:center;gap:10px;margin:14px 0}
+.sep-line{flex:1;height:1px;background:#1E4DBC22}
+.sep span{font-size:11px;color:#4A6FA5;white-space:nowrap}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px}
+.mb{margin-bottom:12px}
+
+/* ── ALERTS ── */
+.alert{border-radius:10px;padding:11px 14px;margin-bottom:12px;font-size:12px;font-weight:600;line-height:1.5}
+.alert-e{background:#D6303115;border:1px solid #D6303144;color:#D63031}
+.alert-w{background:#E17B0015;border:1px solid #E17B0044;color:#E17B00}
+.alert-s{background:#1A9A5415;border:1px solid #1A9A5444;color:#1A9A54}
+.alert-b{background:#1E4DBC15;border:1px solid #1E4DBC44;color:#88AAEE}
+
+/* ── TOAST ── */
+#toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);padding:11px 20px;font-size:13px;font-weight:700;z-index:2000;display:none;border-radius:12px;white-space:nowrap;max-width:90vw;text-overflow:ellipsis;overflow:hidden;box-shadow:0 8px 32px #00000066}
+
+/* ── SCANNER OVERLAY ── */
+#scan-overlay{position:fixed;inset:0;background:#000;z-index:900;display:none;flex-direction:column}
+#scan-overlay.on{display:flex;animation:fadeIn .2s ease}
+#scan-hdr{background:#00000099;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;backdrop-filter:blur(4px)}
+#vid-wrap{flex:1;position:relative;overflow:hidden;background:#000}
+#preview{width:100%;height:100%;object-fit:cover}
+.sframe{position:absolute;top:50%;left:50%;transform:translate(-50%,-60%);width:270px;height:190px;border:2.5px solid var(--orange);border-radius:14px;box-shadow:0 0 0 2000px #00000088}
+.sline{position:absolute;left:8px;right:8px;height:2.5px;background:linear-gradient(90deg,transparent,var(--orange),transparent);animation:scanLine 2s linear infinite;border-radius:2px}
+.co{position:absolute;width:24px;height:24px;border-color:var(--orange);border-style:solid}
+.co.tl{top:-3px;left:-3px;border-width:4px 0 0 4px;border-radius:5px 0 0 0}
+.co.tr{top:-3px;right:-3px;border-width:4px 4px 0 0;border-radius:0 5px 0 0}
+.co.bl{bottom:-3px;left:-3px;border-width:0 0 4px 4px;border-radius:0 0 0 5px}
+.co.br{bottom:-3px;right:-3px;border-width:0 4px 4px 0;border-radius:0 0 5px 0}
+#scan-hint{background:#00000099;padding:12px 16px;text-align:center;font-size:12px;color:#aaa;backdrop-filter:blur(4px)}
+#last-bar{background:#00000099;padding:12px 16px;border-top:2px solid var(--orange);display:none;backdrop-filter:blur(4px)}
+#cam-err{display:none;position:absolute;inset:0;flex-direction:column;align-items:center;justify-content:center;padding:32px;text-align:center;background:#000}
+.scan-manual-row{background:#00000099;padding:10px 16px;display:flex;gap:8px;backdrop-filter:blur(4px)}
+.scan-manual-row input{background:#ffffff15;border-color:#ffffff22;color:#fff}
+.scan-manual-row button{flex-shrink:0;padding:0 18px;background:var(--orange);border:none;color:var(--navy);border-radius:8px;font-size:16px;font-weight:900;cursor:pointer}
+
+/* ── NAV ── */
+#bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:var(--navy);border-top:1px solid #1E4DBC33;display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom)}
+.nav-btn{flex:1;padding:10px 4px 8px;border:none;background:transparent;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px}
+.nav-icon{font-size:20px;transition:transform .15s}
+.nav-lbl{font-size:9px;font-weight:700;color:#4A6FA5;transition:color .15s}
+.nav-lbl.on{color:var(--orange)}
+.nav-btn:active .nav-icon{transform:scale(.85)}
+
+/* ── PAGES ── */
+.page{display:none;padding:14px;padding-bottom:88px;animation:fadeIn .2s ease}
+.page.on{display:block}
+
+/* ── KPI CARDS ── */
+.kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.kpi{background:var(--navy);border-radius:12px;padding:14px 12px;text-align:center;border-top:3px solid;position:relative;overflow:hidden}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.kpi-val{font-size:28px;font-weight:900;font-family:monospace;line-height:1}
+.kpi-lbl{font-size:9px;color:#4A6FA5;font-weight:700;margin-top:4px;text-transform:uppercase;letter-spacing:.5px}
+
+/* ── VERTICAL TABS ── */
+.vert-tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;margin-bottom:16px;-ms-overflow-style:none;scrollbar-width:none}
+.vert-tabs::-webkit-scrollbar{display:none}
+.vert-tab{flex-shrink:0;padding:8px 14px;border-radius:20px;border:1.5px solid #1E4DBC33;background:transparent;color:#4A6FA5;font-size:11px;font-weight:800;cursor:pointer;transition:all .15s;white-space:nowrap}
+.vert-tab.on{border-color:var(--orange);background:var(--orange);color:var(--navy)}
+
+/* ── ROWS ── */
+.mov-row{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:var(--navy);border:1px solid #1E4DBC22;border-radius:10px;margin-bottom:8px;border-left:3px solid}
+
+/* ── BIG INPUT ── */
+.big-num{font-size:44px!important;font-weight:900!important;text-align:center!important;font-family:monospace!important;padding:18px!important;border-width:2px!important}
+
+/* ── LOGO ── */
+.logo-mark{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;background:linear-gradient(135deg,var(--navy),var(--blue));border-radius:10px;font-size:24px;border:1.5px solid var(--orange)33;box-shadow:0 4px 16px #00000044}
+.logo-text{font-size:22px;font-weight:900;letter-spacing:-1px;color:var(--white)}
+.logo-text span{color:var(--orange)}
+
+/* ── LANDING ── */
+.hero{background:linear-gradient(160deg,var(--navy2) 0%,var(--navy) 100%);padding:32px 20px 24px;text-align:center;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-60px;right:-60px;width:200px;height:200px;background:var(--orange);opacity:.04;border-radius:50%}
+.hero::after{content:'';position:absolute;bottom:-40px;left:-40px;width:150px;height:150px;background:var(--blue);opacity:.08;border-radius:50%}
+.vertical-card{background:var(--navy);border:1px solid #1E4DBC22;border-radius:14px;padding:14px;margin-bottom:10px;display:flex;align-items:center;gap:14px;transition:all .15s;cursor:pointer}
+.vertical-card:active{transform:scale(.98)}
+.vert-icon{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+
+/* ── SCANNER BUTTON ── */
+.scan-btn{background:linear-gradient(135deg,var(--navy),var(--blue));border:2px dashed var(--orange)88;border-radius:16px;padding:28px 20px;text-align:center;cursor:pointer;transition:all .15s;margin-bottom:16px}
+.scan-btn:active{transform:scale(.98)}
+.scan-icon{font-size:56px;margin-bottom:12px;display:block}
+
+/* ── VERIFY SPECIAL ── */
+.verify-hero{background:linear-gradient(135deg,#1a0a3a,#2D1B69);border:1px solid var(--purple)44;border-radius:16px;padding:18px;margin-bottom:14px}
+.verify-step{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid #ffffff11}
+.verify-step:last-child{border-bottom:none}
+.vs-num{width:28px;height:28px;border-radius:50%;background:var(--purple);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;flex-shrink:0}
+
+/* ── KARDEX ── */
+.kx-row{background:var(--navy);border:1px solid #1E4DBC22;border-radius:12px;padding:13px;margin-bottom:8px;border-left:3px solid}
+</style>
+</head>
+<body>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- ══════════ SCANNER ══════════ -->
+<div id="scan-overlay">
+  <div id="scan-hdr">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div class="logo-mark">🛡️</div>
+      <div>
+        <div style="font-size:13px;font-weight:800;color:var(--white)">INVENTIX Scanner</div>
+        <div id="scan-status" style="font-size:10px;color:#aaa">Iniciando cámara...</div>
+      </div>
+    </div>
+    <button onclick="closeScanner()" style="background:#ffffff15;border:none;color:var(--white);border-radius:10px;padding:8px 16px;font-size:13px;font-weight:800;cursor:pointer">✕ Cerrar</button>
+  </div>
+  <div id="vid-wrap">
+    <video id="preview" playsinline muted autoplay></video>
+    <div class="sframe">
+      <div class="sline"></div>
+      <div class="co tl"></div><div class="co tr"></div>
+      <div class="co bl"></div><div class="co br"></div>
+    </div>
+    <div id="cam-err">
+      <div style="font-size:52px;margin-bottom:16px">📵</div>
+      <div style="color:var(--white);font-weight:800;font-size:17px;margin-bottom:8px">Sin acceso a cámara</div>
+      <div style="color:#777;font-size:12px;line-height:1.7" id="cam-err-msg"></div>
+      <div style="margin-top:16px;padding:12px;background:#ffffff08;border-radius:10px;font-size:11px;color:#aaa;text-align:left">
+        <b style="color:var(--orange)">Para activar la cámara:</b><br>
+        1. Sube este archivo a <b>GitHub Pages</b><br>
+        2. O usa <b>codesandbox.io</b><br>
+        El navegador requiere HTTPS para usar la cámara.
+      </div>
+    </div>
+  </div>
+  <div id="scan-hint">Apunta al código de barras o QR del producto</div>
+  <div class="scan-manual-row">
+    <input id="scan-manual-inp" type="text" placeholder="Ingresa UPC manualmente..." style="font-family:monospace" onkeydown="if(event.key==='Enter'){handleScanResult(this.value);this.value=''}">
+    <button onclick="handleScanResult(document.getElementById('scan-manual-inp').value);document.getElementById('scan-manual-inp').value=''">→</button>
+  </div>
+  <div id="last-bar">
+    <div style="font-size:10px;color:#777;margin-bottom:3px">Código detectado:</div>
+    <div id="last-val" style="font-family:monospace;font-size:16px;color:var(--orange);font-weight:800"></div>
+  </div>
+</div>
+
+<!-- ══════════ LANDING / INICIO ══════════ -->
+<div class="page on" id="pg-home">
+  <!-- Hero -->
+  <div class="hero" style="margin:-14px -14px 0;padding:28px 20px 20px">
+    <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:10px">
+      <div class="logo-mark" style="width:52px;height:52px;font-size:28px">🛡️</div>
+      <div>
+        <div class="logo-text">INVENTI<span>X</span></div>
+        <div style="font-size:9px;color:#4A6FA5;letter-spacing:1.5px;text-transform:uppercase;font-weight:700">Plataforma de Inteligencia Operativa</div>
+      </div>
+    </div>
+    <div style="font-size:12px;color:#4A6FA5;font-style:italic;margin-bottom:16px">Transforma tu inventario en una operación inteligente</div>
+    <!-- KPIs rápidos -->
+    <div class="kpi-grid" id="home-kpis"></div>
+    <div id="home-alert"></div>
+  </div>
+
+  <div style="height:14px"></div>
+
+  <!-- Verticales -->
+  <div style="font-size:10px;font-weight:800;color:#4A6FA5;text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">Módulos disponibles</div>
+  <div id="vert-list"></div>
+</div>
+
+<!-- ══════════ APP OPERATIVA ══════════ -->
+<div class="page" id="pg-app">
+  <!-- Header con vertical seleccionado -->
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+    <div>
+      <div style="font-size:17px;font-weight:900" id="app-title">Operaciones</div>
+      <div style="font-size:11px;color:#4A6FA5" id="app-sub">Selecciona un módulo</div>
+    </div>
+    <button onclick="goTo('pg-home');renderHome()" style="background:transparent;border:1px solid #1E4DBC33;color:#4A6FA5;border-radius:8px;padding:7px 12px;font-size:11px;cursor:pointer">← Inicio</button>
+  </div>
+
+  <!-- Vertical tabs -->
+  <div class="vert-tabs" id="vert-tabs"></div>
+
+  <!-- Botón escáner -->
+  <div class="scan-btn" onclick="openScanner('app')" id="scan-main-btn">
+    <span class="scan-icon">📷</span>
+    <div style="font-weight:800;color:var(--orange);font-size:17px;margin-bottom:4px">Escanear producto</div>
+    <div style="font-size:12px;color:#4A6FA5">Toca para abrir la cámara</div>
+  </div>
+
+  <div class="sep"><div class="sep-line"></div><span>o ingresa el código</span><div class="sep-line"></div></div>
+  <div style="display:flex;gap:8px;margin-bottom:16px">
+    <input id="app-manual" type="text" placeholder="UPC o ID del producto" style="font-family:monospace" onkeydown="if(event.key==='Enter')manualSearch()">
+    <button onclick="manualSearch()" style="background:var(--orange);border:none;color:var(--navy);border-radius:10px;padding:0 18px;font-size:18px;font-weight:900;cursor:pointer">→</button>
+  </div>
+
+  <!-- Lista movimientos -->
+  <div id="app-movs"></div>
+</div>
+
+<!-- ══════════ REGISTRAR ══════════ -->
+<div class="page" id="pg-reg">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <div style="font-size:16px;font-weight:900" id="reg-title">Registrar</div>
+    <button id="reg-back" style="background:transparent;border:1px solid #1E4DBC33;color:#4A6FA5;border-radius:8px;padding:7px 12px;font-size:11px;cursor:pointer">✕</button>
+  </div>
+  <div id="reg-prod-card" class="card" style="margin-bottom:16px;border-left:4px solid var(--orange)"></div>
+
+  <!-- Campos dinámicos por proceso -->
+  <div id="reg-campos"></div>
+
+  <div id="reg-cad-alert" style="display:none" class="alert alert-e"></div>
+  <button class="btn btn-primary" id="reg-save-btn" onclick="saveReg()">✅ Guardar registro</button>
+  <button class="btn btn-ghost" id="reg-cancel-btn">← Cancelar</button>
+</div>
+
+<!-- ══════════ VERIFY (ESPECIAL) ══════════ -->
+<div class="page" id="pg-verify">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <div>
+      <div style="font-size:17px;font-weight:900;color:var(--white)">INVENTIX VERIFY</div>
+      <div style="font-size:11px;color:#8B6FD4">Validación en tiempo real · Complemento SAP</div>
+    </div>
+    <button onclick="goTo('pg-home');renderHome()" style="background:transparent;border:1px solid #6C3FCB33;color:#8B6FD4;border-radius:8px;padding:7px 12px;font-size:11px;cursor:pointer">← Inicio</button>
+  </div>
+
+  <!-- Verify hero -->
+  <div class="verify-hero">
+    <div style="font-size:11px;color:#8B6FD4;font-weight:800;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">¿Por qué Verify?</div>
+    <div style="font-size:13px;color:var(--white);font-weight:700;margin-bottom:6px">SAP llega hasta la pantalla — no baja al piso</div>
+    <div style="font-size:11px;color:#aaa;line-height:1.7">Las empresas con SAP siguen teniendo errores de series, lotes y FEFO en el proceso físico. Inventix Verify entra exactamente en ese punto ciego.</div>
+  </div>
+
+  <!-- Botón escáner Verify -->
+  <div class="scan-btn" onclick="openScanner('verify')" style="border-color:#6C3FCB88">
+    <span class="scan-icon">📷</span>
+    <div style="font-weight:800;color:#A888FF;font-size:17px;margin-bottom:4px">Escanear serie / lote</div>
+    <div style="font-size:12px;color:#8B6FD4">Valida en tiempo real contra el pedido</div>
+  </div>
+
+  <div class="sep"><div class="sep-line"></div><span>o ingresa el código</span><div class="sep-line"></div></div>
+  <div style="display:flex;gap:8px;margin-bottom:16px">
+    <input id="verify-manual" type="text" placeholder="Serie / Lote / IMEI..." style="font-family:monospace" onkeydown="if(event.key==='Enter')verifySearch()">
+    <button onclick="verifySearch()" style="background:#6C3FCB;border:none;color:var(--white);border-radius:10px;padding:0 18px;font-size:18px;font-weight:900;cursor:pointer">✓</button>
+  </div>
+
+  <!-- Resultado verify -->
+  <div id="verify-resultado" style="display:none;margin-bottom:14px"></div>
+
+  <!-- Pasos del proceso -->
+  <div class="card">
+    <div style="font-size:11px;font-weight:800;color:#8B6FD4;text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px">Proceso de validación</div>
+    <div class="verify-step">
+      <div class="vs-num">1</div>
+      <div>
+        <div style="font-size:12px;font-weight:800;color:var(--white)">Escanear serie en el rack</div>
+        <div style="font-size:10px;color:#777;margin-top:2px">Lee el código del producto físico</div>
+      </div>
+    </div>
+    <div class="verify-step">
+      <div class="vs-num">2</div>
+      <div>
+        <div style="font-size:12px;font-weight:800;color:var(--white)">Validación contra pedido SAP</div>
+        <div style="font-size:10px;color:#777;margin-top:2px">Compara con la lista autorizada</div>
+      </div>
+    </div>
+    <div class="verify-step">
+      <div class="vs-num">3</div>
+      <div>
+        <div style="font-size:12px;font-weight:800;color:var(--white)">✅ OK o ⚠️ Alerta inmediata</div>
+        <div style="font-size:10px;color:#777;margin-top:2px">El operador sabe al instante si puede embarcar</div>
+      </div>
+    </div>
+    <div class="verify-step">
+      <div class="vs-num">4</div>
+      <div>
+        <div style="font-size:12px;font-weight:800;color:var(--white)">Evidencia digital automática</div>
+        <div style="font-size:10px;color:#777;margin-top:2px">Usuario · Hora · Serie · Resultado</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Historial verify -->
+  <div style="font-size:10px;font-weight:800;color:#4A6FA5;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">Historial de validaciones</div>
+  <div id="verify-hist"></div>
+</div>
+
+<!-- ══════════ KARDEX ══════════ -->
+<div class="page" id="pg-kardex">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <div>
+      <div style="font-size:17px;font-weight:900">Kardex Virtual</div>
+      <div style="font-size:11px;color:#4A6FA5" id="kx-cnt">0 movimientos</div>
+    </div>
+    <button onclick="goTo('pg-home');renderHome()" style="background:transparent;border:1px solid #1E4DBC33;color:#4A6FA5;border-radius:8px;padding:7px 12px;font-size:11px;cursor:pointer">← Inicio</button>
+  </div>
+  <div class="alert alert-b" style="margin-bottom:14px;font-size:11px">
+    ℹ️ El kardex se genera automáticamente con cada movimiento. Sin captura manual.
+  </div>
+  <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:14px" id="kx-filtros"></div>
+  <div id="kx-lista"></div>
+</div>
+
+<!-- ══════════ NAV ══════════ -->
+<div id="bottom-nav">
+  <button class="nav-btn" onclick="goTo('pg-home');renderHome()">
+    <span class="nav-icon">🏠</span><span class="nav-lbl" id="nl-home">Inicio</span>
+  </button>
+  <button class="nav-btn" onclick="goTo('pg-app');renderApp()">
+    <span class="nav-icon">📦</span><span class="nav-lbl" id="nl-app">Operación</span>
+  </button>
+  <button class="nav-btn" onclick="goTo('pg-verify');renderVerify()">
+    <span class="nav-icon">✅</span><span class="nav-lbl" id="nl-verify">Verify</span>
+  </button>
+  <button class="nav-btn" onclick="goTo('pg-kardex');renderKardex()">
+    <span class="nav-icon">📊</span><span class="nav-lbl" id="nl-kx">Kardex</span>
+  </button>
+</div>
+
+<!-- ══════════ NUEVO PRODUCTO MODAL ══════════ -->
+<div id="nuevo-modal" style="display:none;position:fixed;inset:0;background:#000000CC;z-index:500;align-items:flex-end;justify-content:center">
+  <div style="background:var(--navy);border-radius:18px 18px 0 0;width:100%;max-width:480px;padding:18px;max-height:90vh;overflow-y:auto;border-top:3px solid var(--orange);animation:slideUp .3s ease">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div style="font-size:15px;font-weight:900">Producto nuevo</div>
+      <button onclick="closeNuevo()" style="background:#ffffff11;border:none;color:#aaa;border-radius:8px;padding:6px 14px;cursor:pointer;font-size:14px">✕</button>
+    </div>
+    <div class="alert alert-w" id="nuevo-msg" style="font-size:11px"></div>
+    <label class="lbl">ID Interno *</label><input type="text" id="nv-id" placeholder="PROD-001" class="mb">
+    <label class="lbl">Descripción *</label><input type="text" id="nv-desc" placeholder="Leche entera 1L" class="mb">
+    <div class="g2">
+      <div><label class="lbl">Variante</label><input type="text" id="nv-var" placeholder="ENTERA"></div>
+      <div><label class="lbl">Ubicación</label><input type="text" id="nv-ubic" placeholder="RACK-A1"></div>
+    </div>
+    <div class="g3">
+      <div><label class="lbl">Mínimo</label><input type="number" id="nv-min" placeholder="5" style="text-align:center;padding:8px"></div>
+      <div><label class="lbl">Máximo</label><input type="number" id="nv-max" placeholder="50" style="text-align:center;padding:8px"></div>
+      <div><label class="lbl">Reorden</label><input type="number" id="nv-reorden" placeholder="12" style="text-align:center;padding:8px"></div>
+    </div>
+    <button class="btn btn-primary" onclick="saveNuevo()">✅ Agregar al catálogo</button>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════
+// VERTICALES
+// ══════════════════════════════════════════════════════
+const VERTICALES = {
+  core:   { id:"core",   icon:"🛡️", nombre:"INVENTIX CORE",   color:"#1E4DBC", sub:"Control de inventarios, entradas, salidas, ubicaciones", procesos:["ENTRADA","SALIDA","INVENTARIO"], campoExtra:[] },
+  food:   { id:"food",   icon:"🥩", nombre:"INVENTIX FOOD",   color:"#2ECC71", sub:"FEFO, caducidades y trazabilidad alimentaria",           procesos:["ENTRADA","SALIDA","INVENTARIO"], campoExtra:["lote","cad","temp"] },
+  verify: { id:"verify", icon:"✅", nombre:"INVENTIX VERIFY", color:"#6C3FCB", sub:"Validación de series, lotes, embarques y surtidos",       procesos:["VERIFICAR"],                    campoExtra:["serie"] },
+  pharma: { id:"pharma", icon:"💊", nombre:"INVENTIX PHARMA", color:"#8B6FD4", sub:"Control de lotes, cuarentena y cumplimiento COFEPRIS",    procesos:["ENTRADA","SALIDA","INVENTARIO"], campoExtra:["lote","cad","reg"] },
+  tech:   { id:"tech",   icon:"📱", nombre:"INVENTIX TECH",   color:"#F5A623", sub:"Series, IMEI y trazabilidad de dispositivos",             procesos:["ENTRADA","SALIDA","INVENTARIO"], campoExtra:["serie"] },
+};
+
+// ══════════════════════════════════════════════════════
+// CATÁLOGOS DE DEMO
+// ══════════════════════════════════════════════════════
+const CATALOGO_DEMO = {
+  core:[
+    {upc:"7500001000001",id:"PROD-WB-38-NG",desc:"Watch Band Milanese 38mm",var:"NEGRO",ubic:"RACK-A3-N2",min:20,max:200,reorden:50},
+    {upc:"7500001000002",id:"PROD-WB-42-NG",desc:"Watch Band Milanese 42mm",var:"NEGRO",ubic:"RACK-A3-N2",min:15,max:150,reorden:40},
+    {upc:"7500001000003",id:"PROD-CAB-USB",  desc:"Cable USB-C 1M",         var:"NEGRO",ubic:"RACK-B1-N1",min:10,max:100,reorden:25},
+  ],
+  food:[
+    {upc:"7501111000001",id:"ALM-JAM-250",desc:"Jamón serrano 250g",var:"FRESCO",   ubic:"REFRI-1",min:5,max:50,reorden:12,lote:"L-F001",cad:"2026-07-15"},
+    {upc:"7501111000002",id:"ALM-YOG-125",desc:"Yogurt 125g Fresa",var:"FRESA",    ubic:"REFRI-2",min:10,max:100,reorden:25,lote:"L-F002",cad:"2026-06-28"},
+    {upc:"7501111000003",id:"ALM-LEC-1L", desc:"Leche entera 1L", var:"ENTERA",   ubic:"ANAQ-1", min:20,max:200,reorden:50,lote:"L-F003",cad:"2026-07-02"},
+    {upc:"7501111000004",id:"ALM-CRE-200",desc:"Crema 200ml",     var:"NATURAL",  ubic:"REFRI-1",min:8,max:80,reorden:20,lote:"L-F004",cad:"2026-07-10"},
+    {upc:"7501111000005",id:"ALM-MAN-500",desc:"Mantequilla 500g",var:"SIN SAL",  ubic:"REFRI-1",min:3,max:30,reorden:8,lote:"L-F005",cad:"2026-09-01"},
+  ],
+  verify:[
+    {upc:"SN-SAM-A54-001",id:"SN-A54-001",desc:"Samsung Galaxy A54",var:"128GB NEGRO", ubic:"ZONA-EMBAR",serie:"SN-SAM-A54-001",autorizado:true},
+    {upc:"SN-SAM-A54-002",id:"SN-A54-002",desc:"Samsung Galaxy A54",var:"128GB NEGRO", ubic:"ZONA-EMBAR",serie:"SN-SAM-A54-002",autorizado:true},
+    {upc:"SN-SAM-A54-003",id:"SN-A54-003",desc:"Samsung Galaxy A54",var:"128GB AZUL",  ubic:"ZONA-EMBAR",serie:"SN-SAM-A54-003",autorizado:false},
+    {upc:"SN-SAM-A54-004",id:"SN-A54-004",desc:"Samsung Galaxy A54",var:"128GB BLANCO",ubic:"ZONA-EMBAR",serie:"SN-SAM-A54-004",autorizado:true},
+  ],
+  pharma:[
+    {upc:"7503333000001",id:"PH-PARA-500",desc:"Paracetamol 500mg c/10",var:"TABLETAS",ubic:"RACK-P1-N1",min:50,max:500,reorden:120,lote:"L-COFE-001",cad:"2027-03-15",reg:"COFEPRIS-2024-001"},
+    {upc:"7503333000002",id:"PH-IBUP-400",desc:"Ibuprofeno 400mg c/20", var:"CÁPSULAS",ubic:"RACK-P1-N2",min:40,max:400,reorden:100,lote:"L-COFE-002",cad:"2027-06-30",reg:"COFEPRIS-2024-002"},
+    {upc:"7503333000003",id:"PH-VITA-C",  desc:"Vitamina C 1g c/10",   var:"EFERV",   ubic:"RACK-P2-N1",min:60,max:600,reorden:150,lote:"L-COFE-003",cad:"2027-01-20",reg:"COFEPRIS-2024-003"},
+  ],
+  tech:[
+    {upc:"7502222000001",id:"TECH-CAB-1M",desc:"Cable USB-C 1M",      var:"NEGRO", ubic:"RACK-T1-N1",min:20,max:200,reorden:50, serie:"SN-CAB-001"},
+    {upc:"7502222000002",id:"TECH-AUD-BT",desc:"Audífonos Bluetooth",  var:"NEGRO", ubic:"RACK-T2-N1",min:10,max:100,reorden:25, serie:"SN-AUD-001"},
+    {upc:"7502222000003",id:"TECH-CAR-20W",desc:"Cargador 20W",        var:"BLANCO",ubic:"RACK-T3-N1",min:25,max:250,reorden:60, serie:"SN-CAR-001"},
+    {upc:"7502222000004",id:"TECH-PWB-10K",desc:"Power Bank 10,000mAh",var:"NEGRO", ubic:"RACK-T3-N2",min:15,max:150,reorden:35, serie:"SN-PWB-001"},
+  ],
+};
+
+// ══════════════════════════════════════════════════════
+// ESTADO GLOBAL
+// ══════════════════════════════════════════════════════
+let vertActual   = "core";
+let procesoActual = "ENTRADA";
+let catalogo     = [...CATALOGO_DEMO.core];
+let entradas=[], salidas=[], conteos=[], kardex=[], verifyHist=[];
+let prodActual   = null;
+let scanMode     = "app";
+let readerRef    = null;
+let scanning     = false;
+let kxFiltro     = "TODOS";
+let regCampos    = {};
+
+// ══════════════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════════════
+const now = () => {
+  const d = new Date();
+  return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+};
+const hoy = () => { const d=new Date(); return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`; };
+const fmtCad = c => { if(!c)return null; const d=new Date(c); const dias=Math.ceil((d-new Date())/86400000); return {str:`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`,dias}; };
+const getStock = id => entradas.filter(e=>e.id_interno===id).reduce((s,e)=>s+e.cantidad,0) - salidas.filter(s=>s.id_interno===id).reduce((s,x)=>s+x.cantidad,0);
+const vib = () => { try{navigator.vibrate&&navigator.vibrate(80);}catch(e){} };
+const el  = id => document.getElementById(id);
+const addKardex = r => kardex.unshift(r);
+const navMap = {"pg-home":"nl-home","pg-app":"nl-app","pg-verify":"nl-verify","pg-kardex":"nl-kx"};
+
+const toast = (msg, color="#1A9A54") => {
+  const t = el("toast");
+  t.textContent=msg; t.style.display="block";
+  t.style.background=color; t.style.color=color==="#1A9A54"||color==="#D63031"?"#fff":getContrastColor(color);
+  clearTimeout(window._tt); window._tt=setTimeout(()=>t.style.display="none",3000);
+};
+const getContrastColor = c => ["#1A9A54","#D63031","#0F2747","#1E4DBC","#6C3FCB"].includes(c)?"#fff":c==="F5A623"?"#0F2747":"#fff";
+
+// ══════════════════════════════════════════════════════
+// NAVEGACIÓN
+// ══════════════════════════════════════════════════════
+const goTo = pid => {
+  document.querySelectorAll(".page").forEach(p=>p.classList.remove("on"));
+  el(pid).classList.add("on"); window.scrollTo(0,0);
+  document.querySelectorAll(".nav-lbl").forEach(l=>l.classList.remove("on"));
+  if(navMap[pid]) el(navMap[pid]).classList.add("on");
+};
+
+// ══════════════════════════════════════════════════════
+// VERTICAL
+// ══════════════════════════════════════════════════════
+const setVertical = v => {
+  vertActual = v;
+  catalogo = [...(CATALOGO_DEMO[v]||[])].concat(catalogo.filter(p=>p._custom));
+  if(v==="verify"){goTo("pg-verify");renderVerify();return;}
+  goTo("pg-app"); renderApp();
+};
+
+// ══════════════════════════════════════════════════════
+// SCANNER
+// ══════════════════════════════════════════════════════
+const openScanner = mode => {
+  scanMode = mode; scanning = true;
+  el("scan-overlay").classList.add("on");
+  el("cam-err").style.display = "none";
+  el("preview").style.display = "block";
+  el("last-bar").style.display = "none";
+  el("scan-status").textContent = "Iniciando cámara...";
+
+  const showErr = msg => {
+    el("cam-err").style.display = "flex";
+    el("cam-err-msg").textContent = msg;
+    el("preview").style.display = "none";
+    el("scan-status").textContent = "Sin cámara — usa el campo manual ↓";
+  };
+
+  (async () => {
+    try {
+      if(!window.ZXing){ el("scan-status").textContent="Cargando escáner..."; await new Promise(r=>setTimeout(r,800)); }
+      const hints = new Map();
+      hints.set(window.ZXing.DecodeHintType.POSSIBLE_FORMATS,[
+        window.ZXing.BarcodeFormat.EAN_13, window.ZXing.BarcodeFormat.EAN_8,
+        window.ZXing.BarcodeFormat.CODE_128, window.ZXing.BarcodeFormat.QR_CODE,
+        window.ZXing.BarcodeFormat.UPC_A, window.ZXing.BarcodeFormat.UPC_E,
+        window.ZXing.BarcodeFormat.CODE_39,
+      ]);
+      hints.set(window.ZXing.DecodeHintType.TRY_HARDER, true);
+      const reader = new window.ZXing.BrowserMultiFormatReader(hints);
+      readerRef = reader;
+      const devs = await window.ZXing.BrowserCodeReader.listVideoInputDevices();
+      if(!devs.length){ showErr("No se encontró cámara en el dispositivo."); return; }
+      const back = devs.find(d=>/back|rear|trasera|environment/i.test(d.label)) || devs[devs.length-1];
+      el("scan-status").textContent = "Apunta al código...";
+      let last="", lastT=0;
+      await reader.decodeFromVideoDevice(back?.deviceId, el("preview"), result => {
+        if(!scanning||!result) return;
+        const code = result.getText(); const now_ = Date.now();
+        if(code===last && now_-lastT<2000) return;
+        last=code; lastT=now_; vib();
+        el("last-bar").style.display="block"; el("last-val").textContent=code;
+        closeScanner(); handleScanResult(code);
+      });
+    } catch(e) {
+      showErr(e.message||"No se pudo acceder a la cámara.");
+    }
+  })();
+};
+
+const closeScanner = () => {
+  scanning = false; el("scan-overlay").classList.remove("on");
+  if(readerRef){ try{readerRef.reset();}catch(e){} readerRef=null; }
+};
+
+const handleScanResult = code => {
+  code = (code||"").trim().replace(/\s/g,"");
+  if(!code) return;
+  if(scanMode==="verify"){ verifyCode(code); return; }
+  buscarProducto(code, procesoActual);
+};
+
+// ══════════════════════════════════════════════════════
+// BUSCAR PRODUCTO
+// ══════════════════════════════════════════════════════
+const buscarProducto = (code, proceso) => {
+  const prod = catalogo.find(p=>p.upc===code||p.id===code||p.serie===code);
+  if(prod){
+    prodActual = prod;
+    mostrarFormReg(prod, proceso);
+    goTo("pg-reg");
+    toast(`✅ ${prod.desc}`, "#1A9A54");
+  } else {
+    prodActual = {upc:code, id:"", desc:"", var:"", ubic:"", min:0, max:0, reorden:0, _custom:true, _proceso:proceso};
+    el("nuevo-msg").textContent = `⚠️ Código "${code}" no encontrado. Completa los datos para agregar al catálogo.`;
+    el("nv-id").value = "PROD-"+code.slice(-4);
+    el("nv-desc").value=""; el("nv-var").value=""; el("nv-ubic").value="";
+    el("nuevo-modal").style.display="flex";
+    toast("⚠️ Producto no encontrado", "#E17B00");
+  }
+};
+
+const manualSearch = () => { const v=el("app-manual").value.trim(); if(!v)return; el("app-manual").value=""; buscarProducto(v, procesoActual); };
+
+const closeNuevo = () => el("nuevo-modal").style.display="none";
+
+const saveNuevo = () => {
+  const id=el("nv-id").value.trim(), desc=el("nv-desc").value.trim();
+  if(!id||!desc){ toast("⚠️ ID y Descripción son obligatorios","#E17B00"); return; }
+  const nuevo={upc:prodActual.upc,id,desc,var:el("nv-var").value.trim()||"GENÉRICO",ubic:el("nv-ubic").value.trim()||"SIN UBICACIÓN",min:parseInt(el("nv-min").value)||0,max:parseInt(el("nv-max").value)||999,reorden:parseInt(el("nv-reorden").value)||0,_custom:true};
+  catalogo.push(nuevo); prodActual=nuevo; closeNuevo();
+  mostrarFormReg(nuevo, prodActual._proceso||procesoActual); goTo("pg-reg");
+  toast(`✅ "${desc}" agregado al catálogo`,"#1A9A54");
+};
+
+// ══════════════════════════════════════════════════════
+// FORMULARIO REGISTRO
+// ══════════════════════════════════════════════════════
+const mostrarFormReg = (p, proceso) => {
+  procesoActual = proceso;
+  const cfg = VERTICALES[vertActual]||VERTICALES.core;
+  const cad = p.cad ? fmtCad(p.cad) : null;
+  const stock = getStock(p.id);
+
+  el("reg-title").textContent = proceso;
+  el("reg-back").onclick = () => goTo("pg-app");
+  el("reg-save-btn").style.background = proceso==="SALIDA"?"var(--danger)":"var(--orange)";
+  el("reg-save-btn").textContent = proceso==="SALIDA"?"📤 Confirmar salida":"📥 Confirmar "+ (proceso==="INVENTARIO"?"conteo":"entrada");
+
+  // Card producto
+  el("reg-prod-card").innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:flex-start">
+      <div style="flex:1">
+        <div style="font-family:monospace;font-size:10px;color:#4A6FA5">${p.upc}</div>
+        <div style="font-size:16px;font-weight:900;color:var(--white);margin-top:3px">${p.desc}</div>
+        <div style="font-size:12px;color:${cfg.color};margin-top:2px">${p.var}</div>
+        <div style="font-size:11px;color:#4A6FA5;margin-top:2px">📍 ${p.ubic}</div>
+        ${cad?`<div style="margin-top:8px;padding:6px 10px;border-radius:8px;font-size:11px;font-weight:700;background:${cad.dias<7?"#D6303115":cad.dias<30?"#E17B0015":"#1A9A5415"};color:${cad.dias<7?"#D63031":cad.dias<30?"#E17B00":"#1A9A54"};border:1px solid ${cad.dias<7?"#D6303133":cad.dias<30?"#E17B0033":"#1A9A5433"}">${cad.dias<7?"🔴":cad.dias<30?"🟡":"🟢"} Cad: ${cad.str}${cad.dias<30?` (${cad.dias}d)`:""}</div>`:""}
+        ${p.serie?`<div style="font-family:monospace;font-size:10px;color:#4A6FA5;margin-top:4px">Serie: ${p.serie}</div>`:""}
+        ${p.reg?`<div style="font-size:10px;color:#8B6FD4;margin-top:4px">${p.reg}</div>`:""}
+      </div>
+      <div style="font-size:40px;margin-left:12px">${cfg.icon}</div>
+    </div>
+    ${proceso==="SALIDA"?`<div style="margin-top:10px;padding:10px;background:#ffffff08;border-radius:8px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:11px;color:#4A6FA5">Stock disponible</span><span style="font-size:20px;font-weight:900;font-family:monospace;color:${stock>0?"var(--success)":"var(--danger)"}">${stock}</span></div>`:""}
+  `;
+
+  // Campos dinámicos
+  let html = `
+    <label class="lbl">${proceso==="INVENTARIO"?"Conteo físico *":"Cantidad *"}</label>
+    <input type="number" id="rf-cant" min="0" placeholder="0" class="big-num mb" style="border-color:${proceso==="SALIDA"?"var(--danger)":"var(--orange)"}">
+  `;
+  if(proceso!=="SALIDA"){
+    html += `<div class="g2"><div><label class="lbl">Ubicación</label><input type="text" id="rf-ubic" value="${p.ubic||""}" placeholder="RACK-A1"></div>`;
+    if(cfg.campoExtra.includes("lote")) html+=`<div><label class="lbl">Lote sanitario</label><input type="text" id="rf-lote" value="${p.lote||""}" placeholder="L-001"></div></div>`;
+    else html+=`<div><label class="lbl">OC / Pedido</label><input type="text" id="rf-oc" placeholder="OC-001"></div></div>`;
+    if(cfg.campoExtra.includes("cad")) html+=`<div class="g2"><div><label class="lbl">Caducidad</label><input type="date" id="rf-cad" value="${p.cad||""}" oninput="checkCadReg()"></div><div><label class="lbl">Proveedor</label><input type="text" id="rf-prov" placeholder="Proveedor"></div></div>`;
+    if(cfg.campoExtra.includes("temp")) html+=`<label class="lbl">Temperatura (°C)</label><input type="number" id="rf-temp" placeholder="-2" step="0.1" class="mb">`;
+    if(cfg.campoExtra.includes("reg")) html+=`<label class="lbl">Reg. sanitario</label><input type="text" id="rf-reg" value="${p.reg||""}" placeholder="COFEPRIS-2024-001" class="mb">`;
+    if(cfg.campoExtra.includes("serie")) html+=`<label class="lbl">Número de serie</label><input type="text" id="rf-serie" value="${p.serie||""}" placeholder="SN-001" class="mb">`;
+  } else {
+    html += `<div class="g2"><div><label class="lbl">Canal / Destino</label><input type="text" id="rf-canal" placeholder="TIENDA-01"></div><div><label class="lbl">OC / Pedido</label><input type="text" id="rf-oc" placeholder="PED-001"></div></div>`;
+  }
+  el("reg-campos").innerHTML = html;
+  el("reg-cad-alert").style.display = "none";
+  setTimeout(()=>el("rf-cant").focus(), 300);
+};
+
+const checkCadReg = () => {
+  const v=el("rf-cad")?.value, a=el("reg-cad-alert"); if(!v||!a)return;
+  const info=fmtCad(v);
+  if(info.dias<=0){a.style.display="block";a.className="alert alert-e";a.textContent="🔴 PRODUCTO VENCIDO";}
+  else if(info.dias<=7){a.style.display="block";a.className="alert alert-e";a.textContent=`⚠️ Crítico: vence en ${info.dias} días`;}
+  else if(info.dias<=30){a.style.display="block";a.className="alert alert-w";a.textContent=`⚠️ Próximo a vencer: ${info.dias} días`;}
+  else{a.style.display="none";}
+};
+
+const saveReg = () => {
+  const cant = parseInt(el("rf-cant")?.value)||0;
+  if(cant<=0){ toast("⚠️ Ingresa una cantidad válida","#E17B00"); return; }
+  if(procesoActual==="SALIDA" && cant>getStock(prodActual.id)){ toast("❌ Stock insuficiente","#D63031"); return; }
+
+  const loteFefo = procesoActual==="SALIDA" ? (()=>{
+    const ls=entradas.filter(e=>e.id_interno===prodActual.id&&e.lote).sort((a,b)=>new Date(a.cad||"9999")-new Date(b.cad||"9999"));
+    return ls[0]?.lote||prodActual.lote||"";
+  })() : "";
+
+  const reg = {
+    id:Date.now(), ts:now(),
+    upc:prodActual.upc, id_interno:prodActual.id, desc:prodActual.desc, var:prodActual.var,
+    cantidad:cant, proceso:procesoActual, vertical:vertActual,
+    ubicacion:el("rf-ubic")?.value||prodActual.ubic||"",
+    lote:el("rf-lote")?.value||loteFefo||prodActual.lote||"",
+    caducidad:el("rf-cad")?.value||"",
+    oc:el("rf-oc")?.value||"",
+    proveedor:el("rf-prov")?.value||"",
+    temperatura:el("rf-temp")?.value||"",
+    reg_sanitario:el("rf-reg")?.value||"",
+    serie:el("rf-serie")?.value||prodActual.serie||"",
+    canal:el("rf-canal")?.value||"",
+    fefo:procesoActual==="SALIDA"?"✅ FEFO OK":"",
+    estado:"OK",
+  };
+
+  if(procesoActual==="ENTRADA") entradas.push(reg);
+  else if(procesoActual==="SALIDA") salidas.push(reg);
+  else conteos.push(reg);
+  addKardex(reg);
+
+  vib();
+  const color = procesoActual==="SALIDA"?"#D63031":procesoActual==="INVENTARIO"?"#6C3FCB":"#1A9A54";
+  toast(`${procesoActual==="SALIDA"?"📤":"📥"} ${prodActual.desc} · ${cant} pzas`, color);
+  prodActual = null;
+  goTo("pg-app"); renderApp();
+};
+
+// ══════════════════════════════════════════════════════
+// VERIFY
+// ══════════════════════════════════════════════════════
+const verifyCode = code => {
+  const prod = CATALOGO_DEMO.verify.find(p=>p.serie===code||p.upc===code||p.id===code);
+  const ts = now();
+  let resultHTML;
+  if(!prod){
+    resultHTML=`<div class="alert alert-w">⚠️ Serie <b style="font-family:monospace">${code}</b> no está en el catálogo de este pedido.</div>`;
+    verifyHist.unshift({ts,code,resultado:"NO ENCONTRADO",color:"#E17B00"});
+  } else if(!prod.autorizado){
+    resultHTML=`<div class="alert alert-e">❌ Serie <b style="font-family:monospace">${code}</b> — ${prod.desc} — <b>NO AUTORIZADA</b> para este embarque.</div>`;
+    verifyHist.unshift({ts,code,desc:prod.desc,resultado:"NO AUTORIZADO",color:"#D63031"});
+  } else {
+    resultHTML=`<div class="alert alert-s">✅ Serie <b style="font-family:monospace">${code}</b> — ${prod.desc} ${prod.var} — <b>AUTORIZADA ✓</b></div>`;
+    verifyHist.unshift({ts,code,desc:prod.desc,resultado:"AUTORIZADO",color:"#1A9A54"});
+    addKardex({id:Date.now(),ts,upc:code,id_interno:prod.id,desc:prod.desc,var:prod.var,cantidad:1,proceso:"VERIFICAR",vertical:"verify",estado:"OK",serie:code});
+  }
+  vib();
+  el("verify-resultado").style.display="block";
+  el("verify-resultado").innerHTML=resultHTML;
+  renderVerifyHist();
+};
+
+const verifySearch = () => { const v=el("verify-manual").value.trim(); if(!v)return; el("verify-manual").value=""; verifyCode(v); };
+
+const renderVerifyHist = () => {
+  const c=el("verify-hist");
+  if(verifyHist.length===0){c.innerHTML='<div style="text-align:center;padding:24px;color:#4A6FA5;font-size:12px">Sin validaciones aún. Escanea o ingresa una serie.</div>';return;}
+  c.innerHTML=verifyHist.slice(0,10).map(v=>`<div class="kx-row" style="border-left-color:${v.color}">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-family:monospace;font-size:12px;font-weight:800;color:${v.color}">${v.code}</div>
+        ${v.desc?`<div style="font-size:10px;color:#4A6FA5;margin-top:2px">${v.desc}</div>`:""}
+        <div style="font-size:9px;color:#333;margin-top:1px">${v.ts}</div>
+      </div>
+      <div style="background:${v.color}22;color:${v.color};border:1px solid ${v.color}33;border-radius:6px;padding:3px 10px;font-size:10px;font-weight:800;flex-shrink:0;margin-left:10px">${v.resultado}</div>
+    </div>
+  </div>`).join("");
+};
+
+// ══════════════════════════════════════════════════════
+// RENDER APP OPERATIVA
+// ══════════════════════════════════════════════════════
+const renderApp = () => {
+  const cfg = VERTICALES[vertActual]||VERTICALES.core;
+  el("app-title").textContent = cfg.nombre;
+  el("app-sub").textContent   = cfg.sub;
+
+  // Scan button color
+  const scanBtn=el("scan-main-btn");
+  if(scanBtn){
+    scanBtn.style.borderColor=cfg.color+"88";
+    scanBtn.querySelector("div").style.color=cfg.color;
+  }
+
+  // Vertical tabs (procesos)
+  el("vert-tabs").innerHTML = cfg.procesos.map(p=>`
+    <button class="vert-tab ${procesoActual===p?"on":""}" onclick="procesoActual='${p}';renderApp()"
+      style="${procesoActual===p?`background:${cfg.color};border-color:${cfg.color};color:var(--navy)`:""}">${p}</button>
+  `).join("");
+
+  // Lista movimientos
+  const movs=[...entradas,...salidas,...conteos].filter(m=>m.vertical===vertActual).reverse().slice(0,10);
+  const c=el("app-movs");
+  if(movs.length===0){
+    c.innerHTML=`<div style="text-align:center;padding:32px;color:#4A6FA5;font-size:13px">Sin registros en ${cfg.nombre}.<br>Escanea un producto para comenzar.</div>`;
+    return;
+  }
+  const colorMap={"ENTRADA":"#1A9A54","SALIDA":"#D63031","INVENTARIO":"#6C3FCB"};
+  c.innerHTML=`<div style="font-size:10px;font-weight:800;color:#4A6FA5;text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">Últimos movimientos</div>`+
+  movs.map(m=>`<div class="mov-row" style="border-left-color:${colorMap[m.proceso]||cfg.color}">
+    <div style="flex:1;min-width:0">
+      <div style="font-size:12px;font-weight:800;color:${cfg.color};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${m.desc}</div>
+      <div style="font-size:10px;color:#4A6FA5;margin-top:2px">${m.proceso} · ${m.ts.split(" ")[1]}${m.lote?" · "+m.lote:""}${m.oc?" · "+m.oc:""}</div>
+      ${m.temperatura?`<div style="font-size:9px;color:#1E4DBC">🌡️ ${m.temperatura}°C</div>`:""}
+    </div>
+    <div style="font-size:20px;font-weight:900;color:${m.proceso==="SALIDA"?"#D63031":"#1A9A54"};font-family:monospace;margin-left:10px">${m.proceso==="SALIDA"?"−":"+"}${m.cantidad}</div>
+  </div>`).join("");
+};
+
+// ══════════════════════════════════════════════════════
+// RENDER VERIFY
+// ══════════════════════════════════════════════════════
+const renderVerify = () => { renderVerifyHist(); };
+
+// ══════════════════════════════════════════════════════
+// RENDER KARDEX
+// ══════════════════════════════════════════════════════
+const PROC_C={"ENTRADA":"#1A9A54","SALIDA":"#D63031","INVENTARIO":"#6C3FCB","VERIFICAR":"#8B6FD4"};
+const PROC_I={"ENTRADA":"📥","SALIDA":"📤","INVENTARIO":"📋","VERIFICAR":"✅"};
+let kxFiltroVal="TODOS";
+
+const renderKardex = () => {
+  el("kx-cnt").textContent=`${kardex.length} movimiento${kardex.length!==1?"s":""}`;
+  const filtros=["TODOS","ENTRADA","SALIDA","INVENTARIO","VERIFICAR"];
+  el("kx-filtros").innerHTML=filtros.map(f=>`<button onclick="kxFiltroVal='${f}';renderKardex()" style="padding:5px 14px;border-radius:20px;border:none;white-space:nowrap;cursor:pointer;font-size:10px;font-weight:700;background:${kxFiltroVal===f?"var(--orange)":"var(--navy)"};color:${kxFiltroVal===f?"var(--navy)":"#4A6FA5"}">${f}</button>`).join("");
+  const lista=kxFiltroVal==="TODOS"?kardex:kardex.filter(k=>k.proceso===kxFiltroVal);
+  const c=el("kx-lista");
+  if(lista.length===0){c.innerHTML='<div style="text-align:center;padding:32px;color:#4A6FA5;font-size:13px">Sin movimientos registrados aún</div>';return;}
+  c.innerHTML=lista.map(k=>{
+    const color=PROC_C[k.proceso]||"#4A6FA5", icon=PROC_I[k.proceso]||"•";
+    const vert=VERTICALES[k.vertical||"core"];
+    return`<div class="kx-row" style="border-left-color:${color}">
+      <div style="display:flex;gap:10px">
+        <div style="width:34px;height:34px;border-radius:50%;background:${color}22;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">${icon}</div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <div style="display:flex;gap:6px;align-items:center">
+              <span style="font-size:10px;font-weight:800;text-transform:uppercase;color:${color}">${k.proceso}</span>
+              ${vert?`<span style="font-size:9px;background:${vert.color}22;color:${vert.color};border:1px solid ${vert.color}33;border-radius:10px;padding:1px 7px;font-weight:700">${vert.icon} ${k.vertical?.toUpperCase()}</span>`:""}
+            </div>
+            <span style="font-size:9px;color:#333;flex-shrink:0">${k.ts}</span>
+          </div>
+          <div style="font-family:monospace;font-size:11px;color:var(--orange);margin-top:3px">${k.id_interno}<span style="color:#4A6FA5"> · ${k.cantidad} ${k.proceso==="VERIFICAR"?"validaciones":"pzas"}</span></div>
+          <div style="font-size:10px;color:#4A6FA5;margin-top:1px">${k.desc||""}${k.lote?" · "+k.lote:""}${k.serie?" · "+k.serie:""}</div>
+        </div>
+      </div>
+    </div>`;
+  }).join("");
+};
+
+// ══════════════════════════════════════════════════════
+// RENDER HOME
+// ══════════════════════════════════════════════════════
+const renderHome = () => {
+  const totalStock = Object.values(CATALOGO_DEMO).flat().filter((p,i,a)=>a.findIndex(x=>x.id===p.id)===i).reduce((s,p)=>s+Math.max(0,getStock(p.id)),0);
+  const movHoy = kardex.filter(k=>k.ts.startsWith(hoy())).length;
+  const sinStock = Object.values(CATALOGO_DEMO).flat().filter((p,i,a)=>a.findIndex(x=>x.id===p.id)===i&&getStock(p.id)<=0).length;
+  const verOK = verifyHist.filter(v=>v.resultado==="AUTORIZADO").length;
+
+  el("home-kpis").innerHTML=`
+    <div class="kpi" style="border-top-color:var(--orange)"><div class="kpi-val" style="color:var(--orange)">${totalStock}</div><div class="kpi-lbl">Stock total</div></div>
+    <div class="kpi" style="border-top-color:${sinStock>0?"var(--danger)":"#333"}"><div class="kpi-val" style="color:${sinStock>0?"var(--danger)":"#4A6FA5"}">${sinStock}</div><div class="kpi-lbl">Sin stock</div></div>
+    <div class="kpi" style="border-top-color:var(--success)"><div class="kpi-val" style="color:var(--success)">${movHoy}</div><div class="kpi-lbl">Movs. hoy</div></div>
+    <div class="kpi" style="border-top-color:#8B6FD4"><div class="kpi-val" style="color:#8B6FD4">${verOK}</div><div class="kpi-lbl">Verify OK</div></div>
+  `;
+
+  el("home-alert").innerHTML = sinStock>0
+    ? `<div class="alert alert-e" style="font-size:11px;margin-bottom:12px">⚠️ ${sinStock} producto${sinStock>1?"s":""} sin stock disponible</div>`
+    : "";
+
+  el("vert-list").innerHTML = Object.values(VERTICALES).map(v=>`
+    <div class="vertical-card" onclick="setVertical('${v.id}')">
+      <div class="vert-icon" style="background:${v.color}22;border:1.5px solid ${v.color}33">${v.icon}</div>
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:800;color:${v.color}">${v.nombre}</div>
+        <div style="font-size:11px;color:#4A6FA5;margin-top:2px">${v.sub}</div>
+      </div>
+      <div style="color:#4A6FA5;font-size:18px">›</div>
+    </div>
+  `).join("");
+};
+
+// ══════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════
+el("nl-home").classList.add("on");
+renderHome();
+</script>
+</body>
+</html>
