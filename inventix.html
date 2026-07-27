@@ -63,8 +63,8 @@ select option{background:#0F2747}
 #scan-overlay{position:fixed;inset:0;background:#000;z-index:900;display:none;flex-direction:column}
 #scan-overlay.on{display:flex;animation:fadeIn .2s ease}
 #scan-hdr{background:#00000099;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;backdrop-filter:blur(4px)}
-#vid-wrap{flex:1;position:relative;overflow:hidden;background:#000}
-#preview{width:100%;height:100%;object-fit:cover}
+#vid-wrap{flex:1;position:relative;overflow:hidden;background:#000;min-height:300px}
+#preview{width:100%;height:100%;object-fit:cover;display:block}
 .sframe{position:absolute;top:50%;left:50%;transform:translate(-50%,-60%);width:270px;height:190px;border:2.5px solid var(--orange);border-radius:14px;box-shadow:0 0 0 2000px #00000088}
 .sline{position:absolute;left:8px;right:8px;height:2.5px;background:linear-gradient(90deg,transparent,var(--orange),transparent);animation:scanLine 2s linear infinite;border-radius:2px}
 .co{position:absolute;width:24px;height:24px;border-color:var(--orange);border-style:solid}
@@ -136,6 +136,11 @@ select option{background:#0F2747}
 
 /* ── KARDEX ── */
 .kx-row{background:var(--navy);border:1px solid #1E4DBC22;border-radius:12px;padding:13px;margin-bottom:8px;border-left:3px solid}
+
+/* ── SCANNER LOADING ── */
+#scanner-loading{display:none;position:absolute;inset:0;flex-direction:column;align-items:center;justify-content:center;background:#000000CC;color:var(--white);font-size:14px;gap:16px;z-index:10}
+#scanner-loading .spinner{width:40px;height:40px;border:4px solid var(--orange);border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
@@ -156,6 +161,11 @@ select option{background:#0F2747}
     <button onclick="closeScanner()" style="background:#ffffff15;border:none;color:var(--white);border-radius:10px;padding:8px 16px;font-size:13px;font-weight:800;cursor:pointer">✕ Cerrar</button>
   </div>
   <div id="vid-wrap">
+    <div id="scanner-loading">
+      <div class="spinner"></div>
+      <div>Iniciando cámara...</div>
+      <div style="font-size:11px;color:#777">Por favor, permite el acceso a la cámara</div>
+    </div>
     <video id="preview" playsinline muted autoplay></video>
     <div class="sframe">
       <div class="sline"></div>
@@ -487,58 +497,150 @@ const setVertical = v => {
 };
 
 // ══════════════════════════════════════════════════════
-// SCANNER
+// SCANNER - VERSIÓN MEJORADA PARA MÓVILES
 // ══════════════════════════════════════════════════════
 const openScanner = mode => {
   scanMode = mode; scanning = true;
-  el("scan-overlay").classList.add("on");
+  
+  // Mostrar overlay
+  const overlay = el("scan-overlay");
+  overlay.classList.add("on");
+  
+  // Ocultar errores previos
   el("cam-err").style.display = "none";
   el("preview").style.display = "block";
   el("last-bar").style.display = "none";
   el("scan-status").textContent = "Iniciando cámara...";
+  
+  // Mostrar loading
+  const loading = el("scanner-loading");
+  loading.style.display = "flex";
 
+  // Función para mostrar error
   const showErr = msg => {
+    loading.style.display = "none";
     el("cam-err").style.display = "flex";
     el("cam-err-msg").textContent = msg;
     el("preview").style.display = "none";
-    el("scan-status").textContent = "Sin cámara — usa el campo manual ↓";
+    el("scan-status").textContent = "Error — usa el campo manual ↓";
   };
 
-  (async () => {
+  // Función para iniciar el escáner
+  const iniciarScanner = async () => {
     try {
-      if(!window.ZXing){ el("scan-status").textContent="Cargando escáner..."; await new Promise(r=>setTimeout(r,800)); }
-      const hints = new Map();
-      hints.set(window.ZXing.DecodeHintType.POSSIBLE_FORMATS,[
-        window.ZXing.BarcodeFormat.EAN_13, window.ZXing.BarcodeFormat.EAN_8,
-        window.ZXing.BarcodeFormat.CODE_128, window.ZXing.BarcodeFormat.QR_CODE,
-        window.ZXing.BarcodeFormat.UPC_A, window.ZXing.BarcodeFormat.UPC_E,
-        window.ZXing.BarcodeFormat.CODE_39,
-      ]);
-      hints.set(window.ZXing.DecodeHintType.TRY_HARDER, true);
-      const reader = new window.ZXing.BrowserMultiFormatReader(hints);
+      // Esperar a que ZXing esté disponible
+      if(!window.ZXing) {
+        el("scan-status").textContent = "Cargando librería...";
+        await new Promise(r => setTimeout(r, 1000));
+        if(!window.ZXing) {
+          showErr("La librería de escaneo no se cargó correctamente.");
+          return;
+        }
+      }
+
+      // Configurar el lector con opciones para móviles
+      const reader = new window.ZXing.BrowserMultiFormatReader();
       readerRef = reader;
-      const devs = await window.ZXing.BrowserCodeReader.listVideoInputDevices();
-      if(!devs.length){ showErr("No se encontró cámara en el dispositivo."); return; }
-      const back = devs.find(d=>/back|rear|trasera|environment/i.test(d.label)) || devs[devs.length-1];
+
+      // Obtener dispositivos de video
+      let devices = [];
+      try {
+        devices = await window.ZXing.BrowserCodeReader.listVideoInputDevices();
+      } catch(e) {
+        // Si falla, intentar con getUserMedia directamente
+        devices = [];
+      }
+
+      // Si no hay dispositivos, intentar con la cámara predeterminada
+      let deviceId = null;
+      if(devices.length > 0) {
+        // Buscar cámara trasera en móviles
+        const back = devices.find(d => 
+          /back|rear|trasera|environment|back camera/i.test(d.label)
+        );
+        const front = devices.find(d => 
+          /front|delantera|selfie|user|front camera/i.test(d.label)
+        );
+        // En móviles, dar prioridad a la trasera
+        deviceId = (back || front || devices[0]).deviceId;
+      }
+
       el("scan-status").textContent = "Apunta al código...";
-      let last="", lastT=0;
-      await reader.decodeFromVideoDevice(back?.deviceId, el("preview"), result => {
-        if(!scanning||!result) return;
-        const code = result.getText(); const now_ = Date.now();
-        if(code===last && now_-lastT<2000) return;
-        last=code; lastT=now_; vib();
-        el("last-bar").style.display="block"; el("last-val").textContent=code;
-        closeScanner(); handleScanResult(code);
-      });
+      loading.style.display = "none";
+
+      // Iniciar decodificación
+      let lastCode = "";
+      let lastTime = 0;
+
+      // Usar decodeFromVideoDevice o decodeFromVideoElement según disponibilidad
+      if (deviceId) {
+        await reader.decodeFromVideoDevice(deviceId, el("preview"), (result) => {
+          procesarResultado(result, lastCode, lastTime);
+        });
+      } else {
+        // Fallback: intentar con el elemento de video
+        await reader.decodeFromVideoElement(el("preview"), (result) => {
+          procesarResultado(result, lastCode, lastTime);
+        });
+      }
+
     } catch(e) {
-      showErr(e.message||"No se pudo acceder a la cámara.");
+      loading.style.display = "none";
+      console.error("Error scanner:", e);
+      
+      // Mensaje de error más amigable
+      let msg = "No se pudo acceder a la cámara.";
+      if(e.message?.includes("Permission")) {
+        msg = "Permiso denegado. Por favor, permite el acceso a la cámara en la configuración de tu navegador.";
+      } else if(e.message?.includes("NotFoundError")) {
+        msg = "No se encontró ninguna cámara en este dispositivo.";
+      } else if(e.message?.includes("NotAllowedError")) {
+        msg = "El acceso a la cámara fue denegado. Usa HTTPS o localhost.";
+      } else if(e.message) {
+        msg = e.message;
+      }
+      showErr(msg);
     }
-  })();
+  };
+
+  // Procesar resultado del escáner
+  const procesarResultado = (result, lastCode, lastTime) => {
+    if(!scanning || !result) return;
+    const code = result.getText();
+    const now_ = Date.now();
+    if(code === lastCode && (now_ - lastTime) < 2000) return;
+    lastCode = code; lastTime = now_;
+    vib();
+    el("last-bar").style.display = "block";
+    el("last-val").textContent = code;
+    setTimeout(() => {
+      closeScanner();
+      handleScanResult(code);
+    }, 300);
+  };
+
+  // Iniciar el escáner
+  iniciarScanner();
 };
 
 const closeScanner = () => {
-  scanning = false; el("scan-overlay").classList.remove("on");
-  if(readerRef){ try{readerRef.reset();}catch(e){} readerRef=null; }
+  scanning = false;
+  el("scan-overlay").classList.remove("on");
+  el("scanner-loading").style.display = "none";
+  if(readerRef) {
+    try { 
+      readerRef.reset(); 
+      readerRef = null;
+    } catch(e) {}
+  }
+  // Detener todos los tracks de video
+  const video = el("preview");
+  if(video && video.srcObject) {
+    try {
+      video.srcObject.getTracks().forEach(track => track.stop());
+      video.srcObject = null;
+    } catch(e) {}
+  }
 };
 
 const handleScanResult = code => {
@@ -745,101 +847,4 @@ const renderApp = () => {
 
   // Lista movimientos
   const movs=[...entradas,...salidas,...conteos].filter(m=>m.vertical===vertActual).reverse().slice(0,10);
-  const c=el("app-movs");
-  if(movs.length===0){
-    c.innerHTML=`<div style="text-align:center;padding:32px;color:#4A6FA5;font-size:13px">Sin registros en ${cfg.nombre}.<br>Escanea un producto para comenzar.</div>`;
-    return;
-  }
-  const colorMap={"ENTRADA":"#1A9A54","SALIDA":"#D63031","INVENTARIO":"#6C3FCB"};
-  c.innerHTML=`<div style="font-size:10px;font-weight:800;color:#4A6FA5;text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">Últimos movimientos</div>`+
-  movs.map(m=>`<div class="mov-row" style="border-left-color:${colorMap[m.proceso]||cfg.color}">
-    <div style="flex:1;min-width:0">
-      <div style="font-size:12px;font-weight:800;color:${cfg.color};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${m.desc}</div>
-      <div style="font-size:10px;color:#4A6FA5;margin-top:2px">${m.proceso} · ${m.ts.split(" ")[1]}${m.lote?" · "+m.lote:""}${m.oc?" · "+m.oc:""}</div>
-      ${m.temperatura?`<div style="font-size:9px;color:#1E4DBC">🌡️ ${m.temperatura}°C</div>`:""}
-    </div>
-    <div style="font-size:20px;font-weight:900;color:${m.proceso==="SALIDA"?"#D63031":"#1A9A54"};font-family:monospace;margin-left:10px">${m.proceso==="SALIDA"?"−":"+"}${m.cantidad}</div>
-  </div>`).join("");
-};
-
-// ══════════════════════════════════════════════════════
-// RENDER VERIFY
-// ══════════════════════════════════════════════════════
-const renderVerify = () => { renderVerifyHist(); };
-
-// ══════════════════════════════════════════════════════
-// RENDER KARDEX
-// ══════════════════════════════════════════════════════
-const PROC_C={"ENTRADA":"#1A9A54","SALIDA":"#D63031","INVENTARIO":"#6C3FCB","VERIFICAR":"#8B6FD4"};
-const PROC_I={"ENTRADA":"📥","SALIDA":"📤","INVENTARIO":"📋","VERIFICAR":"✅"};
-let kxFiltroVal="TODOS";
-
-const renderKardex = () => {
-  el("kx-cnt").textContent=`${kardex.length} movimiento${kardex.length!==1?"s":""}`;
-  const filtros=["TODOS","ENTRADA","SALIDA","INVENTARIO","VERIFICAR"];
-  el("kx-filtros").innerHTML=filtros.map(f=>`<button onclick="kxFiltroVal='${f}';renderKardex()" style="padding:5px 14px;border-radius:20px;border:none;white-space:nowrap;cursor:pointer;font-size:10px;font-weight:700;background:${kxFiltroVal===f?"var(--orange)":"var(--navy)"};color:${kxFiltroVal===f?"var(--navy)":"#4A6FA5"}">${f}</button>`).join("");
-  const lista=kxFiltroVal==="TODOS"?kardex:kardex.filter(k=>k.proceso===kxFiltroVal);
-  const c=el("kx-lista");
-  if(lista.length===0){c.innerHTML='<div style="text-align:center;padding:32px;color:#4A6FA5;font-size:13px">Sin movimientos registrados aún</div>';return;}
-  c.innerHTML=lista.map(k=>{
-    const color=PROC_C[k.proceso]||"#4A6FA5", icon=PROC_I[k.proceso]||"•";
-    const vert=VERTICALES[k.vertical||"core"];
-    return`<div class="kx-row" style="border-left-color:${color}">
-      <div style="display:flex;gap:10px">
-        <div style="width:34px;height:34px;border-radius:50%;background:${color}22;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">${icon}</div>
-        <div style="flex:1;min-width:0">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start">
-            <div style="display:flex;gap:6px;align-items:center">
-              <span style="font-size:10px;font-weight:800;text-transform:uppercase;color:${color}">${k.proceso}</span>
-              ${vert?`<span style="font-size:9px;background:${vert.color}22;color:${vert.color};border:1px solid ${vert.color}33;border-radius:10px;padding:1px 7px;font-weight:700">${vert.icon} ${k.vertical?.toUpperCase()}</span>`:""}
-            </div>
-            <span style="font-size:9px;color:#333;flex-shrink:0">${k.ts}</span>
-          </div>
-          <div style="font-family:monospace;font-size:11px;color:var(--orange);margin-top:3px">${k.id_interno}<span style="color:#4A6FA5"> · ${k.cantidad} ${k.proceso==="VERIFICAR"?"validaciones":"pzas"}</span></div>
-          <div style="font-size:10px;color:#4A6FA5;margin-top:1px">${k.desc||""}${k.lote?" · "+k.lote:""}${k.serie?" · "+k.serie:""}</div>
-        </div>
-      </div>
-    </div>`;
-  }).join("");
-};
-
-// ══════════════════════════════════════════════════════
-// RENDER HOME
-// ══════════════════════════════════════════════════════
-const renderHome = () => {
-  const totalStock = Object.values(CATALOGO_DEMO).flat().filter((p,i,a)=>a.findIndex(x=>x.id===p.id)===i).reduce((s,p)=>s+Math.max(0,getStock(p.id)),0);
-  const movHoy = kardex.filter(k=>k.ts.startsWith(hoy())).length;
-  const sinStock = Object.values(CATALOGO_DEMO).flat().filter((p,i,a)=>a.findIndex(x=>x.id===p.id)===i&&getStock(p.id)<=0).length;
-  const verOK = verifyHist.filter(v=>v.resultado==="AUTORIZADO").length;
-
-  el("home-kpis").innerHTML=`
-    <div class="kpi" style="border-top-color:var(--orange)"><div class="kpi-val" style="color:var(--orange)">${totalStock}</div><div class="kpi-lbl">Stock total</div></div>
-    <div class="kpi" style="border-top-color:${sinStock>0?"var(--danger)":"#333"}"><div class="kpi-val" style="color:${sinStock>0?"var(--danger)":"#4A6FA5"}">${sinStock}</div><div class="kpi-lbl">Sin stock</div></div>
-    <div class="kpi" style="border-top-color:var(--success)"><div class="kpi-val" style="color:var(--success)">${movHoy}</div><div class="kpi-lbl">Movs. hoy</div></div>
-    <div class="kpi" style="border-top-color:#8B6FD4"><div class="kpi-val" style="color:#8B6FD4">${verOK}</div><div class="kpi-lbl">Verify OK</div></div>
-  `;
-
-  el("home-alert").innerHTML = sinStock>0
-    ? `<div class="alert alert-e" style="font-size:11px;margin-bottom:12px">⚠️ ${sinStock} producto${sinStock>1?"s":""} sin stock disponible</div>`
-    : "";
-
-  el("vert-list").innerHTML = Object.values(VERTICALES).map(v=>`
-    <div class="vertical-card" onclick="setVertical('${v.id}')">
-      <div class="vert-icon" style="background:${v.color}22;border:1.5px solid ${v.color}33">${v.icon}</div>
-      <div style="flex:1">
-        <div style="font-size:13px;font-weight:800;color:${v.color}">${v.nombre}</div>
-        <div style="font-size:11px;color:#4A6FA5;margin-top:2px">${v.sub}</div>
-      </div>
-      <div style="color:#4A6FA5;font-size:18px">›</div>
-    </div>
-  `).join("");
-};
-
-// ══════════════════════════════════════════════════════
-// INIT
-// ══════════════════════════════════════════════════════
-el("nl-home").classList.add("on");
-renderHome();
-</script>
-</body>
-</html>
+  const c=el("app-movs
