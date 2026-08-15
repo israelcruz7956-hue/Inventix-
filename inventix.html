@@ -3,1040 +3,606 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>INVENTIX v4</title>
+<meta name="theme-color" content="#0F2747">
+<link rel="manifest" href="manifest.json">
+<title>INVENTIX Core v1.4</title>
 <style>
-:root{--navy:#0F2747;--blue:#1E4DBC;--orange:#F5A623;--navy2:#0A1E38;--success:#1A9A54;--danger:#D63031;--warn:#E17B00;--purple:#6C3FCB;--tech:#F5A623}
+:root{
+  --navy:#0F2747;--navy2:#08192f;--blue:#1E4DBC;--orange:#F5A623;
+  --success:#1A9A54;--danger:#D63031;--purple:#6C3FCB;--text:#F0F4FA;--muted:#7894bd;
+}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{font-family:Arial,sans-serif;background:var(--navy2);color:#F0F0F0;max-width:480px;margin:0 auto;min-height:100vh}
-@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
-@keyframes scanLine{0%{top:5%}50%{top:85%}100%{top:5%}}
-@keyframes pop{0%{transform:scale(1)}50%{transform:scale(1.08)}100%{transform:scale(1)}}
-input,select,textarea{width:100%;background:#0A1E38;border:1.5px solid #1E4DBC44;border-radius:10px;color:#F0F0F0;font-size:13px;padding:11px 14px;font-family:Arial;outline:none;-webkit-appearance:none}
+body{font-family:Arial,sans-serif;background:var(--navy2);color:var(--text);max-width:520px;margin:auto;min-height:100vh}
+header{padding:20px 16px;background:linear-gradient(160deg,#0A1E38,#0F2747);position:sticky;top:0;z-index:10;border-bottom:1px solid #1E4DBC44}
+.brand{font-size:25px;font-weight:900}.brand span{color:var(--orange)}
+.sub{font-size:11px;color:var(--muted);margin-top:3px}
+main{padding:14px 14px 90px}
+.card{background:var(--navy);border:1px solid #1E4DBC2d;border-radius:14px;padding:14px;margin-bottom:12px}
+h2{font-size:16px;margin-bottom:10px}
+label{display:block;font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;margin:8px 0 5px}
+input,select{width:100%;background:#0A1E38;border:1.5px solid #1E4DBC55;border-radius:10px;color:white;padding:11px 12px;font-size:14px;outline:none}
 input:focus,select:focus{border-color:var(--orange)}
-select option{background:#0F2747}
-.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px;border:none;border-radius:12px;font-size:14px;font-weight:800;cursor:pointer;margin-bottom:8px;font-family:Arial;transition:all .15s}
-.btn:active{transform:scale(.97)}
-.btn-orange{background:var(--orange);color:var(--navy)}
-.btn-green{background:var(--success);color:#fff}
-.btn-red{background:var(--danger);color:#fff}
-.btn-blue{background:var(--blue);color:#fff}
-.btn-purple{background:var(--purple);color:#fff}
-.btn-ghost{background:transparent;border:1.5px solid #333;color:#777}
-.card{background:var(--navy);border:1px solid #1E4DBC22;border-radius:14px;padding:14px;margin-bottom:10px}
-.lbl{display:block;font-size:10px;font-weight:800;color:#4A6FA5;text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px}
-.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
-.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px}
-.mb{margin-bottom:10px}
-.sep{display:flex;align-items:center;gap:10px;margin:12px 0}
-.sep-line{flex:1;height:1px;background:#1E4DBC22}
-.sep span{font-size:11px;color:#4A6FA5;white-space:nowrap}
-.alert{border-radius:10px;padding:10px 14px;margin-bottom:10px;font-size:12px;line-height:1.5}
-.alert-e{background:#D6303115;border:1px solid #D6303144;color:#D63031}
-.alert-w{background:#E17B0015;border:1px solid #E17B0044;color:#E17B00}
-.alert-s{background:#1A9A5415;border:1px solid #1A9A5444;color:#1A9A54}
-.alert-b{background:#1E4DBC15;border:1px solid #1E4DBC44;color:#88AAEE}
-#toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);padding:12px 20px;font-size:14px;font-weight:800;z-index:3000;display:none;border-radius:14px;white-space:nowrap;max-width:90vw;overflow:hidden;box-shadow:0 8px 32px #00000088;color:#fff;animation:pop .3s ease}
-/* CONFIRM */
-#confirm-ok{display:none;position:fixed;inset:0;z-index:2500;align-items:center;justify-content:center;background:#00000088}
-#confirm-ok.on{display:flex}
-#confirm-inner{background:var(--navy);border-radius:20px;padding:28px 24px;text-align:center;border:2px solid var(--success);max-width:320px;width:90%}
-/* SCANNER */
-#scan-overlay{position:fixed;inset:0;background:#000;z-index:900;display:none;flex-direction:column}
-#scan-overlay.on{display:flex}
-#scan-hdr{background:#00000099;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
-#vid-wrap{flex:1;position:relative;overflow:hidden;background:#000}
-#cam-video{width:100%;height:100%;object-fit:cover;display:block}
-.sframe{position:absolute;width:270px;height:180px;border:2.5px solid var(--orange);border-radius:14px;box-shadow:0 0 0 9999px #00000077;pointer-events:none;top:50%;left:50%;transform:translate(-50%,-60%)}
-.sline{position:absolute;left:8px;right:8px;height:2.5px;background:linear-gradient(90deg,transparent,var(--orange),transparent);animation:scanLine 2s linear infinite;border-radius:2px}
-.co{position:absolute;width:22px;height:22px;border-color:var(--orange);border-style:solid}
-.co.tl{top:-2px;left:-2px;border-width:4px 0 0 4px;border-radius:4px 0 0 0}
-.co.tr{top:-2px;right:-2px;border-width:4px 4px 0 0;border-radius:0 4px 0 0}
-.co.bl{bottom:-2px;left:-2px;border-width:0 0 4px 4px;border-radius:0 0 0 4px}
-.co.br{bottom:-2px;right:-2px;border-width:0 4px 4px 0;border-radius:0 0 4px 0}
-#scan-hint{background:#00000099;padding:10px 16px;text-align:center;font-size:12px;color:#aaa;flex-shrink:0}
-#scan-stxt{font-size:11px;color:var(--orange);text-align:center;padding:4px 0}
-#scan-manual-row{background:#00000099;padding:10px 16px;display:flex;gap:8px;flex-shrink:0}
-#scan-manual-row input{background:#ffffff15;border-color:#ffffff22;color:#fff}
-#scan-manual-row button{flex-shrink:0;padding:0 16px;background:var(--orange);border:none;color:var(--navy);border-radius:8px;font-size:16px;font-weight:900;cursor:pointer}
-/* NAV */
-#bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:var(--navy);border-top:1px solid #1E4DBC33;display:flex;z-index:100}
-.nav-btn{flex:1;padding:10px 4px 8px;border:none;background:transparent;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px}
-.nav-lbl{font-size:9px;font-weight:700;color:#4A6FA5}
-.nav-lbl.on{color:var(--orange)}
-/* PAGES */
-.page{display:none;padding:14px;padding-bottom:88px;animation:fadeIn .2s ease}
-.page.on{display:block}
-/* KPI */
-.kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
-.kpi{background:var(--navy);border-radius:12px;padding:12px;text-align:center;border-top:3px solid}
-.kpi-val{font-size:24px;font-weight:900;font-family:monospace;line-height:1}
-.kpi-lbl{font-size:9px;color:#4A6FA5;font-weight:700;margin-top:3px;text-transform:uppercase}
-/* TABS */
-.proc-tab{flex-shrink:0;padding:7px 14px;border-radius:20px;border:1.5px solid #1E4DBC33;background:transparent;color:#4A6FA5;font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap}
-.proc-tab.on{border-color:var(--orange);background:var(--orange);color:var(--navy)}
-.vert-card{background:var(--navy);border:1px solid #1E4DBC22;border-radius:14px;padding:14px;margin-bottom:10px;display:flex;align-items:center;gap:12px;cursor:pointer}
-.vert-card:active{opacity:.8}
-.vi{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
-.mov-row{display:flex;justify-content:space-between;align-items:center;padding:11px 14px;background:var(--navy);border:1px solid #1E4DBC22;border-radius:10px;margin-bottom:6px;border-left:3px solid;cursor:pointer}
-.scan-btn{background:linear-gradient(135deg,var(--navy),#1a2d5a);border:2px dashed var(--orange)88;border-radius:16px;padding:24px 20px;text-align:center;cursor:pointer;margin-bottom:14px}
-.scan-btn:active{opacity:.8}
-.kx-row{background:var(--navy);border:1px solid #1E4DBC22;border-radius:12px;padding:12px;margin-bottom:8px;border-left:3px solid}
-.big-num{font-size:40px!important;font-weight:900!important;text-align:center!important;font-family:monospace!important;padding:16px!important;border-width:2px!important}
-.tag{display:inline-flex;padding:2px 8px;border-radius:10px;font-size:9px;font-weight:800;margin:2px}
-/* VERIFY */
-.ver-item{background:var(--navy);border:1px solid #1E4DBC22;border-radius:10px;padding:12px;margin-bottom:6px;display:flex;align-items:center;gap:10px;border-left:3px solid #4A6FA5}
-.ver-item.ok{border-left-color:var(--success)}
-.ver-item.fail{border-left-color:var(--danger)}
-.ver-item.pending{border-left-color:#4A6FA5}
-/* INV FISICO */
-.inv-row{background:var(--navy);border:1px solid #1E4DBC22;border-radius:10px;padding:11px;margin-bottom:6px;border-left:3px solid #4A6FA5}
-.inv-row.ok{border-left-color:var(--success)}
-.inv-row.diff{border-left-color:var(--danger)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.btn{width:100%;padding:12px;border:none;border-radius:10px;font-weight:900;font-size:14px;margin-top:10px;cursor:pointer}
+.primary{background:var(--orange);color:var(--navy)}
+.secondary{background:#1E4DBC;color:white}
+.danger{background:var(--danger);color:white}
+.ghost{background:transparent;color:var(--muted);border:1px solid #1E4DBC44}
+.kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px}
+.kpi{background:var(--navy);border-radius:12px;padding:14px;text-align:center;border-top:3px solid var(--orange)}
+.kpi:nth-child(2){border-top-color:var(--success)} .kpi:nth-child(3){border-top-color:var(--blue)} .kpi:nth-child(4){border-top-color:var(--purple)}
+.kpi strong{display:block;font-size:24px}.kpi small{color:var(--muted);font-size:10px}
+.tabs{display:flex;gap:6px;overflow:auto;margin-bottom:12px}
+.tab{white-space:nowrap;border:1px solid #1E4DBC44;background:transparent;color:var(--muted);border-radius:20px;padding:8px 12px;font-weight:800}
+.tab.on{background:var(--orange);color:var(--navy);border-color:var(--orange)}
+.page{display:none}.page.on{display:block}
+.row{background:#0B203C;border-left:3px solid var(--blue);padding:10px;border-radius:8px;margin:7px 0;font-size:12px}
+.row b{color:white}.row .meta{color:var(--muted);margin-top:4px;line-height:1.5}
+.ok{border-left-color:var(--success)} .out{border-left-color:var(--danger)} .verify{border-left-color:var(--purple)}
+.badge{display:inline-block;padding:3px 7px;border-radius:10px;background:#1E4DBC33;color:#9bb8e8;font-size:10px;font-weight:800}
+.note{font-size:11px;color:var(--muted);line-height:1.5}
+.statusline{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px}
+.pill{display:inline-block;padding:5px 8px;border-radius:999px;font-size:10px;font-weight:900;background:#16365f;color:#c8d8ef}
+.pill.ok{background:#123f2a;color:#8fe0ad}.pill.bad{background:#512026;color:#ffadb1}
+.summary4{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:10px 0}
+.summary4>div{background:#0A1E38;border-radius:10px;padding:10px;text-align:center;border:1px solid #1E4DBC44}
+.summary4 strong{display:block;font-size:18px}.summary4 small{font-size:9px;color:var(--muted)}
+.toolbar{display:flex;gap:8px}.toolbar .btn{margin-top:0}
+nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:520px;display:grid;grid-template-columns:repeat(5,1fr);background:var(--navy);border-top:1px solid #1E4DBC44;z-index:20}
+nav button{background:transparent;border:none;color:var(--muted);padding:10px 2px;font-size:10px;font-weight:800}
+nav button span{display:block;font-size:20px;margin-bottom:2px}
+nav button.on{color:var(--orange)}
+.toast{display:none;position:fixed;top:76px;left:50%;transform:translateX(-50%);z-index:99;background:#111f32;color:white;padding:10px 14px;border-radius:10px;box-shadow:0 8px 24px #0008;font-size:12px;max-width:90%}
+.scanner{display:none;position:fixed;inset:0;z-index:100;background:#000;flex-direction:column}
+.scanner.on{display:flex}.scanner video{width:100%;height:65vh;object-fit:cover}
+.scanbar{padding:12px;background:#071629}.scanbar button{padding:10px;border:0;border-radius:8px;font-weight:800}
+hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
 </style>
 </head>
 <body>
-<div id="toast"></div>
+<div id="toast" class="toast"></div>
 
-<!-- CONFIRM OK -->
-<div id="confirm-ok">
-  <div id="confirm-inner">
-    <div style="font-size:52px;margin-bottom:12px">✅</div>
-    <div style="font-size:18px;font-weight:900;color:var(--success);margin-bottom:6px" id="confirm-title">Guardado</div>
-    <div style="font-size:13px;color:#aaa;margin-bottom:18px" id="confirm-msg"></div>
-    <button class="btn btn-green" onclick="closeConfirm()" style="margin:0">Continuar</button>
+<div id="scanner" class="scanner">
+  <div class="scanbar">
+    <b>INVENTIX Scanner</b>
+    <button id="closeScanner" style="float:right">Cerrar</button>
+  </div>
+  <video id="video" playsinline muted autoplay></video>
+  <div class="scanbar">
+    <div class="note">Centra el código. Si el navegador no soporta lectura automática, usa captura manual.</div>
+    <input id="scanManual" placeholder="UPC / código">
+    <button id="scanManualBtn" class="btn primary">Usar código</button>
   </div>
 </div>
 
-<!-- SCANNER -->
-<div id="scan-overlay">
-  <div id="scan-hdr">
-    <div style="display:flex;align-items:center;gap:10px">
-      <div style="width:38px;height:38px;background:linear-gradient(135deg,var(--navy),var(--blue));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px">🛡️</div>
-      <div>
-        <div style="font-size:13px;font-weight:800">INVENTIX Scanner</div>
-        <div id="scan-stxt" style="font-size:10px;color:#aaa;padding:0">Iniciando...</div>
-      </div>
+<header>
+  <div class="brand">INVENTI<span>X</span> CORE</div>
+  <div class="sub">v1.4 · Import/Export + conteo + Verify</div>
+</header>
+
+<main>
+<section id="home" class="page on">
+  <div class="kpis">
+    <div class="kpi"><strong id="kStock">0</strong><small>Stock total</small></div>
+    <div class="kpi"><strong id="kSku">0</strong><small>SKUs activos</small></div>
+    <div class="kpi"><strong id="kMov">0</strong><small>Movimientos</small></div>
+    <div class="kpi"><strong id="kVerify">0</strong><small>Verify OK</small></div>
+  </div>
+  <div class="card">
+    <h2>Entorno de ejecución</h2>
+    <div class="statusline">
+      <span id="secureBadge" class="pill">Comprobando...</span>
+      <span id="cameraBadge" class="pill">Cámara</span>
     </div>
-    <button onclick="closeScanner()" style="background:#ffffff15;border:none;color:#fff;border-radius:10px;padding:8px 14px;font-size:13px;font-weight:800;cursor:pointer">✕ Cerrar</button>
+    <div id="secureNote" class="note" style="margin-top:8px"></div>
   </div>
-  <div id="vid-wrap">
-    <video id="cam-video" playsinline muted autoplay></video>
-    <div class="sframe"><div class="sline"></div><div class="co tl"></div><div class="co tr"></div><div class="co bl"></div><div class="co br"></div></div>
+  <div class="card">
+    <h2>Prueba de persistencia</h2>
+    <div class="note">Haz una entrada o salida, cierra completamente Chrome y vuelve a abrir la misma URL. El movimiento y la existencia deben continuar.</div>
   </div>
-  <div id="scan-hint">Centra el código en el recuadro</div>
-  <div id="scan-manual-row">
-    <input id="scan-inp" type="text" placeholder="O escribe el código aquí..." onkeydown="if(event.key==='Enter'){doManual();}" autocomplete="off" inputmode="text">
-    <button onclick="doManual()">→</button>
-  </div>
-</div>
-
-<!-- ══ HOME ══ -->
-<div class="page on" id="pg-home">
-  <div style="background:linear-gradient(160deg,var(--navy2),var(--navy));margin:-14px -14px 0;padding:24px 18px 18px">
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
-      <div style="width:50px;height:50px;background:linear-gradient(135deg,var(--navy),var(--blue));border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:26px;border:1.5px solid #F5A62333">🛡️</div>
-      <div>
-        <div style="font-size:22px;font-weight:900;letter-spacing:-1px">INVENTI<span style="color:var(--orange)">X</span> <span style="font-size:12px;color:#4A6FA5;font-weight:700">v4</span></div>
-        <div style="font-size:9px;color:#4A6FA5;letter-spacing:1px;text-transform:uppercase;font-weight:700">Inteligencia Operativa · Con persistencia</div>
-      </div>
+  <div class="card">
+    <h2>Respaldo completo</h2>
+    <div class="toolbar">
+      <button id="exportBtn" class="btn secondary">Exportar</button>
+      <button id="importBtn" class="btn ghost">Importar</button>
     </div>
-    <div class="kpi-grid" id="home-kpis"></div>
-    <div id="home-alert"></div>
+    <input id="importFile" type="file" accept=".json,application/json" style="display:none">
+    <div class="note" style="margin-top:8px">El respaldo JSON permite recuperar datos aunque cambies de teléfono o limpies el navegador.</div>
   </div>
-  <div style="height:12px"></div>
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-    <div style="font-size:10px;font-weight:800;color:#4A6FA5;text-transform:uppercase;letter-spacing:.8px">Módulos</div>
-    <button onclick="resetAll()" style="background:transparent;border:1px solid #D6303133;color:#D63031;border-radius:8px;padding:4px 10px;font-size:10px;font-weight:800;cursor:pointer">🗑️ Limpiar datos</button>
-  </div>
-  <div id="vert-list"></div>
-</div>
+</section>
 
-<!-- ══ OPERACIÓN ══ -->
-<div class="page" id="pg-op">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-    <div>
-      <div style="font-size:16px;font-weight:900" id="op-title">Operaciones</div>
-      <div style="font-size:11px;color:#4A6FA5" id="op-sub"></div>
+<section id="inventory" class="page">
+  <div class="card">
+    <h2>Inventario</h2>
+    <div class="toolbar">
+      <button id="importInvBtn" class="btn secondary">📥 Importar CSV</button>
+      <button id="exportInvBtn" class="btn ghost">📤 Exportar CSV</button>
     </div>
-    <button onclick="goTo('pg-home');renderHome()" style="background:transparent;border:1px solid #1E4DBC33;color:#4A6FA5;border-radius:8px;padding:6px 10px;font-size:11px;cursor:pointer">← Inicio</button>
-  </div>
-  <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:12px" id="proc-tabs"></div>
-
-  <div class="scan-btn" onclick="openScanner('op')">
-    <div style="font-size:48px;margin-bottom:8px">📷</div>
-    <div style="font-weight:800;color:var(--orange);font-size:16px;margin-bottom:3px">Escanear producto</div>
-    <div style="font-size:11px;color:#4A6FA5">Toca para abrir la cámara</div>
+    <input id="importInvFile" type="file" accept=".csv,text/csv,.txt,text/plain" style="display:none">
+    <div class="note" style="margin-top:8px">Columnas aceptadas: UPC/CODIGO/SKU, DESCRIPCION, EXISTENCIA/CANTIDAD/QTY/STOCK y UBICACION.</div>
+    <hr>
+    <div id="inventoryList"></div>
   </div>
 
-  <div class="sep"><div class="sep-line"></div><span>o ingresa el código</span><div class="sep-line"></div></div>
-  <div style="display:flex;gap:8px;margin-bottom:14px">
-    <input id="op-manual" type="text" placeholder="UPC / ID / Serie..." inputmode="text" onkeydown="if(event.key==='Enter')opManual()">
-    <button onclick="opManual()" style="background:var(--orange);border:none;color:var(--navy);border-radius:10px;padding:0 16px;font-size:18px;font-weight:900;cursor:pointer">→</button>
+  <div class="card">
+    <h2>Toma física</h2>
+    <label>UPC / SKU</label><input id="pCode" placeholder="Código">
+    <div class="grid2">
+      <div><label>Cantidad contada</label><input id="pQty" type="number" min="1" inputmode="numeric"></div>
+      <div><label>Ubicación</label><input id="pLoc" placeholder="LOCAL01 / A-01"></div>
+    </div>
+    <label>Responsable</label><input id="pUser" placeholder="Nombre">
+    <button id="physicalScan" class="btn secondary">📷 Escanear UPC</button>
+    <button id="savePhysical" class="btn primary">✅ Registrar conteo</button>
+    <button id="exportPhysicalBtn" class="btn ghost">📤 Exportar toma física</button>
+    <div id="physicalList"></div>
+  </div>
+</section>
+
+<section id="entry" class="page">
+  <div class="card">
+    <h2>Registrar entrada</h2>
+    <div class="grid2">
+      <div><label>Folio OC</label><input id="eOC" placeholder="OC / Orden de compra"></div>
+      <div><label>Factura proveedor</label><input id="eInvoice" placeholder="Factura / remisión"></div>
+    </div>
+    <label>UPC / SKU</label><input id="eCode" placeholder="Código">
+    <label>Descripción</label><input id="eDesc" placeholder="Producto">
+    <div class="grid2">
+      <div><label>Cantidad</label><input id="eQty" type="number" min="1" inputmode="numeric"></div>
+      <div><label>Ubicación</label><input id="eLoc" placeholder="A-01-01"></div>
+    </div>
+    <label>Responsable</label><input id="eUser" placeholder="Nombre">
+    <button id="entryScan" class="btn secondary">📷 Escanear UPC</button>
+    <button id="saveEntry" class="btn primary">✅ Guardar entrada</button>
+  </div>
+</section>
+
+<section id="exit" class="page">
+  <div class="card">
+    <h2>Registrar salida</h2>
+    <div class="grid2">
+      <div><label>Folio OV</label><input id="sOV" placeholder="OV / Pedido"></div>
+      <div><label>Documento salida</label><input id="sDoc" placeholder="Factura / remisión"></div>
+    </div>
+    <label>UPC / SKU</label><input id="sCode" placeholder="Código">
+    <div class="grid2">
+      <div><label>Cantidad</label><input id="sQty" type="number" min="1" inputmode="numeric"></div>
+      <div><label>Ubicación</label><input id="sLoc" placeholder="A-01-01"></div>
+    </div>
+    <label>Picker</label><input id="sUser" placeholder="Nombre">
+    <button id="exitScan" class="btn secondary">📷 Escanear UPC</button>
+    <button id="saveExit" class="btn primary">✅ Guardar salida</button>
+  </div>
+</section>
+
+<section id="kardex" class="page">
+  <div class="card">
+    <h2>Kardex virtual</h2>
+    <div id="kardexList"></div>
+  </div>
+  <div class="card">
+    <h2>Orden esperada</h2>
+    <div class="toolbar">
+      <button id="importVerifyBtn" class="btn secondary">📥 Importar orden CSV</button>
+      <button id="exportVerifyBtn" class="btn ghost">📤 Exportar resultado</button>
+    </div>
+    <input id="importVerifyFile" type="file" accept=".csv,text/csv,.txt,text/plain" style="display:none">
+    <div class="note" style="margin-top:8px">Columnas: OC/OV (opcional), CODIGO/UPC/SERIE, CANTIDAD/QTY y DESCRIPCION.</div>
+    <div class="summary4">
+      <div><strong id="vTotalExpected">0</strong><small>TOTAL ORDEN</small></div>
+      <div><strong id="vScanned">0</strong><small>ESCANEADOS OK</small></div>
+      <div><strong id="vMissing">0</strong><small>FALTAN</small></div>
+      <div><strong id="vNoExiste">0</strong><small>NO EXISTE / EXCESO</small></div>
+    </div>
+    <div id="verifyExpectedList"></div>
   </div>
 
-  <!-- Importar CSV -->
-  <details style="margin-bottom:12px">
-    <summary style="cursor:pointer;font-size:11px;font-weight:800;color:#4A6FA5;padding:8px;background:var(--navy);border-radius:8px;border:1px solid #1E4DBC22">📥 Importar catálogo desde Excel/CSV</summary>
-    <div style="padding:12px;background:var(--navy);border:1px solid #1E4DBC22;border-radius:0 0 8px 8px;margin-top:2px">
-      <div style="font-size:11px;color:#4A6FA5;margin-bottom:8px">El CSV debe tener columnas: <b style="color:var(--orange)">upc, id, desc, var, ubic, min, max, reorden</b> (y opcionalmente: lote, cad, reg, serie)</div>
-      <input type="file" id="csv-file" accept=".csv,.xlsx" style="background:transparent;border:1px dashed #1E4DBC44;color:#4A6FA5;font-size:11px;padding:8px" onchange="importCSV(event)">
-      <div id="import-result" style="margin-top:8px;font-size:11px"></div>
+  <div class="card">
+    <h2>Verify trazable</h2>
+    <div class="grid2">
+      <div><label>Referencia OC</label><input id="vOC" placeholder="OC / origen"></div>
+      <div><label>Referencia OV</label><input id="vOV" placeholder="OV / pedido"></div>
     </div>
-  </details>
-
-  <div id="op-movs"></div>
-</div>
-
-<!-- ══ REGISTRAR ══ -->
-<div class="page" id="pg-reg">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-    <div style="font-size:16px;font-weight:900" id="reg-title">Registrar</div>
-    <button id="reg-back" style="background:transparent;border:1px solid #1E4DBC33;color:#4A6FA5;border-radius:8px;padding:6px 12px;font-size:11px;cursor:pointer">✕</button>
+    <div class="grid2">
+      <div><label>Documento</label><input id="vDoc" placeholder="Factura / remisión"></div>
+      <div><label>Responsable</label><input id="vUser" placeholder="Validador"></div>
+    </div>
+    <label>Serie / lote / IMEI</label><input id="vCode" placeholder="Código a validar">
+    <button id="verifyScan" class="btn secondary">📷 Escanear código</button>
+    <button id="verifyBtn" class="btn primary">✅ Validar y registrar</button>
+    <div class="note" style="margin-top:8px">En esta etapa Verify guarda la referencia documental de cada lectura. El cruce esperado vs escaneado se agregará después.</div>
+    <div id="verifyList"></div>
   </div>
-  <div id="reg-prod-card" class="card" style="margin-bottom:14px;border-left:4px solid var(--orange)"></div>
-  <div id="reg-campos"></div>
-  <div id="reg-dup-alert" style="display:none" class="alert alert-w"></div>
-  <div id="reg-cad-alert" style="display:none" class="alert alert-e"></div>
-  <button class="btn btn-orange" id="reg-save-btn" onclick="saveReg()">✅ Guardar registro</button>
-  <button class="btn btn-ghost" onclick="goTo('pg-op')">← Cancelar</button>
-</div>
+</section>
+</main>
 
-<!-- ══ INVENTARIO FÍSICO ══ -->
-<div class="page" id="pg-inv">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-    <div>
-      <div style="font-size:16px;font-weight:900">📋 Inventario físico</div>
-      <div style="font-size:11px;color:#4A6FA5">Teórico vs Físico — Cruce automático</div>
-    </div>
-    <button onclick="goTo('pg-home');renderHome()" style="background:transparent;border:1px solid #1E4DBC33;color:#4A6FA5;border-radius:8px;padding:6px 10px;font-size:11px;cursor:pointer">← Inicio</button>
-  </div>
-
-  <!-- Referencia de la toma -->
-  <div class="card" style="margin-bottom:12px;border-left:4px solid var(--orange)">
-    <label class="lbl">Referencia / Folio de toma *</label>
-    <div style="display:flex;gap:8px">
-      <input id="inv-ref" type="text" placeholder="INV-2026-001" style="font-family:monospace">
-      <button onclick="iniciarToma()" style="flex-shrink:0;background:var(--orange);border:none;color:var(--navy);border-radius:8px;padding:0 14px;font-size:13px;font-weight:800;cursor:pointer">Iniciar</button>
-    </div>
-  </div>
-
-  <div id="inv-toma-activa" style="display:none">
-    <!-- Scanner en toma -->
-    <div class="scan-btn" onclick="openScanner('inv')" style="border-color:var(--success)88;padding:18px">
-      <div style="font-size:40px;margin-bottom:6px">📷</div>
-      <div style="font-weight:800;color:var(--success);font-size:14px">Escanear producto para contar</div>
-    </div>
-    <div class="sep"><div class="sep-line"></div><span>o ingresa el código</span><div class="sep-line"></div></div>
-    <div style="display:flex;gap:8px;margin-bottom:14px">
-      <input id="inv-manual" type="text" placeholder="UPC / ID..." onkeydown="if(event.key==='Enter')invManual()">
-      <button onclick="invManual()" style="background:var(--success);border:none;color:#fff;border-radius:10px;padding:0 14px;font-size:18px;font-weight:900;cursor:pointer">→</button>
-    </div>
-
-    <!-- Resumen cruce -->
-    <div class="kpi-grid" id="inv-kpis" style="margin-bottom:12px"></div>
-
-    <!-- Lista de cruce -->
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-      <div style="font-size:10px;font-weight:800;color:#4A6FA5;text-transform:uppercase">Cruce teórico vs físico</div>
-      <button onclick="exportInv()" style="background:var(--success);border:none;color:#fff;border-radius:8px;padding:5px 10px;font-size:10px;font-weight:800;cursor:pointer">⬇️ CSV</button>
-    </div>
-    <div id="inv-lista"></div>
-  </div>
-</div>
-
-<!-- ══ VERIFY ══ -->
-<div class="page" id="pg-verify">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-    <div>
-      <div style="font-size:16px;font-weight:900">✅ INVENTIX VERIFY</div>
-      <div style="font-size:11px;color:#8B6FD4">Validación por serie · Complemento SAP</div>
-    </div>
-    <button onclick="goTo('pg-home');renderHome()" style="background:transparent;border:1px solid #6C3FCB33;color:#8B6FD4;border-radius:8px;padding:6px 10px;font-size:11px;cursor:pointer">← Inicio</button>
-  </div>
-
-  <!-- Tabs: Generar lista / Validar -->
-  <div style="display:flex;background:#181818;border-radius:12px;padding:3px;margin-bottom:14px">
-    <button id="ver-tab-gen" onclick="verTab('gen')" style="flex:1;padding:9px;border:none;border-radius:8px;font-size:11px;font-weight:800;cursor:pointer;background:var(--purple);color:#fff">📋 Generar lista</button>
-    <button id="ver-tab-val" onclick="verTab('val')" style="flex:1;padding:9px;border:none;border-radius:8px;font-size:11px;font-weight:800;cursor:pointer;background:transparent;color:#555">📷 Validar</button>
-  </div>
-
-  <!-- GENERAR LISTA -->
-  <div id="ver-gen">
-    <div class="card" style="border-left:4px solid var(--purple);margin-bottom:12px">
-      <label class="lbl">OC / Referencia de salida *</label>
-      <input id="ver-oc" type="text" placeholder="OC-2026-001" class="mb" style="font-family:monospace">
-      <label class="lbl">Tipo de validación</label>
-      <select id="ver-tipo" class="mb" onchange="renderVerGenForm()">
-        <option value="serie">Por número de serie (TECH)</option>
-        <option value="lote">Por lote y caducidad (FOOD/PHARMA)</option>
-        <option value="cantidad">Por cantidad (CORE)</option>
-      </select>
-      <div id="ver-gen-form"></div>
-      <button class="btn btn-purple" onclick="generarListaVerify()" style="margin:0">📋 Generar lista de validación</button>
-    </div>
-    <div id="ver-lista-generada"></div>
-  </div>
-
-  <!-- VALIDAR -->
-  <div id="ver-val" style="display:none">
-    <div id="ver-oc-activa" class="alert alert-b" style="margin-bottom:12px"></div>
-    <div class="scan-btn" onclick="openScanner('verify')" style="border-color:#6C3FCB88;padding:18px">
-      <div style="font-size:40px;margin-bottom:6px">📷</div>
-      <div style="font-weight:800;color:#A888FF;font-size:14px;margin-bottom:3px">Escanear serie / lote</div>
-      <div style="font-size:11px;color:#8B6FD4">Valida contra la lista generada</div>
-    </div>
-    <div class="sep"><div class="sep-line"></div><span>o ingresa el código</span><div class="sep-line"></div></div>
-    <div style="display:flex;gap:8px;margin-bottom:12px">
-      <input id="ver-manual" type="text" placeholder="Serie / Lote..." onkeydown="if(event.key==='Enter')verManual()">
-      <button onclick="verManual()" style="background:var(--purple);border:none;color:#fff;border-radius:10px;padding:0 14px;font-size:16px;font-weight:900;cursor:pointer">✓</button>
-    </div>
-    <!-- Progress -->
-    <div id="ver-progress" style="margin-bottom:12px;display:none">
-      <div style="display:flex;justify-content:space-between;font-size:11px;color:#4A6FA5;margin-bottom:4px">
-        <span>Progreso de validación</span><span id="ver-prog-txt">0/0</span>
-      </div>
-      <div style="height:8px;background:#ffffff11;border-radius:4px;overflow:hidden">
-        <div id="ver-prog-bar" style="height:100%;background:var(--purple);border-radius:4px;transition:width .4s;width:0%"></div>
-      </div>
-    </div>
-    <div id="ver-resultado-flash" style="display:none;margin-bottom:10px"></div>
-    <div id="ver-items-lista"></div>
-  </div>
-</div>
-
-<!-- ══ KARDEX ══ -->
-<div class="page" id="pg-kx">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-    <div>
-      <div style="font-size:16px;font-weight:900">📊 Kardex virtual</div>
-      <div style="font-size:11px;color:#4A6FA5" id="kx-cnt">0 movimientos</div>
-    </div>
-    <div style="display:flex;gap:6px">
-      <button onclick="exportKardex()" style="background:var(--success);border:none;color:#fff;border-radius:8px;padding:6px 10px;font-size:10px;font-weight:800;cursor:pointer">⬇️ CSV</button>
-      <button onclick="goTo('pg-home');renderHome()" style="background:transparent;border:1px solid #1E4DBC33;color:#4A6FA5;border-radius:8px;padding:6px 10px;font-size:11px;cursor:pointer">← Inicio</button>
-    </div>
-  </div>
-  <div class="alert alert-b" style="font-size:11px;margin-bottom:12px">ℹ️ Kardex se genera automáticamente. Timestamp registrado en cada movimiento.</div>
-  <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:12px" id="kx-filtros"></div>
-  <div id="kx-lista"></div>
-</div>
-
-<!-- NAV -->
-<div id="bottom-nav">
-  <button class="nav-btn" onclick="goTo('pg-home');renderHome()"><span style="font-size:20px">🏠</span><span class="nav-lbl on" id="nl-home">Inicio</span></button>
-  <button class="nav-btn" onclick="goTo('pg-op');renderOp()"><span style="font-size:20px">📦</span><span class="nav-lbl" id="nl-op">Operación</span></button>
-  <button class="nav-btn" onclick="goTo('pg-inv');renderInv()"><span style="font-size:20px">📋</span><span class="nav-lbl" id="nl-inv">Inventario</span></button>
-  <button class="nav-btn" onclick="goTo('pg-verify');renderVerify()"><span style="font-size:20px">✅</span><span class="nav-lbl" id="nl-ver">Verify</span></button>
-  <button class="nav-btn" onclick="goTo('pg-kx');renderKardex()"><span style="font-size:20px">📊</span><span class="nav-lbl" id="nl-kx">Kardex</span></button>
-</div>
+<nav>
+<button data-page="home" class="on"><span>🏠</span>Inicio</button>
+<button data-page="inventory"><span>📦</span>Inventario</button>
+<button data-page="entry"><span>➕</span>Entrada</button>
+<button data-page="exit"><span>➖</span>Salida</button>
+<button data-page="kardex"><span>📊</span>Kardex</button>
+</nav>
 
 <script>
-// ══════════════════════════════════
-// PERSISTENCIA — localStorage
-// ══════════════════════════════════
-const LS = {
-  get: k => { try{ const v=localStorage.getItem('inv_'+k); return v?JSON.parse(v):null; }catch(e){return null;} },
-  set: (k,v) => { try{ localStorage.setItem('inv_'+k, JSON.stringify(v)); }catch(e){} },
-  del: k => { try{ localStorage.removeItem('inv_'+k); }catch(e){} }
-};
+const STORAGE_KEY = 'inventix_core_v1_1';
+let state = { inventory:{}, kardex:[], verify:[], verifyExpected:{}, physicalCounts:[] };
 
-// ══════════════════════════════════
-// CATÁLOGO BASE
-// ══════════════════════════════════
-const CAT_BASE = {
-  core:[
-    {upc:"7500001000001",id:"WB-38-NG",desc:"Watch Band Milanese 38mm",var:"NEGRO",ubic:"RACK-A3-N2",min:20,max:200,reorden:50},
-    {upc:"7500001000002",id:"WB-42-NG",desc:"Watch Band Milanese 42mm",var:"NEGRO",ubic:"RACK-A3-N2",min:15,max:150,reorden:40},
-    {upc:"7500001000003",id:"CAB-USB-1M",desc:"Cable USB-C 1M",var:"NEGRO",ubic:"RACK-B1",min:10,max:100,reorden:25},
-    {upc:"7500001000004",id:"PWR-BANK-10K",desc:"Power Bank 10,000mAh",var:"NEGRO",ubic:"RACK-B2",min:8,max:80,reorden:20},
-  ],
-  food:[
-    {upc:"7501111000001",id:"JAM-250-FR",desc:"Jamón serrano 250g",var:"FRESCO",ubic:"REFRI-1",min:5,max:50,reorden:12,lote:"L-F001",cad:"2026-07-15"},
-    {upc:"7501111000002",id:"YOG-125-FR",desc:"Yogurt 125g Fresa",var:"FRESA",ubic:"REFRI-2",min:10,max:100,reorden:25,lote:"L-F002",cad:"2026-06-28"},
-    {upc:"7501111000003",id:"LEC-1L-ENT",desc:"Leche entera 1L",var:"ENTERA",ubic:"ANAQ-1",min:20,max:200,reorden:50,lote:"L-F003",cad:"2026-07-02"},
-    {upc:"7501111000004",id:"CRE-200-NAT",desc:"Crema 200ml",var:"NATURAL",ubic:"REFRI-1",min:8,max:80,reorden:20,lote:"L-F004",cad:"2026-07-10"},
-  ],
-  verify:[
-    {upc:"SN-A54-001",id:"SN-A54-001",desc:"Samsung Galaxy A54",var:"128GB NEGRO",ubic:"ZONA-EMBAR",serie:"SN-A54-001",autorizado:true},
-    {upc:"SN-A54-002",id:"SN-A54-002",desc:"Samsung Galaxy A54",var:"128GB NEGRO",ubic:"ZONA-EMBAR",serie:"SN-A54-002",autorizado:true},
-    {upc:"SN-A54-003",id:"SN-A54-003",desc:"Samsung Galaxy A54",var:"128GB AZUL",ubic:"ZONA-EMBAR",serie:"SN-A54-003",autorizado:false},
-    {upc:"SN-A54-004",id:"SN-A54-004",desc:"Samsung Galaxy A54",var:"128GB BLANCO",ubic:"ZONA-EMBAR",serie:"SN-A54-004",autorizado:true},
-  ],
-  pharma:[
-    {upc:"7503333000001",id:"PARA-500",desc:"Paracetamol 500mg c/10",var:"TABLETAS",ubic:"RACK-P1",min:50,max:500,reorden:120,lote:"L-COFE-001",cad:"2027-03-15",reg:"COFEPRIS-2024-001"},
-    {upc:"7503333000002",id:"IBUP-400",desc:"Ibuprofeno 400mg c/20",var:"CÁPSULAS",ubic:"RACK-P2",min:40,max:400,reorden:100,lote:"L-COFE-002",cad:"2027-06-30",reg:"COFEPRIS-2024-002"},
-  ],
-  tech:[
-    {upc:"7502222000001",id:"CAB-UC-1M-001",desc:"Cable USB-C 1M",var:"NEGRO",ubic:"RACK-T1",min:20,max:200,reorden:50,serie:"SN-CAB-00001"},
-    {upc:"7502222000002",id:"AUD-BT-001",desc:"Audífonos Bluetooth",var:"NEGRO",ubic:"RACK-T2",min:10,max:100,reorden:25,serie:"SN-AUD-00001"},
-    {upc:"7502222000003",id:"CAR-20W-001",desc:"Cargador 20W",var:"BLANCO",ubic:"RACK-T3",min:25,max:250,reorden:60,serie:"SN-CAR-00001"},
-  ],
-};
+function nowISO(){ return new Date().toISOString(); }
+function fmtDate(iso){ return new Date(iso).toLocaleString('es-MX'); }
 
-const VERTS = {
-  core:  {id:"core",  icon:"🛡️",nombre:"INVENTIX CORE",  color:"#1E4DBC",sub:"Entradas, salidas, inventario general",   proc:["ENTRADA","SALIDA"],extras:[]},
-  food:  {id:"food",  icon:"🥩",nombre:"INVENTIX FOOD",  color:"#2ECC71",sub:"FEFO, caducidades, trazabilidad",         proc:["ENTRADA","SALIDA"],extras:["lote","cad","temp"]},
-  verify:{id:"verify",icon:"✅",nombre:"INVENTIX VERIFY",color:"#6C3FCB",sub:"Validación por serie/lote vs SAP",        proc:["VERIFICAR"],       extras:["serie"]},
-  pharma:{id:"pharma",icon:"💊",nombre:"INVENTIX PHARMA",color:"#8B6FD4",sub:"COFEPRIS, cuarentena, registro sanitario",proc:["ENTRADA","SALIDA"],extras:["lote","cad","reg"]},
-  tech:  {id:"tech",  icon:"📱",nombre:"INVENTIX TECH",  color:"#F5A623",sub:"Series, IMEI, trazabilidad por pieza",    proc:["ENTRADA","SALIDA"],extras:["serie"]},
-};
-
-// ══════════════════════════════════
-// ESTADO (con persistencia)
-// ══════════════════════════════════
-let vert    = LS.get('vert')    || "core";
-let proc    = LS.get('proc')    || "ENTRADA";
-let cats    = LS.get('cats')    || [...CAT_BASE.core];
-let kardex  = LS.get('kardex')  || [];
-let tomaAct = LS.get('toma')    || null;   // {ref, fecha, conteos:[]}
-let verList = LS.get('verList') || null;   // lista verify activa
-let prodAct = null;
-let scanMode= "op";
-let camStream=null, scanLoop=null;
-let kxF = "TODOS";
-let saving = false;            // Flag para evitar doble clic en guardado
-
-const save = () => {
-  LS.set('vert', vert);
-  LS.set('proc', proc);
-  LS.set('cats', cats);
-  LS.set('kardex', kardex);
-  LS.set('toma', tomaAct);
-  LS.set('verList', verList);
-};
-
-// ══════════════════════════════════
-// HELPERS
-// ══════════════════════════════════
-const pad = n => String(n).padStart(2,'0');
-const now = () => { const d=new Date(); return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`; };
-const hoy = () => { const d=new Date(); return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}`; };
-const fmtCad = c => { if(!c)return null; const d=new Date(c); const dias=Math.ceil((d-new Date())/86400000); return {str:`${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}`,dias}; };
-const getStock = id => kardex.filter(k=>k.id_interno===id&&k.proceso==="ENTRADA").reduce((s,k)=>s+k.cantidad,0) - kardex.filter(k=>k.id_interno===id&&k.proceso==="SALIDA").reduce((s,k)=>s+k.cantidad,0);
-const vib = () => { try{navigator.vibrate&&navigator.vibrate([60]);}catch(e){} };
-const el = id => document.getElementById(id);
-const navMap = {"pg-home":"nl-home","pg-op":"nl-op","pg-inv":"nl-inv","pg-verify":"nl-ver","pg-kx":"nl-kx"};
-
-const toast = (msg, bg="#1A9A54") => {
-  const t=el("toast");t.textContent=msg;t.style.background=bg;t.style.display="block";
-  clearTimeout(window._tt);window._tt=setTimeout(()=>t.style.display="none",3000);
-};
-
-const showConfirm = (title, msg) => {
-  el("confirm-title").textContent=title;
-  el("confirm-msg").textContent=msg;
-  el("confirm-ok").classList.add("on");
-};
-const closeConfirm = () => {
-  el("confirm-ok").classList.remove("on");
-  // Liberar flag de guardado después de cerrar el modal
-  setTimeout(() => { saving = false; }, 300);
-};
-
-const goTo = pid => {
-  document.querySelectorAll(".page").forEach(p=>p.classList.remove("on"));
-  el(pid).classList.add("on"); window.scrollTo(0,0);
-  document.querySelectorAll(".nav-lbl").forEach(l=>l.classList.remove("on"));
-  if(navMap[pid])el(navMap[pid]).classList.add("on");
-};
-
-const resetAll = () => {
-  if(!confirm("¿Limpiar todos los datos? Esto borra entradas, salidas y kardex."))return;
-  kardex=[];cats=[...CAT_BASE[vert]];
-  // También limpiamos listas verify y tomas
-  verList=null; tomaAct=null;
-  save();renderHome();toast("🗑️ Datos limpiados","#E17B00");
-};
-
-// ══════════════════════════════════
-// VERTICAL
-// ══════════════════════════════════
-const setVert = v => {
-  vert=v; proc=(VERTS[v]?.proc||["ENTRADA"])[0];
-  cats=[...CAT_BASE[v]||[]].concat(cats.filter(p=>p._custom));
-  save();
-  if(v==="verify"){goTo("pg-verify");renderVerify();return;}
-  goTo("pg-op");renderOp();
-};
-
-// ══════════════════════════════════
-// SCANNER NATIVO
-// ══════════════════════════════════
-const openScanner = mode => {
-  scanMode=mode;
-  el("scan-overlay").classList.add("on");
-  el("scan-stxt").textContent="Solicitando cámara...";
-  navigator.mediaDevices.getUserMedia({video:{facingMode:"environment",width:{ideal:1280}}})
-  .then(stream=>{
-    camStream=stream;
-    const v=el("cam-video");v.srcObject=stream;v.play();
-    el("scan-stxt").textContent="Apunta al código";
-    if("BarcodeDetector" in window){
-      const det=new BarcodeDetector({formats:["ean_13","ean_8","code_128","qr_code","upc_a","upc_e","code_39","code_93","data_matrix"]});
-      let last="",lastT=0;
-      scanLoop=setInterval(async()=>{
-        try{
-          const r=await det.detect(v);
-          if(r.length){
-            const c=r[0].rawValue,now_=Date.now();
-            if(c===last&&now_-lastT<2000)return;
-            last=c;lastT=now_;vib();
-            closeScanner();handleCode(c);
-          }
-        }catch(e){}
-      },300);
-      el("scan-stxt").textContent="✅ Escáner activo";
-    }else{
-      el("scan-stxt").textContent="Cámara activa · Usa el campo manual ↓";
+function load(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      const parsed = JSON.parse(raw);
+      state = {
+        inventory: parsed.inventory || {},
+        kardex: parsed.kardex || [],
+        verify: parsed.verify || [],
+        verifyExpected: parsed.verifyExpected || {},
+        physicalCounts: parsed.physicalCounts || []
+      };
     }
-  }).catch(()=>{ el("scan-stxt").textContent="Sin cámara — usa el campo manual ↓"; });
-};
+  }catch(e){ console.error(e); }
+  renderAll();
+}
 
-const closeScanner = () => {
-  el("scan-overlay").classList.remove("on");
-  if(scanLoop){clearInterval(scanLoop);scanLoop=null;}
-  if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null;}
-};
+function save(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  renderAll();
+}
 
-const doManual = () => {
-  const v=el("scan-inp").value.trim();if(!v)return;
-  el("scan-inp").value="";closeScanner();handleCode(v);
-};
+function toast(msg, bad=false){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.style.display='block'; t.style.background=bad?'#7d1f24':'#113c2a';
+  clearTimeout(window.__tt); window.__tt=setTimeout(()=>t.style.display='none',2200);
+}
 
-const handleCode = code => {
-  code=(code||"").trim();if(!code)return;
-  if(scanMode==="verify"){verifyCode(code);return;}
-  if(scanMode==="inv"){invCaptura(code);return;}
-  buscar(code);
-};
+function cleanCode(v){ return String(v||'').trim().toUpperCase(); }
+function qty(v){ const n=Number(v); return Number.isFinite(n)?n:0; }
 
-// ══════════════════════════════════
-// BUSCAR PRODUCTO
-// ══════════════════════════════════
-const buscar = code => {
-  const p=cats.find(x=>x.upc===code||x.id===code||(x.serie&&x.serie===code));
-  if(p){prodAct=p;mostrarForm(p,proc);goTo("pg-reg");toast(`✅ ${p.desc}`);}
-  else{
-    const desc=prompt(`Código: ${code}\nNo encontrado. ¿Descripción?`);
-    if(!desc)return;
-    const nuevo={upc:code,id:"P-"+code.slice(-4),desc,var:"GENÉRICO",ubic:"SIN UB",min:0,max:999,reorden:0,_custom:true};
-    cats.push(nuevo);save();prodAct=nuevo;mostrarForm(nuevo,proc);goTo("pg-reg");
-    toast(`✅ "${desc}" agregado`);
+function normHeader(v){
+  return String(v||'').trim().toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ');
+}
+function parseCSV(raw){
+  raw=String(raw||'').replace(/\r/g,'').trim(); if(!raw) return [];
+  const first=raw.split('\n')[0]||'';
+  const counts={',':(first.match(/,/g)||[]).length,';':(first.match(/;/g)||[]).length,'\t':(first.match(/\t/g)||[]).length};
+  const sep=Object.entries(counts).sort((a,b)=>b[1]-a[1])[0][0];
+  const rows=[]; let row=[],cell='',quoted=false;
+  for(let i=0;i<raw.length;i++){
+    const ch=raw[i];
+    if(ch==='"'){ if(quoted && raw[i+1]==='"'){cell+='"';i++;} else quoted=!quoted; }
+    else if(ch===sep && !quoted){row.push(cell);cell='';}
+    else if(ch==='\n' && !quoted){row.push(cell);rows.push(row);row=[];cell='';}
+    else cell+=ch;
   }
-};
-
-const opManual=()=>{const v=el("op-manual").value.trim();if(!v)return;el("op-manual").value="";buscar(v);};
-
-// ══════════════════════════════════
-// FORMULARIO REGISTRO
-// ══════════════════════════════════
-const mostrarForm = (p, proceso) => {
-  proc=proceso;
-  const cfg=VERTS[vert]||VERTS.core;
-  const cad=p.cad?fmtCad(p.cad):null;
-  const stk=getStock(p.id);
-
-  el("reg-title").textContent=`${proceso} · ${cfg.nombre}`;
-  el("reg-back").onclick=()=>goTo("pg-op");
-  el("reg-save-btn").style.background=proceso==="SALIDA"?"var(--danger)":"var(--orange)";
-  el("reg-save-btn").textContent=proceso==="SALIDA"?"📤 Confirmar SALIDA":"📥 Confirmar ENTRADA";
-
-  el("reg-prod-card").innerHTML=`
-    <div style="display:flex;justify-content:space-between;align-items:flex-start">
-      <div style="flex:1">
-        <div style="font-family:monospace;font-size:10px;color:#4A6FA5">${p.upc}</div>
-        <div style="font-size:15px;font-weight:900;margin-top:3px">${p.desc}</div>
-        <div style="font-size:11px;color:${cfg.color};margin-top:2px">${p.var}</div>
-        <div style="font-size:10px;color:#4A6FA5;margin-top:2px">📍 ${p.ubic}</div>
-        ${p.serie?`<div style="font-family:monospace;font-size:10px;color:#4A6FA5;margin-top:2px">Serie: ${p.serie}</div>`:""}
-        ${cad?`<div style="margin-top:6px;padding:5px 10px;border-radius:8px;font-size:11px;font-weight:700;
-          background:${cad.dias<7?"#D6303115":cad.dias<30?"#E17B0015":"#1A9A5415"};
-          color:${cad.dias<7?"#D63031":cad.dias<30?"#E17B00":"#1A9A54"}">
-          ${cad.dias<7?"🔴":cad.dias<30?"🟡":"🟢"} Cad: ${cad.str}${cad.dias<30?` (${cad.dias}d)`:""}</div>`:""}
-        ${proceso==="SALIDA"?`<div style="margin-top:8px;padding:8px;background:#ffffff08;border-radius:8px;display:flex;justify-content:space-between">
-          <span style="font-size:11px;color:#4A6FA5">Stock disponible</span>
-          <span style="font-size:18px;font-weight:900;font-family:monospace;color:${stk>0?"var(--success)":"var(--danger)"}">${stk}</span></div>`:""}
-      </div>
-      <div style="font-size:36px;margin-left:10px">${cfg.icon}</div>
-    </div>`;
-
-  let html=`
-    <label class="lbl">OC / Referencia *</label>
-    <input type="text" id="rf-oc" placeholder="${proceso==="ENTRADA"?"OC-2026-001":"SAL-2026-001"}" class="mb" style="font-family:monospace">
-    <label class="lbl">${proceso==="SALIDA"?"Cantidad a despachar *":"Cantidad recibida *"}</label>
-    <input type="number" id="rf-cant" min="1" placeholder="0" class="big-num mb" inputmode="numeric" style="border-color:${proceso==="SALIDA"?"var(--danger)":"var(--orange)"}">`;
-
-  if(proceso==="ENTRADA"){
-    html+=`<div class="g2"><div><label class="lbl">Proveedor</label><input type="text" id="rf-prov" placeholder="Proveedor"></div>
-      <div><label class="lbl">Ubicación</label><input type="text" id="rf-ubic" value="${p.ubic||""}" placeholder="RACK-A1"></div></div>`;
-    if(cfg.extras.includes("lote"))html+=`<div class="g2"><div><label class="lbl">Lote *</label><input type="text" id="rf-lote" value="${p.lote||""}" placeholder="L-001"></div>
-      <div><label class="lbl">Caducidad</label><input type="date" id="rf-cad" value="${p.cad||""}" oninput="chkCad()"></div></div>`;
-    if(cfg.extras.includes("temp"))html+=`<label class="lbl">Temperatura °C</label><input type="number" id="rf-temp" placeholder="-2" step="0.1" class="mb">`;
-    if(cfg.extras.includes("reg"))html+=`<label class="lbl">Reg. sanitario</label><input type="text" id="rf-reg" value="${p.reg||""}" placeholder="COFEPRIS" class="mb">`;
-    if(cfg.extras.includes("serie"))html+=`<label class="lbl">Serie / IMEI *</label><input type="text" id="rf-serie" value="${p.serie||""}" placeholder="SN-001" class="mb" style="font-family:monospace">`;
-  }else{
-    html+=`<div class="g2"><div><label class="lbl">Destino / Canal</label><input type="text" id="rf-canal" placeholder="TIENDA-01"></div>
-      <div><label class="lbl">Lote (FEFO sugerido)</label><input type="text" id="rf-lote" value="${getLoteFefo(p.id)}" placeholder="L-001" ${cfg.extras.includes("lote")?"":"readonly style='opacity:.5'"}></div></div>`;
-  }
-  html+=`<label class="lbl">Observaciones</label><input type="text" id="rf-obs" placeholder="Opcional" class="mb">`;
-
-  el("reg-campos").innerHTML=html;
-  el("reg-dup-alert").style.display="none";
-  el("reg-cad-alert").style.display="none";
-  setTimeout(()=>el("rf-oc").focus(),300);
-};
-
-const getLoteFefo = id => {
-  const entrs=kardex.filter(k=>k.id_interno===id&&k.proceso==="ENTRADA"&&k.lote)
-    .sort((a,b)=>new Date(a.cad_raw||"9999")-new Date(b.cad_raw||"9999"));
-  return entrs[0]?.lote||"";
-};
-
-const chkCad = () => {
-  const v=el("rf-cad")?.value,a=el("reg-cad-alert");if(!v||!a)return;
-  const i=fmtCad(v);
-  if(i.dias<=0){a.style.display="block";a.textContent="🔴 PRODUCTO VENCIDO — no registrar";}
-  else if(i.dias<=7){a.style.display="block";a.className="alert alert-e";a.textContent=`⚠️ Vence en ${i.dias} días`;}
-  else if(i.dias<=30){a.style.display="block";a.className="alert alert-w";a.textContent=`⚠️ Próximo a vencer: ${i.dias} días`;}
-  else a.style.display="none";
-};
-
-const saveReg = () => {
-  const oc=el("rf-oc")?.value.trim();
-  const cant=parseInt(el("rf-cant")?.value)||0;
-
-  // Validaciones
-  if(!oc){toast("⚠️ OC / Referencia es obligatoria","#E17B00");el("rf-oc").focus();return;}
-  if(cant<=0){toast("⚠️ Ingresa una cantidad válida","#E17B00");el("rf-cant").focus();return;}
-  if(proc==="SALIDA"&&cant>getStock(prodAct.id)){toast(`❌ Stock insuficiente. Disponible: ${getStock(prodAct.id)}`,"#D63031");return;}
-
-  // Anti-duplicado: misma OC + mismo producto en los últimos 10 segundos
-  const reciente=kardex.find(k=>k.oc===oc&&k.id_interno===prodAct.id&&k.proceso===proc&&(Date.now()-k.ts_ms)<10000);
-  if(reciente){
-    el("reg-dup-alert").style.display="block";
-    el("reg-dup-alert").textContent=`⚠️ Ya se registró esta OC para este producto hace menos de 10 segundos. ¿Es un duplicado?`;
-    el("reg-dup-alert").innerHTML+=`<br><button onclick="forceSave()" style="margin-top:6px;background:var(--warn);border:none;color:#fff;border-radius:6px;padding:5px 12px;font-size:11px;cursor:pointer">Sí, registrar de todas formas</button>`;
-    return;
-  }
-  forceSave();
-};
-
-const forceSave = () => {
-  if (saving) return;
-  saving = true;
-
-  const oc=el("rf-oc")?.value.trim();
-  const cant=parseInt(el("rf-cant")?.value)||0;
-  const ts=now();const ts_ms=Date.now();
-  const reg={
-    id:ts_ms, ts, ts_ms, oc,
-    upc:prodAct.upc, id_interno:prodAct.id,
-    desc:prodAct.desc, var:prodAct.var,
-    cantidad:cant, proceso:proc, vertical:vert,
-    ubicacion:el("rf-ubic")?.value||prodAct.ubic||"",
-    lote:el("rf-lote")?.value||"",
-    cad_raw:el("rf-cad")?.value||"",
-    caducidad:el("rf-cad")?.value?fmtCad(el("rf-cad")?.value)?.str||"":"",
-    proveedor:el("rf-prov")?.value||"",
-    temperatura:el("rf-temp")?.value||"",
-    reg_sanitario:el("rf-reg")?.value||"",
-    serie:el("rf-serie")?.value||prodAct.serie||"",
-    canal:el("rf-canal")?.value||"",
-    obs:el("rf-obs")?.value||"",
-    fefo:proc==="SALIDA"?"✅ FEFO OK":"",
-    estado:"OK",
-  };
-  kardex.unshift(reg);save();vib();
-  const stk=getStock(prodAct.id);
-  showConfirm(
-    proc==="SALIDA"?"📤 Salida registrada":"📥 Entrada registrada",
-    `${prodAct.desc}\n${cant} pzas · OC: ${oc}\nStock actual: ${stk} pzas\nTimestamp: ${ts}`
-  );
-  prodAct=null;renderHome();renderOp();
-  // El flag se libera al cerrar el confirm
-};
-
-// ══════════════════════════════════
-// INVENTARIO FÍSICO
-// ══════════════════════════════════
-const iniciarToma = () => {
-  const ref=el("inv-ref").value.trim();
-  if(!ref){toast("⚠️ Ingresa la referencia de la toma","#E17B00");return;}
-  // Pre-carga con stock teórico
-  const teórico=cats.map(p=>({
-    id_interno:p.id, upc:p.upc, desc:p.desc, var:p.var, ubic:p.ubic,
-    teorico:getStock(p.id), fisico:null, lote:p.lote||"", cad:p.cad||""
-  })).filter(p=>p.teorico>0||cats.find(c=>c.id===p.id_interno));
-  tomaAct={ref, fecha:now(), conteos:teórico};
-  save();renderInv();
-};
-
-const renderInv = () => {
-  if(!tomaAct){
-    el("inv-toma-activa").style.display="none";
-    if(el("inv-ref"))el("inv-ref").value="";
-    return;
-  }
-  el("inv-toma-activa").style.display="block";
-  const contados=tomaAct.conteos.filter(c=>c.fisico!==null).length;
-  const diffs=tomaAct.conteos.filter(c=>c.fisico!==null&&c.fisico!==c.teorico).length;
-  el("inv-kpis").innerHTML=`
-    <div class="kpi" style="border-top-color:var(--orange)"><div class="kpi-val" style="color:var(--orange)">${tomaAct.conteos.length}</div><div class="kpi-lbl">Total SKUs</div></div>
-    <div class="kpi" style="border-top-color:var(--success)"><div class="kpi-val" style="color:var(--success)">${contados}</div><div class="kpi-lbl">Contados</div></div>
-    <div class="kpi" style="border-top-color:${diffs>0?"var(--danger)":"#333"}"><div class="kpi-val" style="color:${diffs>0?"var(--danger)":"#4A6FA5"}">${diffs}</div><div class="kpi-lbl">Diferencias</div></div>
-    <div class="kpi" style="border-top-color:#4A6FA5"><div class="kpi-val" style="color:#4A6FA5">${tomaAct.conteos.length-contados}</div><div class="kpi-lbl">Pendientes</div></div>`;
-
-  el("inv-lista").innerHTML=`<div style="font-size:10px;font-weight:800;color:#4A6FA5;text-transform:uppercase;margin-bottom:8px">Ref: ${tomaAct.ref} · ${tomaAct.fecha}</div>`+
-  tomaAct.conteos.map((c,i)=>`
-    <div class="inv-row ${c.fisico===null?"":c.fisico===c.teorico?"ok":"diff"}">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
-        <div style="flex:1;min-width:0">
-          <div style="font-size:12px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.desc}</div>
-          <div style="font-family:monospace;font-size:10px;color:#4A6FA5">${c.id_interno} · ${c.ubic}</div>
-          ${c.lote?`<div style="font-size:9px;color:#4A6FA5">Lote: ${c.lote}</div>`:""}
-        </div>
-        <div style="text-align:right;flex-shrink:0;margin-left:10px">
-          <div style="font-size:9px;color:#4A6FA5">TEÓRICO</div>
-          <div style="font-size:18px;font-weight:900;font-family:monospace;color:#F0F0F0">${c.teorico}</div>
-        </div>
-      </div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <div style="flex:1">
-          <label class="lbl">Conteo físico</label>
-          <input type="number" min="0" placeholder="0" value="${c.fisico!==null?c.fisico:""}"
-            style="font-size:18px;font-weight:900;text-align:center;font-family:monospace;padding:8px;border-color:${c.fisico===null?"#1E4DBC44":c.fisico===c.teorico?"var(--success)":"var(--danger)"}"
-            oninput="updateConteo(${i},this.value)">
-        </div>
-        ${c.fisico!==null&&c.fisico!==c.teorico?`
-        <div style="background:${c.fisico>c.teorico?"#1A9A5422":"#D6303122"};color:${c.fisico>c.teorico?"var(--success)":"var(--danger)"};border:1px solid;border-color:${c.fisico>c.teorico?"var(--success)":"var(--danger)"};border-radius:8px;padding:8px;text-align:center;flex-shrink:0;min-width:70px">
-          <div style="font-size:9px;font-weight:800">DIFERENCIA</div>
-          <div style="font-size:18px;font-weight:900;font-family:monospace">${c.fisico>c.teorico?"+":""}${c.fisico-c.teorico}</div>
-        </div>`:""}
-      </div>
-    </div>`).join("");
-};
-
-const updateConteo = (i, val) => {
-  tomaAct.conteos[i].fisico=parseInt(val)||0;save();
-  // Re-render solo los KPIs
-  const contados=tomaAct.conteos.filter(c=>c.fisico!==null).length;
-  const diffs=tomaAct.conteos.filter(c=>c.fisico!==null&&c.fisico!==c.teorico).length;
-  el("inv-kpis").innerHTML=`
-    <div class="kpi" style="border-top-color:var(--orange)"><div class="kpi-val" style="color:var(--orange)">${tomaAct.conteos.length}</div><div class="kpi-lbl">Total SKUs</div></div>
-    <div class="kpi" style="border-top-color:var(--success)"><div class="kpi-val" style="color:var(--success)">${contados}</div><div class="kpi-lbl">Contados</div></div>
-    <div class="kpi" style="border-top-color:${diffs>0?"var(--danger)":"#333"}"><div class="kpi-val" style="color:${diffs>0?"var(--danger)":"#4A6FA5"}">${diffs}</div><div class="kpi-lbl">Diferencias</div></div>
-    <div class="kpi" style="border-top-color:#4A6FA5"><div class="kpi-val" style="color:#4A6FA5">${tomaAct.conteos.length-contados}</div><div class="kpi-lbl">Pendientes</div></div>`;
-};
-
-const invManual = () => { const v=el("inv-manual").value.trim();if(!v)return;el("inv-manual").value="";invCaptura(v); };
-
-const invCaptura = code => {
-  if(!tomaAct){toast("⚠️ Inicia una toma primero","#E17B00");return;}
-  const idx=tomaAct.conteos.findIndex(c=>c.id_interno===code||c.upc===code);
-  if(idx<0){toast(`⚠️ "${code}" no está en el teórico`,"#E17B00");return;}
-  const cant=prompt(`${tomaAct.conteos[idx].desc}\nTeórico: ${tomaAct.conteos[idx].teorico}\n¿Conteo físico?`);
-  if(cant===null)return;
-  tomaAct.conteos[idx].fisico=parseInt(cant)||0;
-  save();renderInv();vib();
-  const d=tomaAct.conteos[idx].fisico-tomaAct.conteos[idx].teorico;
-  toast(d===0?`✅ ${tomaAct.conteos[idx].desc} — SIN DIFERENCIA`:d>0?`⬆️ Sobrante: +${d} pzas`:`⬇️ Faltante: ${d} pzas`,d===0?"#1A9A54":d>0?"#0984E3":"#D63031");
-};
-
-const exportInv = () => {
-  if(!tomaAct)return;
-  const rows=["REF,FECHA,ID,DESCRIPCION,VARIANTE,UBICACION,LOTE,TEORICO,FISICO,DIFERENCIA",
-    ...tomaAct.conteos.map(c=>`${tomaAct.ref},${tomaAct.fecha},${c.id_interno},"${c.desc}","${c.var}",${c.ubic},${c.lote||""},${c.teorico},${c.fisico!==null?c.fisico:""},${c.fisico!==null?c.fisico-c.teorico:""}`)];
-  dl(rows.join("\n"),`inventix_inv_${tomaAct.ref}.csv`);
-  toast("✅ CSV exportado");
-};
-
-// ══════════════════════════════════
-// VERIFY — GENERAR LISTA + VALIDAR
-// ══════════════════════════════════
-let verTabAct="gen";
-const verTab = t => {
-  verTabAct=t;
-  el("ver-tab-gen").style.background=t==="gen"?"var(--purple)":"transparent";
-  el("ver-tab-gen").style.color=t==="gen"?"#fff":"#555";
-  el("ver-tab-val").style.background=t==="val"?"var(--purple)":"transparent";
-  el("ver-tab-val").style.color=t==="val"?"#fff":"#555";
-  el("ver-gen").style.display=t==="gen"?"block":"none";
-  el("ver-val").style.display=t==="val"?"block":"none";
-  if(t==="val")renderVerVal();
-};
-
-const renderVerify = () => { renderVerGenForm(); renderVerVal(); };
-
-const renderVerGenForm = () => {
-  const tipo=el("ver-tipo")?.value||"serie";
-  let html="";
-  if(tipo==="serie"){
-    html=`
-      <div class="g2" style="margin-bottom:8px">
-        <div><label class="lbl">Prefijo (ej. SN-)</label><input type="text" id="ver-prefix" placeholder="SN-"></div>
-        <div><label class="lbl">Cantidad</label><input type="number" id="ver-qty" placeholder="10" min="1"></div>
-      </div>
-      <button class="btn btn-purple" onclick="generarAutomatico()" style="margin-bottom:8px">⚡ Generar automático</button>
-      <div style="margin-bottom:8px">
-        <label class="lbl">Importar desde CSV</label>
-        <input type="file" accept=".csv" onchange="importVerCSV(event)" style="background:transparent;border:1px dashed #1E4DBC44;color:#4A6FA5;font-size:11px;padding:8px">
-        <div id="ver-import-result" style="font-size:11px;margin-top:4px"></div>
-      </div>
-      <label class="lbl">Productos a validar (uno por línea: serie,descripcion)</label>
-      <textarea id="ver-series" rows="5" style="background:#0A1E38;border:1px solid #1E4DBC44;border-radius:8px;color:#F0F0F0;font-size:12px;padding:10px;font-family:monospace;resize:vertical;width:100%;margin-bottom:8px" placeholder="SN-A54-001,Samsung Galaxy A54\nSN-A54-002,Samsung Galaxy A54\nSN-A54-003,Samsung Galaxy A54"></textarea>
-      <div style="font-size:10px;color:#4A6FA5;margin-bottom:10px">Puedes pegar desde Excel. Columnas: serie, descripción (opcional)</div>`;
-  } else if(tipo==="lote"){
-    html=`<label class="lbl">Productos y lotes (uno por línea: id,lote,cantidad)</label>
-      <textarea id="ver-series" rows="5" style="background:#0A1E38;border:1px solid #1E4DBC44;border-radius:8px;color:#F0F0F0;font-size:12px;padding:10px;font-family:monospace;resize:vertical;width:100%;margin-bottom:8px" placeholder="JAM-250-FR,L-F001,50\nYOG-125-FR,L-F002,100"></textarea>`;
-  } else {
-    html=`<label class="lbl">Productos y cantidades (uno por línea: id,cantidad)</label>
-      <textarea id="ver-series" rows="5" style="background:#0A1E38;border:1px solid #1E4DBC44;border-radius:8px;color:#F0F0F0;font-size:12px;padding:10px;font-family:monospace;resize:vertical;width:100%;margin-bottom:8px" placeholder="WB-38-NG,50\nWB-42-NG,30"></textarea>`;
-  }
-  el("ver-gen-form").innerHTML=html;
-};
-
-const generarAutomatico = () => {
-  const prefix = el("ver-prefix").value.trim();
-  const qty = parseInt(el("ver-qty").value) || 0;
-  if (!prefix || qty <= 0) { toast("⚠️ Ingresa prefijo y cantidad", "#E17B00"); return; }
-  const lines = [];
-  for (let i = 1; i <= qty; i++) {
-    const num = String(i).padStart(4, '0');
-    lines.push(`${prefix}${num},${prefix}${num}`);
-  }
-  el("ver-series").value = lines.join("\n");
-  toast(`✅ ${qty} códigos generados`);
-};
-
-const importVerCSV = async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  const text = await file.text();
-  const lines = text.split("\n").filter(l => l.trim());
-  const codes = lines.map(l => {
-    const parts = l.split(",").map(s => s.trim());
-    return parts[0] + (parts[1] ? `,${parts[1]}` : "");
+  row.push(cell); rows.push(row);
+  const headers=(rows.shift()||[]).map(normHeader);
+  return rows.filter(r=>r.some(x=>String(x).trim()!=='')).map(r=>{
+    const o={}; headers.forEach((h,i)=>o[h]=String(r[i]??'').trim()); return o;
   });
-  el("ver-series").value = codes.join("\n");
-  el("ver-import-result").innerHTML = `<div class="alert alert-s">✅ ${codes.length} líneas importadas</div>`;
-};
+}
+function pick(row, aliases){
+  for(const a of aliases){ const k=Object.keys(row).find(x=>normHeader(x)===normHeader(a)); if(k && String(row[k]).trim()!=='') return String(row[k]).trim(); }
+  return '';
+}
+function csvEscape(v){ const s=String(v??''); return /[",;\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; }
+function downloadText(filename, content, type='text/csv;charset=utf-8'){
+  const blob=new Blob(['\ufeff'+content],{type}); const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download=filename; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+function dateTag(){ return new Date().toISOString().slice(0,10); }
+function expectedSummary(){
+  const rows=Object.values(state.verifyExpected||{});
+  const total=rows.reduce((a,x)=>a+Number(x.expected||0),0);
+  const scanned=rows.reduce((a,x)=>a+Math.min(Number(x.scanned||0),Number(x.expected||0)),0);
+  const missing=rows.reduce((a,x)=>a+Math.max(Number(x.expected||0)-Number(x.scanned||0),0),0);
+  const bad=state.verify.filter(x=>x.result==='NO EXISTE'||x.result==='EXCEDENTE').length;
+  return {total,scanned,missing,bad};
+}
 
-const generarListaVerify = () => {
-  const oc=el("ver-oc").value.trim();
-  if(!oc){toast("⚠️ OC/Referencia es obligatoria","#E17B00");return;}
-  const tipo=el("ver-tipo").value;
-  const txt=el("ver-series").value.trim();
-  if(!txt){toast("⚠️ Agrega al menos un elemento","#E17B00");return;}
-  const lineas=txt.split("\n").filter(l=>l.trim());
-  const items=lineas.map((l,i)=>{
-    const p=l.split(",").map(x=>x.trim());
-    return{
-      idx:i,
-      codigo:p[0]||"",
-      desc:p[1]||p[0]||"",
-      referencia:p[2]||"",
-      tipo,estado:"pending",ts:""
-    };
-  });
-  verList={oc,tipo,fecha:now(),created_at:Date.now(),items};
-  save();
-  el("ver-lista-generada").innerHTML=`<div class="alert alert-s">✅ Lista generada · ${items.length} elementos · OC: ${oc}<br>Ve a la pestaña <b>Validar</b> para escanear.</div>`;
-  renderVerVal();
-  verTab("val");
-};
+function addMovement(type, code, quantity, location, user, desc='', reference='', documentNo=''){
+  code=cleanCode(code); quantity=qty(quantity);
+  reference=String(reference||'').trim().toUpperCase();
+  documentNo=String(documentNo||'').trim().toUpperCase();
 
-const renderVerVal = () => {
-  if(!verList){
-    el("ver-oc-activa").textContent="Sin lista activa. Genera una lista en la pestaña anterior.";
-    el("ver-progress").style.display="none";
-    el("ver-items-lista").innerHTML="";
-    return;
+  if(!reference) { toast(type==='ENTRADA'?'Ingresa el folio de OC':'Ingresa el folio de OV',true); return false; }
+  if(!code || quantity<=0) { toast('Falta código o cantidad válida',true); return false; }
+
+  // Prevención de doble toque: misma operación exacta en una ventana corta.
+  const last=state.kardex[0];
+  if(last && last.type===type && last.code===code && Number(last.qty)===quantity &&
+     String(last.reference||'')===reference && (Date.now()-new Date(last.time).getTime())<3000){
+    toast('Movimiento duplicado evitado',true);
+    return false;
   }
-  const ok=verList.items.filter(i=>i.estado==="ok").length;
-  const fail=verList.items.filter(i=>i.estado==="fail").length;
-  const total=verList.items.length;
-  const pct=Math.round(ok/total*100);
-  el("ver-oc-activa").textContent=`OC: ${verList.oc} · ${verList.fecha} · ${ok}/${total} validados`;
-  el("ver-progress").style.display="block";
-  el("ver-prog-txt").textContent=`${ok}/${total}`;
-  el("ver-prog-bar").style.width=`${pct}%`;
-  el("ver-items-lista").innerHTML=verList.items.map(item=>`
-    <div class="ver-item ${item.estado}">
-      <div style="font-size:18px;flex-shrink:0">${item.estado==="ok"?"✅":item.estado==="fail"?"❌":"⏳"}</div>
-      <div style="flex:1;min-width:0">
-        <div style="font-family:monospace;font-size:12px;font-weight:800;color:${item.estado==="ok"?"var(--success)":item.estado==="fail"?"var(--danger)":"#4A6FA5"}">${item.codigo}</div>
-        ${item.desc!==item.codigo?`<div style="font-size:10px;color:#4A6FA5">${item.desc}</div>`:""}
-        ${item.ts?`<div style="font-size:9px;color:#333;margin-top:1px">${item.ts}</div>`:""}
-      </div>
-      <div style="background:${item.estado==="ok"?"var(--success)22":item.estado==="fail"?"var(--danger)22":"#ffffff11"};color:${item.estado==="ok"?"var(--success)":item.estado==="fail"?"var(--danger)":"#4A6FA5"};border-radius:6px;padding:2px 8px;font-size:9px;font-weight:800;flex-shrink:0">
-        ${item.estado==="ok"?"OK":item.estado==="fail"?"NO AUTH":"PENDIENTE"}
-      </div>
-    </div>`).join("");
-};
 
-const verManual = () => { const v=el("ver-manual").value.trim();if(!v)return;el("ver-manual").value="";verifyCode(v); };
+  let prod = state.inventory[code] || {code,desc:desc||code,qty:0,locations:{}};
+  if(desc) prod.desc=desc;
 
-const verifyCode = code => {
-  if(!verList){toast("⚠️ Genera una lista de validación primero","#E17B00");return;}
-  code=(code||"").trim();
-  const idx=verList.items.findIndex(i=>i.codigo===code||i.codigo.toLowerCase()===code.toLowerCase());
-  const ts=now();
-  let color,msg,estado;
-  if(idx<0){
-    color="#E17B00";msg=`⚠️ "${code}" no está en la lista OC: ${verList.oc}`;estado="fail";
-    // Agregar como no autorizado
-    verList.items.push({idx:verList.items.length,codigo:code,desc:"No en lista",referencia:"",tipo:verList.tipo,estado:"fail",ts});
-  } else if(verList.items[idx].estado==="ok"){
-    color="#E17B00";msg=`⚠️ "${code}" ya fue validado (duplicado)`;estado="dup";
+  if(type==='ENTRADA'){
+    prod.qty += quantity;
+    const loc=location||'SIN UBICACIÓN';
+    prod.locations[loc]=(prod.locations[loc]||0)+quantity;
   } else {
-    verList.items[idx].estado="ok";verList.items[idx].ts=ts;
-    color="#1A9A54";msg=`✅ ${code} — AUTORIZADO · ${ts}`;estado="ok";
-    // Agregar al kardex
-    kardex.unshift({id:Date.now(),ts,ts_ms:Date.now(),oc:verList.oc,upc:code,id_interno:code,desc:verList.items[idx].desc,var:"",cantidad:1,proceso:"VERIFICAR",vertical:"verify",serie:code,estado:"OK"});
+    if(prod.qty < quantity) { toast('Stock insuficiente',true); return false; }
+    prod.qty -= quantity;
+    const loc=location||'SIN UBICACIÓN';
+    const locQty=prod.locations[loc]||0;
+    if(locQty < quantity) { toast('Stock insuficiente en esa ubicación',true); return false; }
+    prod.locations[loc]=locQty-quantity;
   }
-  save();vib();
-  // Flash resultado
-  const flash=el("ver-resultado-flash");
-  flash.style.display="block";flash.className=`alert ${estado==="ok"?"alert-s":estado==="dup"?"alert-w":"alert-e"}`;flash.textContent=msg;
-  setTimeout(()=>flash.style.display="none",3000);
-  renderVerVal();
-};
 
-// ══════════════════════════════════
-// IMPORTAR CSV CATÁLOGO
-// ══════════════════════════════════
-const importCSV = async e => {
-  const file=e.target.files[0];if(!file)return;
-  const text=await file.text();
-  const lines=text.trim().split("\n");
-  const headers=lines[0].split(",").map(h=>h.trim().toLowerCase().replace(/"/g,""));
-  let count=0;
-  for(let i=1;i<lines.length;i++){
-    const vals=lines[i].split(",").map(v=>v.trim().replace(/"/g,""));
-    if(vals.length<2)continue;
-    const obj={};headers.forEach((h,j)=>obj[h]=vals[j]||"");
-    if(!obj.upc&&!obj.id)continue;
-    const nuevo={
-      upc:obj.upc||obj.codigo||"",
-      id:obj.id||obj.sku||"",
-      desc:obj.desc||obj.descripcion||obj.description||"",
-      var:obj.var||obj.variante||obj.variant||"GENÉRICO",
-      ubic:obj.ubic||obj.ubicacion||obj.location||"",
-      min:parseInt(obj.min||obj.minimo||0),
-      max:parseInt(obj.max||obj.maximo||999),
-      reorden:parseInt(obj.reorden||0),
-      lote:obj.lote||"",cad:obj.cad||obj.caducidad||"",
-      reg:obj.reg||"",serie:obj.serie||"",_imported:true
-    };
-    const exists=cats.findIndex(c=>c.upc===nuevo.upc||c.id===nuevo.id);
-    if(exists>=0)cats[exists]={...cats[exists],...nuevo};
-    else{cats.push(nuevo);count++;}
-  }
+  state.inventory[code]=prod;
+  state.kardex.unshift({
+    id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()+Math.random()),
+    type, code, desc:prod.desc, qty:quantity, location:location||'', user:user||'Sin responsable',
+    reference, documentNo, time:nowISO(), balance:prod.qty
+  });
   save();
-  el("import-result").innerHTML=`<div class="alert alert-s">✅ Importados: ${count} productos nuevos · ${lines.length-1} filas procesadas</div>`;
-  toast(`✅ ${count} productos importados`);
-};
+  toast(type==='ENTRADA'?'Entrada guardada':'Salida guardada');
+  return true;
+}
 
-// ══════════════════════════════════
-// KARDEX
-// ══════════════════════════════════
-const PC={"ENTRADA":"#1A9A54","SALIDA":"#D63031","INVENTARIO":"#6C3FCB","VERIFICAR":"#8B6FD4"};
-const PI={"ENTRADA":"📥","SALIDA":"📤","INVENTARIO":"📋","VERIFICAR":"✅"};
+function renderAll(){
+  const products=Object.values(state.inventory);
+  document.getElementById('kStock').textContent=products.reduce((a,p)=>a+Number(p.qty||0),0);
+  document.getElementById('kSku').textContent=products.filter(p=>p.qty>0).length;
+  document.getElementById('kMov').textContent=state.kardex.length;
+  document.getElementById('kVerify').textContent=state.verify.filter(x=>x.result==='OK').length;
 
-const renderKardex = () => {
-  el("kx-cnt").textContent=`${kardex.length} movimiento${kardex.length!==1?"s":""}`;
-  const filtros=["TODOS","ENTRADA","SALIDA","VERIFICAR"];
-  el("kx-filtros").innerHTML=filtros.map(f=>`<button onclick="kxF='${f}';renderKardex()"
-    style="flex-shrink:0;padding:5px 14px;border-radius:20px;border:none;white-space:nowrap;cursor:pointer;font-size:10px;font-weight:700;
-    background:${kxF===f?"var(--orange)":"var(--navy)"};color:${kxF===f?"var(--navy)":"#4A6FA5"}">${f}</button>`).join("");
-  const lista=kxF==="TODOS"?kardex:kardex.filter(k=>k.proceso===kxF);
-  const c=el("kx-lista");
-  if(!lista.length){c.innerHTML='<div style="text-align:center;padding:32px;color:#4A6FA5;font-size:13px">Sin movimientos</div>';return;}
-  c.innerHTML=lista.map(k=>{
-    const color=PC[k.proceso]||"#4A6FA5",icon=PI[k.proceso]||"•",v=VERTS[k.vertical||"core"];
-    return`<div class="kx-row" style="border-left-color:${color}">
-      <div style="display:flex;gap:10px">
-        <div style="width:32px;height:32px;border-radius:50%;background:${color}22;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0">${icon}</div>
-        <div style="flex:1;min-width:0">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:4px">
-            <div style="display:flex;gap:6px;align-items:center">
-              <span style="font-size:10px;font-weight:800;text-transform:uppercase;color:${color}">${k.proceso}</span>
-              ${k.oc?`<span style="font-size:9px;background:#F5A62322;color:var(--orange);border:1px solid #F5A62333;border-radius:6px;padding:1px 6px;font-weight:800;font-family:monospace">${k.oc}</span>`:""}
-              ${v?`<span style="font-size:9px;background:${v.color}22;color:${v.color};border:1px solid ${v.color}33;border-radius:6px;padding:1px 6px;font-weight:700">${v.icon}</span>`:""}
-            </div>
-            <span style="font-size:9px;color:#333;flex-shrink:0;font-family:monospace">${k.ts}</span>
-          </div>
-          <div style="font-family:monospace;font-size:11px;color:var(--orange);margin-top:2px">${k.id_interno}<span style="color:#4A6FA5"> · ${k.proceso==="VERIFICAR"?"1 validación":k.cantidad+" pzas"}</span></div>
-          <div style="font-size:10px;color:#4A6FA5;margin-top:1px">${k.desc||""}${k.lote?" · Lote:"+k.lote:""}${k.serie?" · "+k.serie:""}${k.ubicacion?" · "+k.ubicacion:""}</div>
-          ${k.temperatura?`<div style="font-size:9px;color:#0984E3">🌡️ ${k.temperatura}°C</div>`:""}
-        </div>
+  const inv=document.getElementById('inventoryList');
+  inv.innerHTML=products.length?products.sort((a,b)=>a.code.localeCompare(b.code)).map(p=>{
+    const locs=Object.entries(p.locations||{}).filter(([,q])=>q!==0).map(([l,q])=>`${l}: ${q}`).join(' · ')||'Sin ubicación';
+    return `<div class="row ${p.qty>0?'ok':'out'}"><b>${p.code}</b> · ${escapeHtml(p.desc)} <span class="badge">${p.qty} pzas</span><div class="meta">${escapeHtml(locs)}</div></div>`
+  }).join(''):'<div class="note">Sin inventario todavía. Importa CSV o agrega productos manualmente desde Entrada.</div>';
+
+  const kx=document.getElementById('kardexList');
+  kx.innerHTML=state.kardex.length?state.kardex.map(m=>`
+    <div class="row ${m.type==='ENTRADA'?'ok':'out'}">
+      <b>${m.type}</b> · ${escapeHtml(m.reference||(m.type==='ENTRADA'?'SIN OC':'SIN OV'))} · ${m.code} · ${m.qty} pzas
+      <div class="meta">${escapeHtml(m.desc)}<br>${m.documentNo?'Documento: '+escapeHtml(m.documentNo)+'<br>':''}${escapeHtml(m.location||'Sin ubicación')} · ${escapeHtml(m.user)}<br>${fmtDate(m.time)} · Saldo ${m.balance}</div>
+    </div>`).join(''):'<div class="note">Sin movimientos.</div>';
+
+  const pc=document.getElementById('physicalList');
+  if(pc){
+    pc.innerHTML=(state.physicalCounts||[]).slice(0,20).map(p=>`
+      <div class="row"><b>${escapeHtml(p.code)}</b> · ${p.qty} pzas
+      <div class="meta">${escapeHtml(p.location||'Sin ubicación')} · ${escapeHtml(p.user||'Sin responsable')}<br>${fmtDate(p.time)}</div></div>`
+    ).join('') || '<div class="note">Sin conteos físicos todavía.</div>';
+  }
+
+  const vs=expectedSummary();
+  const vals=[vs.total,vs.scanned,vs.missing,vs.bad];
+  ['vTotalExpected','vScanned','vMissing','vNoExiste'].forEach((id,i)=>{
+    const el=document.getElementById(id); if(el) el.textContent=vals[i];
+  });
+  const vel=document.getElementById('verifyExpectedList');
+  if(vel){
+    const rows=Object.values(state.verifyExpected||{});
+    vel.innerHTML=rows.length?rows.slice(0,40).map(x=>{
+      const diff=Number(x.expected||0)-Number(x.scanned||0);
+      const status=x.scanned>x.expected?'EXCEDENTE':diff<=0?'COMPLETO':'FALTAN '+diff;
+      return `<div class="row ${diff<=0&&x.scanned<=x.expected?'ok':x.scanned>x.expected?'out':'verify'}">
+        <b>${escapeHtml(x.code)}</b> · ${x.scanned||0}/${x.expected} · ${status}
+        <div class="meta">${escapeHtml(x.desc||'')}${x.reference?'<br>Ref: '+escapeHtml(x.reference):''}</div>
+      </div>`;
+    }).join(''):'<div class="note">Importa una orden para comparar esperado vs escaneado.</div>';
+  }
+
+  const vl=document.getElementById('verifyList');
+  vl.innerHTML=state.verify.slice(0,30).map(v=>`
+    <div class="row verify">
+      <b>${escapeHtml(v.code)}</b> · ${v.result}
+      <div class="meta">
+        ${v.oc?'OC: '+escapeHtml(v.oc)+'<br>':''}
+        ${v.ov?'OV: '+escapeHtml(v.ov)+'<br>':''}
+        ${v.documentNo?'Documento: '+escapeHtml(v.documentNo)+'<br>':''}
+        ${escapeHtml(v.user||'Sin responsable')}<br>${fmtDate(v.time)}
       </div>
-    </div>`;
-  }).join("");
-};
+    </div>`).join('');
+}
 
-const exportKardex = () => {
-  const rows=["TIMESTAMP,OC,PROCESO,VERTICAL,ID_INTERNO,DESCRIPCION,VARIANTE,CANTIDAD,UBICACION,LOTE,CADUCIDAD,SERIE,TEMPERATURA,OBS,ESTADO",
-    ...kardex.map(k=>`"${k.ts}","${k.oc||""}","${k.proceso}","${k.vertical||""}","${k.id_interno}","${k.desc}","${k.var}",${k.cantidad},"${k.ubicacion||""}","${k.lote||""}","${k.caducidad||""}","${k.serie||""}","${k.temperatura||""}","${k.obs||""}","${k.estado||""}"`)];
-  dl(rows.join("\n"),"inventix_kardex.csv");toast("✅ Kardex exportado");
-};
+function escapeHtml(s){
+  return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+}
 
-const dl = (content, filename) => {
-  const blob=new Blob([content],{type:"text/csv;charset=utf-8;"});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement("a");a.href=url;a.download=filename;a.click();URL.revokeObjectURL(url);
-};
+document.querySelectorAll('nav button').forEach(btn=>btn.addEventListener('click',()=>{
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('nav button').forEach(b=>b.classList.remove('on'));
+  document.getElementById(btn.dataset.page).classList.add('on'); btn.classList.add('on');
+}));
 
-// ══════════════════════════════════
-// RENDER OP
-// ══════════════════════════════════
-const renderOp = () => {
-  const cfg=VERTS[vert]||VERTS.core;
-  el("op-title").textContent=cfg.nombre;el("op-sub").textContent=cfg.sub;
-  el("proc-tabs").innerHTML=cfg.proc.map(p=>`<button class="proc-tab ${proc===p?"on":""}"
-    onclick="proc='${p}';save();renderOp()"
-    style="${proc===p?`background:${cfg.color};border-color:${cfg.color};color:${cfg.id==="tech"?"#0F2747":"#fff"}`:""}">${p}</button>`).join("");
-  const movs=kardex.filter(m=>m.vertical===vert&&(m.proceso==="ENTRADA"||m.proceso==="SALIDA")).reverse().slice(0,12);
-  const c=el("op-movs");
-  if(!movs.length){c.innerHTML=`<div style="text-align:center;padding:28px;color:#4A6FA5;font-size:13px">Sin movimientos en ${cfg.nombre}.<br>Escanea o ingresa un producto.</div>`;return;}
-  c.innerHTML=`<div style="font-size:10px;font-weight:800;color:#4A6FA5;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">Últimos movimientos</div>`+
-  movs.map(m=>`<div class="mov-row" style="border-left-color:${m.proceso==="SALIDA"?"var(--danger)":"var(--success)"}">
-    <div style="flex:1;min-width:0">
-      <div style="font-size:12px;font-weight:800;color:${cfg.color};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${m.desc}</div>
-      <div style="font-size:10px;color:#4A6FA5;margin-top:1px">${m.proceso} · <b style="color:var(--orange);font-family:monospace">${m.oc||"-"}</b> · ${m.ts}</div>
-      ${m.lote?`<div style="font-size:9px;color:#4A6FA5">Lote: ${m.lote}</div>`:""}
-      ${m.serie?`<div style="font-size:9px;color:#4A6FA5;font-family:monospace">Serie: ${m.serie}</div>`:""}
-    </div>
-    <div style="font-size:20px;font-weight:900;color:${m.proceso==="SALIDA"?"var(--danger)":"var(--success)"};font-family:monospace;margin-left:8px;flex-shrink:0">${m.proceso==="SALIDA"?"−":"+"}${m.cantidad}</div>
-  </div>`).join("");
-};
+document.getElementById('saveEntry').addEventListener('click',()=>{
+  const btn=document.getElementById('saveEntry'); btn.disabled=true;
+  const ok=addMovement('ENTRADA',eCode.value,eQty.value,eLoc.value,eUser.value,eDesc.value,eOC.value,eInvoice.value);
+  if(ok){ eQty.value=''; }
+  setTimeout(()=>btn.disabled=false,800);
+});
+document.getElementById('saveExit').addEventListener('click',()=>{
+  const btn=document.getElementById('saveExit'); btn.disabled=true;
+  const ok=addMovement('SALIDA',sCode.value,sQty.value,sLoc.value,sUser.value,'',sOV.value,sDoc.value);
+  if(ok){ sQty.value=''; }
+  setTimeout(()=>btn.disabled=false,800);
+});
+document.getElementById('verifyBtn').addEventListener('click',()=>{
+  const code=cleanCode(vCode.value);
+  const oc=String(vOC.value||'').trim().toUpperCase();
+  const ov=String(vOV.value||'').trim().toUpperCase();
+  const documentNo=String(vDoc.value||'').trim().toUpperCase();
+  const user=String(vUser.value||'').trim();
+  if(!code) return toast('Ingresa o escanea serie/lote/IMEI',true);
+  if(!user) return toast('Ingresa responsable de validación',true);
 
-// ══════════════════════════════════
-// HOME
-// ══════════════════════════════════
-const renderHome = () => {
-  const allCats=Object.values(CAT_BASE).flat().filter((p,i,a)=>a.findIndex(x=>x.id===p.id)===i);
-  const totalStock=allCats.reduce((s,p)=>s+Math.max(0,getStock(p.id)),0);
-  const movHoy=kardex.filter(k=>k.ts&&k.ts.startsWith(hoy())).length;
-  const sinStock=allCats.filter(p=>getStock(p.id)<=0).length;
-  const verOK=kardex.filter(k=>k.proceso==="VERIFICAR").length;
-  el("home-kpis").innerHTML=`
-    <div class="kpi" style="border-top-color:var(--orange)"><div class="kpi-val" style="color:var(--orange)">${totalStock}</div><div class="kpi-lbl">Stock total</div></div>
-    <div class="kpi" style="border-top-color:${sinStock>0?"var(--danger)":"#333"}"><div class="kpi-val" style="color:${sinStock>0?"var(--danger)":"#4A6FA5"}">${sinStock}</div><div class="kpi-lbl">Sin stock</div></div>
-    <div class="kpi" style="border-top-color:var(--success)"><div class="kpi-val" style="color:var(--success)">${movHoy}</div><div class="kpi-lbl">Movs. hoy</div></div>
-    <div class="kpi" style="border-top-color:var(--purple)"><div class="kpi-val" style="color:var(--purple)">${verOK}</div><div class="kpi-lbl">Verify OK</div></div>`;
-  el("home-alert").innerHTML=sinStock>0?`<div class="alert alert-e" style="font-size:11px;margin-bottom:10px">⚠️ ${sinStock} producto${sinStock>1?"s":""} sin stock disponible</div>`:"";
-  el("vert-list").innerHTML=Object.values(VERTS).map(v=>`
-    <div class="vert-card" onclick="setVert('${v.id}')">
-      <div class="vi" style="background:${v.color}22;border:1.5px solid ${v.color}33">${v.icon}</div>
-      <div style="flex:1"><div style="font-size:13px;font-weight:800;color:${v.color}">${v.nombre}</div><div style="font-size:11px;color:#4A6FA5;margin-top:1px">${v.sub}</div></div>
-      <div style="color:#4A6FA5;font-size:18px">›</div>
-    </div>`).join("");
-};
+  let result='OK';
+  const exp=state.verifyExpected[code];
+  if(Object.keys(state.verifyExpected||{}).length){
+    if(!exp) result='NO EXISTE';
+    else{
+      exp.scanned=Number(exp.scanned||0)+1;
+      if(exp.scanned>Number(exp.expected||0)) result='EXCEDENTE';
+      else if(exp.scanned===Number(exp.expected||0)) result='COMPLETO';
+    }
+  }
+  state.verify.unshift({code,result,oc,ov,documentNo,user,time:nowISO()});
+  save(); vCode.value='';
+  toast(result==='NO EXISTE'?'Código no existe en la orden':
+        result==='EXCEDENTE'?'Excedente detectado':
+        result==='COMPLETO'?'Código completo':'Lectura registrada',
+        result==='NO EXISTE'||result==='EXCEDENTE');
+});
 
-// ══ INIT ══
-renderHome();
-if(tomaAct)el("inv-toma-activa").style.display="block";
+document.getElementById('exportBtn').addEventListener('click',()=>{
+  const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='inventix_respaldo_'+new Date().toISOString().slice(0,10)+'.json'; a.click(); URL.revokeObjectURL(a.href);
+});
+document.getElementById('importBtn').addEventListener('click',()=>importFile.click());
+document.getElementById('importFile').addEventListener('change',async(e)=>{
+  const f=e.target.files[0]; if(!f)return;
+  try{ const obj=JSON.parse(await f.text()); state={inventory:obj.inventory||{},kardex:obj.kardex||[],verify:obj.verify||[],verifyExpected:obj.verifyExpected||{},physicalCounts:obj.physicalCounts||[]}; save(); toast('Respaldo restaurado'); }
+  catch(err){ toast('Archivo de respaldo inválido',true); }
+});
+
+let scanTarget=null, stream=null, scanTimer=null;
+async function openScanner(targetId){
+  scanTarget=document.getElementById(targetId);
+  document.getElementById('scanner').classList.add('on');
+  try{
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+      document.getElementById('scanner').classList.remove('on');
+      toast('Este archivo local no puede abrir la cámara. Ábrelo desde una URL HTTPS o desde una app instalada.',true);
+      return;
+    }
+    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
+    video.srcObject=stream;
+    if('BarcodeDetector' in window){
+      const detector=new BarcodeDetector({formats:['ean_13','ean_8','code_128','code_39','upc_a','upc_e','itf']});
+      scanTimer=setInterval(async()=>{
+        try{
+          const codes=await detector.detect(video);
+          if(codes[0]?.rawValue){ useScanned(codes[0].rawValue); }
+        }catch(e){}
+      },500);
+    }
+  }catch(e){
+    document.getElementById('scanner').classList.remove('on');
+    toast('La cámara necesita un contexto seguro. Publica Inventix por HTTPS (GitHub Pages) o instálalo como app/PWA.',true);
+  }
+}
+function useScanned(code){
+  if(scanTarget) scanTarget.value=code;
+  closeScanner(); toast('Código capturado');
+}
+function closeScanner(){
+  clearInterval(scanTimer); scanTimer=null;
+  if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}
+  document.getElementById('scanner').classList.remove('on');
+}
+document.getElementById('entryScan').addEventListener('click',()=>openScanner('eCode'));
+document.getElementById('exitScan').addEventListener('click',()=>openScanner('sCode'));
+document.getElementById('verifyScan').addEventListener('click',()=>openScanner('vCode'));
+document.getElementById('physicalScan').addEventListener('click',()=>openScanner('pCode'));
+document.getElementById('closeScanner').addEventListener('click',closeScanner);
+document.getElementById('scanManualBtn').addEventListener('click',()=>useScanned(scanManual.value));
+
+
+document.getElementById('importInvBtn').addEventListener('click',()=>importInvFile.click());
+document.getElementById('importInvFile').addEventListener('change',async e=>{
+  const f=e.target.files[0]; if(!f)return;
+  try{
+    const rows=parseCSV(await f.text()); if(!rows.length) return toast('CSV de inventario vacío',true);
+    if(!confirm('La importación cargará el archivo como nueva base de inventario. ¿Continuar?')) return;
+    const inv={};
+    for(const r of rows){
+      const code=cleanCode(pick(r,['UPC','CODIGO','CÓDIGO','SKU','SERIE'])); if(!code) continue;
+      const desc=pick(r,['DESCRIPCION','DESCRIPCIÓN','PRODUCTO'])||code;
+      const q=qty(pick(r,['EXISTENCIA','CANTIDAD','QTY','STOCK']));
+      const loc=pick(r,['UBICACION','UBICACIÓN','LOCATION'])||'SIN UBICACIÓN';
+      if(!inv[code]) inv[code]={code,desc,qty:0,locations:{}};
+      inv[code].desc=desc; inv[code].qty+=q; inv[code].locations[loc]=(inv[code].locations[loc]||0)+q;
+    }
+    state.inventory=inv; save(); toast('Inventario importado: '+Object.keys(inv).length+' códigos');
+  }catch(err){ console.error(err); toast('No se pudo importar inventario',true); }
+  e.target.value='';
+});
+document.getElementById('exportInvBtn').addEventListener('click',()=>{
+  const rows=[['CODIGO','DESCRIPCION','EXISTENCIA','UBICACION','EXISTENCIA_UBICACION']];
+  Object.values(state.inventory).forEach(p=>{
+    const locs=Object.entries(p.locations||{});
+    if(!locs.length) rows.push([p.code,p.desc,p.qty,'',p.qty]);
+    else locs.forEach(([l,q])=>rows.push([p.code,p.desc,p.qty,l,q]));
+  });
+  downloadText('inventix_inventario_'+dateTag()+'.csv',rows.map(r=>r.map(csvEscape).join(',')).join('\n'));
+});
+
+document.getElementById('savePhysical').addEventListener('click',()=>{
+  const code=cleanCode(pCode.value), q=qty(pQty.value);
+  if(!code||q<=0) return toast('Falta código o cantidad contada',true);
+  state.physicalCounts.unshift({
+    id:crypto.randomUUID?crypto.randomUUID():String(Date.now()+Math.random()),
+    code,qty:q,location:String(pLoc.value||'').trim(),user:String(pUser.value||'').trim(),time:nowISO()
+  });
+  save(); pQty.value=''; toast('Conteo físico registrado');
+});
+document.getElementById('exportPhysicalBtn').addEventListener('click',()=>{
+  const rows=[['CODIGO','CANTIDAD_FISICA','UBICACION','RESPONSABLE','FECHA_HORA']];
+  (state.physicalCounts||[]).forEach(p=>rows.push([p.code,p.qty,p.location,p.user,p.time]));
+  downloadText('inventix_toma_fisica_'+dateTag()+'.csv',rows.map(r=>r.map(csvEscape).join(',')).join('\n'));
+});
+
+document.getElementById('importVerifyBtn').addEventListener('click',()=>importVerifyFile.click());
+document.getElementById('importVerifyFile').addEventListener('change',async e=>{
+  const f=e.target.files[0]; if(!f)return;
+  try{
+    const rows=parseCSV(await f.text()); if(!rows.length) return toast('CSV de orden vacío',true);
+    const expected={};
+    for(const r of rows){
+      const code=cleanCode(pick(r,['CODIGO','CÓDIGO','UPC','SERIE','IMEI','SKU'])); if(!code) continue;
+      const q=Math.max(1,qty(pick(r,['CANTIDAD','QTY','CANTIDAD OC','TOTAL']))||1);
+      const desc=pick(r,['DESCRIPCION','DESCRIPCIÓN','PRODUCTO']);
+      const ref=pick(r,['OC','OV','ORDEN','PEDIDO','REFERENCIA']);
+      if(!expected[code]) expected[code]={code,expected:0,scanned:0,desc,reference:ref};
+      expected[code].expected+=q;
+      if(desc) expected[code].desc=desc;
+      if(ref) expected[code].reference=ref;
+    }
+    state.verifyExpected=expected; state.verify=[]; save();
+    toast('Orden cargada: '+Object.keys(expected).length+' códigos');
+  }catch(err){ console.error(err); toast('No se pudo importar la orden',true); }
+  e.target.value='';
+});
+document.getElementById('exportVerifyBtn').addEventListener('click',()=>{
+  const rows=[['CODIGO','DESCRIPCION','REFERENCIA','ESPERADO','ESCANEADO','DIFERENCIA','STATUS']];
+  Object.values(state.verifyExpected||{}).forEach(x=>{
+    const diff=Number(x.expected||0)-Number(x.scanned||0);
+    const st=x.scanned>x.expected?'EXCEDENTE':diff<=0?'COMPLETO':'FALTAN';
+    rows.push([x.code,x.desc||'',x.reference||'',x.expected,x.scanned||0,diff,st]);
+  });
+  state.verify.filter(x=>x.result==='NO EXISTE').forEach(x=>rows.push([x.code,'','',0,1,-1,'NO EXISTE']));
+  downloadText('inventix_verify_resultado_'+dateTag()+'.csv',rows.map(r=>r.map(csvEscape).join(',')).join('\n'));
+});
+
+function renderEnvironment(){
+  const secure=window.isSecureContext || location.hostname==='localhost';
+  const sb=document.getElementById('secureBadge'), cb=document.getElementById('cameraBadge'), sn=document.getElementById('secureNote');
+  if(sb){ sb.textContent=secure?'HTTPS / contexto seguro':'Archivo local / sin HTTPS'; sb.className='pill '+(secure?'ok':'bad'); }
+  const cameraReady=!!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia);
+  if(cb){ cb.textContent=cameraReady?'API cámara disponible':'API cámara bloqueada'; cb.className='pill '+(cameraReady?'ok':'bad'); }
+  if(sn){ sn.textContent=secure
+    ?'Entorno apto para solicitar permiso de cámara. Usa Escanear UPC o Verify.'
+    :'Para evitar capturar UPC de 13 dígitos manualmente, publica este paquete en GitHub Pages (HTTPS) o instálalo como app/PWA.'; }
+}
+if('serviceWorker' in navigator && window.isSecureContext){
+  window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(()=>{}));
+}
+renderEnvironment();
+
+load();
 </script>
 </body>
 </html>
