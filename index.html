@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>INVENTIX Core v1.1</title>
+<style>
+:root{
+  --navy:#0F2747;--navy2:#08192f;--blue:#1E4DBC;--orange:#F5A623;
+  --success:#1A9A54;--danger:#D63031;--purple:#6C3FCB;--text:#F0F4FA;--muted:#7894bd;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:Arial,sans-serif;background:var(--navy2);color:var(--text);max-width:520px;margin:auto;min-height:100vh}
+header{padding:20px 16px;background:linear-gradient(160deg,#0A1E38,#0F2747);position:sticky;top:0;z-index:10;border-bottom:1px solid #1E4DBC44}
+.brand{font-size:25px;font-weight:900}.brand span{color:var(--orange)}
+.sub{font-size:11px;color:var(--muted);margin-top:3px}
+main{padding:14px 14px 90px}
+.card{background:var(--navy);border:1px solid #1E4DBC2d;border-radius:14px;padding:14px;margin-bottom:12px}
+h2{font-size:16px;margin-bottom:10px}
+label{display:block;font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;margin:8px 0 5px}
+input,select{width:100%;background:#0A1E38;border:1.5px solid #1E4DBC55;border-radius:10px;color:white;padding:11px 12px;font-size:14px;outline:none}
+input:focus,select:focus{border-color:var(--orange)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.btn{width:100%;padding:12px;border:none;border-radius:10px;font-weight:900;font-size:14px;margin-top:10px;cursor:pointer}
+.primary{background:var(--orange);color:var(--navy)}
+.secondary{background:#1E4DBC;color:white}
+.danger{background:var(--danger);color:white}
+.ghost{background:transparent;color:var(--muted);border:1px solid #1E4DBC44}
+.kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px}
+.kpi{background:var(--navy);border-radius:12px;padding:14px;text-align:center;border-top:3px solid var(--orange)}
+.kpi:nth-child(2){border-top-color:var(--success)} .kpi:nth-child(3){border-top-color:var(--blue)} .kpi:nth-child(4){border-top-color:var(--purple)}
+.kpi strong{display:block;font-size:24px}.kpi small{color:var(--muted);font-size:10px}
+.tabs{display:flex;gap:6px;overflow:auto;margin-bottom:12px}
+.tab{white-space:nowrap;border:1px solid #1E4DBC44;background:transparent;color:var(--muted);border-radius:20px;padding:8px 12px;font-weight:800}
+.tab.on{background:var(--orange);color:var(--navy);border-color:var(--orange)}
+.page{display:none}.page.on{display:block}
+.row{background:#0B203C;border-left:3px solid var(--blue);padding:10px;border-radius:8px;margin:7px 0;font-size:12px}
+.row b{color:white}.row .meta{color:var(--muted);margin-top:4px;line-height:1.5}
+.ok{border-left-color:var(--success)} .out{border-left-color:var(--danger)} .verify{border-left-color:var(--purple)}
+.badge{display:inline-block;padding:3px 7px;border-radius:10px;background:#1E4DBC33;color:#9bb8e8;font-size:10px;font-weight:800}
+.note{font-size:11px;color:var(--muted);line-height:1.5}
+.toolbar{display:flex;gap:8px}.toolbar .btn{margin-top:0}
+nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:520px;display:grid;grid-template-columns:repeat(6,1fr);background:var(--navy);border-top:1px solid #1E4DBC44;z-index:20}
+nav button{background:transparent;border:none;color:var(--muted);padding:10px 2px;font-size:10px;font-weight:800}
+nav button span{display:block;font-size:20px;margin-bottom:2px}
+nav button.on{color:var(--orange)}
+.toast{display:none;position:fixed;top:76px;left:50%;transform:translateX(-50%);z-index:99;background:#111f32;color:white;padding:10px 14px;border-radius:10px;box-shadow:0 8px 24px #0008;font-size:12px;max-width:90%}
+.scanner{display:none;position:fixed;inset:0;z-index:100;background:#000;flex-direction:column}
+.scanner.on{display:flex}.scanner video{width:100%;height:65vh;object-fit:cover}
+.scanbar{padding:12px;background:#071629}.scanbar button{padding:10px;border:0;border-radius:8px;font-weight:800}
+hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
+</style>
+</head>
+<body>
+<div id="toast" class="toast"></div>
+
+<div id="scanner" class="scanner">
+  <div class="scanbar">
+    <b>INVENTIX Scanner</b>
+    <button id="closeScanner" style="float:right">Cerrar</button>
+  </div>
+  <video id="video" playsinline muted autoplay></video>
+  <div class="scanbar">
+    <div class="note">Centra el código. Si el navegador no soporta lectura automática, usa captura manual.</div>
+    <input id="scanManual" placeholder="UPC / código">
+    <button id="scanManualBtn" class="btn primary">Usar código</button>
+  </div>
+</div>
+
+<header>
+  <div class="brand">INVENTI<span>X</span> CORE</div>
+  <div class="sub">v1.1 · Persistencia local activada</div>
+</header>
+
+<main>
+<section id="home" class="page on">
+  <div class="kpis">
+    <div class="kpi"><strong id="kStock">0</strong><small>Stock total</small></div>
+    <div class="kpi"><strong id="kSku">0</strong><small>SKUs activos</small></div>
+    <div class="kpi"><strong id="kMov">0</strong><small>Movimientos</small></div>
+    <div class="kpi"><strong id="kVerify">0</strong><small>Verify OK</small></div>
+  </div>
+  <div class="card">
+    <h2>Prueba de persistencia</h2>
+    <div class="note">Haz una entrada o salida, cierra completamente Chrome y vuelve a abrir la misma URL. El movimiento y la existencia deben continuar.</div>
+  </div>
+  <div class="card">
+    <h2>Respaldo</h2>
+    <div class="toolbar">
+      <button id="exportBtn" class="btn secondary">Exportar</button>
+      <button id="importBtn" class="btn ghost">Importar</button>
+    </div>
+    <input id="importFile" type="file" accept=".json,application/json" style="display:none">
+    <div class="note" style="margin-top:8px">El respaldo JSON permite recuperar datos aunque cambies de teléfono o limpies el navegador.</div>
+  </div>
+</section>
+
+<section id="inventory" class="page">
+  <div class="card">
+    <h2>Inventario</h2>
+    <div id="inventoryList"></div>
+  </div>
+</section>
+
+<section id="entry" class="page">
+  <div class="card">
+    <h2>Registrar entrada</h2>
+    <label>UPC / SKU</label><input id="eCode" placeholder="Código">
+    <label>Descripción</label><input id="eDesc" placeholder="Producto">
+    <div class="grid2">
+      <div><label>Cantidad</label><input id="eQty" type="number" min="1" inputmode="numeric"></div>
+      <div><label>Ubicación</label><input id="eLoc" placeholder="A-01-01"></div>
+    </div>
+    <label>Responsable</label><input id="eUser" placeholder="Nombre">
+    <button id="entryScan" class="btn secondary">📷 Escanear UPC</button>
+    <button id="saveEntry" class="btn primary">✅ Guardar entrada</button>
+  </div>
+</section>
+
+<section id="exit" class="page">
+  <div class="card">
+    <h2>Registrar salida</h2>
+    <label>UPC / SKU</label><input id="sCode" placeholder="Código">
+    <div class="grid2">
+      <div><label>Cantidad</label><input id="sQty" type="number" min="1" inputmode="numeric"></div>
+      <div><label>Ubicación</label><input id="sLoc" placeholder="A-01-01"></div>
+    </div>
+    <label>Picker</label><input id="sUser" placeholder="Nombre">
+    <button id="exitScan" class="btn secondary">📷 Escanear UPC</button>
+    <button id="saveExit" class="btn primary">✅ Guardar salida</button>
+  </div>
+</section>
+
+<section id="kardex" class="page">
+  <div class="card">
+    <h2>Kardex virtual</h2>
+    <div id="kardexList"></div>
+  </div>
+  <div class="card">
+    <h2>Verify manual</h2>
+    <label>Serie / lote / IMEI</label><input id="vCode" placeholder="Código a validar">
+    <button id="verifyBtn" class="btn secondary">Validar y registrar</button>
+    <div id="verifyList"></div>
+  </div>
+</section>
+
+<section id="distribution" class="page">
+  <div class="card">
+    <h2>Modo Distribución</h2>
+    <div class="note">Verify guía la secuencia por cliente y valida cada UPC antes de cerrar la caja.</div>
+    <div class="grid2">
+      <div><label>Cliente</label><input id="dClient" placeholder="Liverpool"></div>
+      <div><label>Tienda / destino</label><input id="dStore" placeholder="T030"></div>
+    </div>
+    <div class="grid2">
+      <div><label>Caja</label><input id="dBox" placeholder="Caja 1"></div>
+      <div>
+        <label>Regla</label>
+        <select id="dRule">
+          <option value="TOP_DOWN">Arriba → abajo</option>
+          <option value="BOTTOM_UP">Abajo → arriba</option>
+          <option value="BLOCK">Por bloque</option>
+        </select>
+      </div>
+    </div>
+    <label>Código máster esperado (tienda)</label>
+    <input id="dMasterExpected" placeholder="Código de barras de tienda">
+    <label>Esperado por caja / tienda</label>
+    <textarea id="dExpected" rows="7" style="width:100%;background:#0A1E38;border:1.5px solid #1E4DBC55;border-radius:10px;color:white;padding:11px 12px;font-size:14px"
+      placeholder="UPC,CANTIDAD&#10;7500463843549,2&#10;7500462871123,1&#10;6938595348686,3"></textarea>
+    <button id="dLoad" class="btn primary">Cargar distribución</button>
+  </div>
+
+  <div id="dWork" class="card" style="display:none">
+    <h2>Distribución activa</h2>
+    <div id="dSummary" class="note"></div>
+    <hr>
+    <div style="text-align:center;padding:8px">
+      <div class="note">SIGUIENTE UPC</div>
+      <div id="dNext" style="font-size:24px;font-weight:900;margin:6px 0;color:var(--orange)">—</div>
+      <div id="dProgress" class="note"></div>
+    </div>
+    <label>Escaneo UPC</label>
+    <input id="dScanCode" placeholder="Escanea o captura UPC">
+    <button id="dScanBtn" class="btn secondary">Confirmar UPC</button>
+    <button id="dCameraBtn" class="btn ghost">📷 Escanear con cámara</button>
+    <div id="dRows" style="margin-top:12px"></div>
+    <hr>
+    <h2>Cierre de caja</h2>
+    <div class="note">Solo permite cerrar cuando todas las cantidades están completas.</div>
+    <label>Escanear etiqueta máster</label>
+    <input id="dMasterScan" placeholder="Código máster / tienda">
+    <button id="dCloseBox" class="btn primary">Cerrar y validar caja</button>
+  </div>
+
+  <div class="card">
+    <h2>Historial de cajas</h2>
+    <div id="dHistory"></div>
+  </div>
+</section>
+
+</main>
+
+<nav>
+<button data-page="home" class="on"><span>🏠</span>Inicio</button>
+<button data-page="inventory"><span>📦</span>Inventario</button>
+<button data-page="entry"><span>➕</span>Entrada</button>
+<button data-page="exit"><span>➖</span>Salida</button>
+<button data-page="kardex"><span>📊</span>Kardex</button>
+<button data-page="distribution"><span>🧩</span>Distribuir</button>
+</nav>
+
+<script>
+const STORAGE_KEY = 'inventix_core_v1_1';
+let state = { inventory:{}, kardex:[], verify:[], distributions:[] };
+
+function nowISO(){ return new Date().toISOString(); }
+function fmtDate(iso){ return new Date(iso).toLocaleString('es-MX'); }
+
+function load(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      const parsed = JSON.parse(raw);
+      state = {
+        inventory: parsed.inventory || {},
+        kardex: parsed.kardex || [],
+        verify: parsed.verify || [],
+        distributions: parsed.distributions || []
+      };
+    }
+  }catch(e){ console.error(e); }
+  renderAll();
+}
+
+function save(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  renderAll();
+}
+
+function toast(msg, bad=false){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.style.display='block'; t.style.background=bad?'#7d1f24':'#113c2a';
+  clearTimeout(window.__tt); window.__tt=setTimeout(()=>t.style.display='none',2200);
+}
+
+function cleanCode(v){ return String(v||'').trim().toUpperCase(); }
+function qty(v){ const n=Number(v); return Number.isFinite(n)?n:0; }
+
+function addMovement(type, code, quantity, location, user, desc=''){
+  code=cleanCode(code); quantity=qty(quantity);
+  if(!code || quantity<=0) return toast('Falta código o cantidad válida',true);
+
+  let prod = state.inventory[code] || {code,desc:desc||code,qty:0,locations:{}};
+  if(desc) prod.desc=desc;
+
+  if(type==='ENTRADA'){
+    prod.qty += quantity;
+    const loc=location||'SIN UBICACIÓN';
+    prod.locations[loc]=(prod.locations[loc]||0)+quantity;
+  } else {
+    if(prod.qty < quantity) return toast('Stock insuficiente',true);
+    prod.qty -= quantity;
+    const loc=location||'SIN UBICACIÓN';
+    const locQty=prod.locations[loc]||0;
+    if(locQty >= quantity) prod.locations[loc]=locQty-quantity;
+  }
+  state.inventory[code]=prod;
+  state.kardex.unshift({
+    id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()+Math.random()),
+    type, code, desc:prod.desc, qty:quantity, location:location||'', user:user||'Sin responsable', time:nowISO(),
+    balance:prod.qty
+  });
+  save();
+  toast(type==='ENTRADA'?'Entrada guardada':'Salida guardada');
+}
+
+function renderAll(){
+  const products=Object.values(state.inventory);
+  document.getElementById('kStock').textContent=products.reduce((a,p)=>a+Number(p.qty||0),0);
+  document.getElementById('kSku').textContent=products.filter(p=>p.qty>0).length;
+  document.getElementById('kMov').textContent=state.kardex.length;
+  document.getElementById('kVerify').textContent=state.verify.filter(x=>x.result==='OK').length;
+
+  const inv=document.getElementById('inventoryList');
+  inv.innerHTML=products.length?products.sort((a,b)=>a.code.localeCompare(b.code)).map(p=>{
+    const locs=Object.entries(p.locations||{}).filter(([,q])=>q!==0).map(([l,q])=>`${l}: ${q}`).join(' · ')||'Sin ubicación';
+    return `<div class="row ${p.qty>0?'ok':'out'}"><b>${p.code}</b> · ${escapeHtml(p.desc)} <span class="badge">${p.qty} pzas</span><div class="meta">${escapeHtml(locs)}</div></div>`
+  }).join(''):'<div class="note">Sin inventario todavía.</div>';
+
+  const kx=document.getElementById('kardexList');
+  kx.innerHTML=state.kardex.length?state.kardex.map(m=>`
+    <div class="row ${m.type==='ENTRADA'?'ok':'out'}">
+      <b>${m.type}</b> · ${m.code} · ${m.qty} pzas
+      <div class="meta">${escapeHtml(m.desc)}<br>${escapeHtml(m.location||'Sin ubicación')} · ${escapeHtml(m.user)}<br>${fmtDate(m.time)} · Saldo ${m.balance}</div>
+    </div>`).join(''):'<div class="note">Sin movimientos.</div>';
+
+  const vl=document.getElementById('verifyList');
+  vl.innerHTML=state.verify.slice(0,20).map(v=>`<div class="row verify"><b>${v.code}</b> · ${v.result}<div class="meta">${fmtDate(v.time)}</div></div>`).join('');
+}
+
+function escapeHtml(s){
+  return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+}
+
+document.querySelectorAll('nav button').forEach(btn=>btn.addEventListener('click',()=>{
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('nav button').forEach(b=>b.classList.remove('on'));
+  document.getElementById(btn.dataset.page).classList.add('on'); btn.classList.add('on');
+}));
+
+document.getElementById('saveEntry').addEventListener('click',()=>{
+  addMovement('ENTRADA',eCode.value,eQty.value,eLoc.value,eUser.value,eDesc.value);
+  if(state.kardex[0]?.type==='ENTRADA'){ eQty.value=''; }
+});
+document.getElementById('saveExit').addEventListener('click',()=>{
+  addMovement('SALIDA',sCode.value,sQty.value,sLoc.value,sUser.value);
+  if(state.kardex[0]?.type==='SALIDA'){ sQty.value=''; }
+});
+document.getElementById('verifyBtn').addEventListener('click',()=>{
+  const code=cleanCode(vCode.value); if(!code) return toast('Ingresa serie/lote/IMEI',true);
+  state.verify.unshift({code,result:'OK',time:nowISO()}); save(); vCode.value=''; toast('Verify registrado');
+});
+
+document.getElementById('exportBtn').addEventListener('click',()=>{
+  const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='inventix_respaldo_'+new Date().toISOString().slice(0,10)+'.json'; a.click(); URL.revokeObjectURL(a.href);
+});
+document.getElementById('importBtn').addEventListener('click',()=>importFile.click());
+document.getElementById('importFile').addEventListener('change',async(e)=>{
+  const f=e.target.files[0]; if(!f)return;
+  try{ const obj=JSON.parse(await f.text()); state={inventory:obj.inventory||{},kardex:obj.kardex||[],verify:obj.verify||[],distributions:obj.distributions||[]}; save(); toast('Respaldo restaurado'); }
+  catch(err){ toast('Archivo de respaldo inválido',true); }
+});
+
+let scanTarget=null, stream=null, scanTimer=null;
+async function openScanner(targetId){
+  scanTarget=document.getElementById(targetId);
+  document.getElementById('scanner').classList.add('on');
+  try{
+    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
+    video.srcObject=stream;
+    if('BarcodeDetector' in window){
+      const detector=new BarcodeDetector({formats:['ean_13','ean_8','code_128','code_39','upc_a','upc_e','itf']});
+      scanTimer=setInterval(async()=>{
+        try{
+          const codes=await detector.detect(video);
+          if(codes[0]?.rawValue){ useScanned(codes[0].rawValue); }
+        }catch(e){}
+      },500);
+    }
+  }catch(e){ toast('Cámara no disponible. Usa captura manual.',true); }
+}
+function useScanned(code){
+  if(scanTarget) scanTarget.value=code;
+  closeScanner(); toast('Código capturado');
+}
+function closeScanner(){
+  clearInterval(scanTimer); scanTimer=null;
+  if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}
+  document.getElementById('scanner').classList.remove('on');
+}
+document.getElementById('entryScan').addEventListener('click',()=>openScanner('eCode'));
+document.getElementById('exitScan').addEventListener('click',()=>openScanner('sCode'));
+document.getElementById('closeScanner').addEventListener('click',closeScanner);
+document.getElementById('scanManualBtn').addEventListener('click',()=>useScanned(scanManual.value));
+
+
+let activeDistribution = null;
+
+function parseExpected(text){
+  return String(text||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean).map(row=>{
+    const p=row.split(/[,\t;|]/).map(x=>x.trim());
+    return {code:cleanCode(p[0]), expected:Number(p[1]), done:0};
+  }).filter(r=>r.code && Number.isFinite(r.expected) && r.expected>0);
+}
+function orderedRows(rows, rule){
+  return rule==='BOTTOM_UP' ? [...rows].reverse() : [...rows];
+}
+function distTotals(d){
+  return {
+    expected:d.rows.reduce((a,r)=>a+r.expected,0),
+    done:d.rows.reduce((a,r)=>a+r.done,0)
+  };
+}
+function nextDistRow(){
+  return activeDistribution ? activeDistribution.rows.find(r=>r.done<r.expected) || null : null;
+}
+function startDistribution(){
+  const rows=parseExpected(dExpected.value);
+  if(!rows.length) return toast('Carga al menos un UPC con cantidad',true);
+  activeDistribution={
+    id:(crypto.randomUUID?crypto.randomUUID():String(Date.now()+Math.random())),
+    client:dClient.value.trim()||'Sin cliente',
+    store:dStore.value.trim()||'Sin tienda',
+    box:dBox.value.trim()||'Caja',
+    rule:dRule.value,
+    masterExpected:cleanCode(dMasterExpected.value),
+    rows:orderedRows(rows,dRule.value),
+    startedAt:nowISO(), closedAt:null, status:'ABIERTA'
+  };
+  dWork.style.display='block';
+  renderDistribution();
+  toast('Modo distribución iniciado');
+}
+function scanDistribution(code){
+  if(!activeDistribution) return toast('Primero carga una distribución',true);
+  code=cleanCode(code);
+  const next=nextDistRow();
+  if(!next) return toast('La caja ya está completa',true);
+  if(code!==next.code) return toast(`UPC fuera de secuencia. Esperado: ${next.code}`,true);
+  next.done++;
+  dScanCode.value='';
+  renderDistribution();
+  toast('UPC confirmado');
+}
+function renderDistribution(){
+  if(!activeDistribution){ dWork.style.display='none'; renderDistributionHistory(); return; }
+  const d=activeDistribution, total=distTotals(d), next=nextDistRow();
+  const rn=d.rule==='TOP_DOWN'?'Arriba → abajo':d.rule==='BOTTOM_UP'?'Abajo → arriba':'Por bloque';
+  dSummary.innerHTML=`<b>${escapeHtml(d.client)}</b> · ${escapeHtml(d.store)} · ${escapeHtml(d.box)}<br>Regla: ${rn}`;
+  dNext.textContent=next?next.code:'CAJA COMPLETA';
+  dProgress.textContent=`${total.done} / ${total.expected} piezas`;
+  dRows.innerHTML=d.rows.map((r,i)=>`<div class="row ${r.done===r.expected?'ok':''}">
+    <b>${i+1}. ${r.code}</b> <span class="badge">${r.done}/${r.expected}</span>
+    <div class="meta">${r.done===r.expected?'Completo':'Pendiente'}</div>
+  </div>`).join('');
+  renderDistributionHistory();
+}
+function closeDistribution(){
+  if(!activeDistribution) return toast('No hay distribución activa',true);
+  const t=distTotals(activeDistribution);
+  if(t.done!==t.expected) return toast(`Caja incompleta: ${t.done}/${t.expected}`,true);
+  const master=cleanCode(dMasterScan.value);
+  if(activeDistribution.masterExpected && master!==activeDistribution.masterExpected)
+    return toast('Etiqueta máster no corresponde a la tienda',true);
+
+  activeDistribution.closedAt=nowISO();
+  activeDistribution.status='CERRADA';
+  activeDistribution.totalPieces=t.expected;
+  activeDistribution.masterScanned=master;
+  state.distributions.unshift(activeDistribution);
+  save();
+  activeDistribution=null;
+  dMasterScan.value=''; dScanCode.value=''; dWork.style.display='none';
+  renderDistributionHistory();
+  toast('Caja cerrada y validada');
+}
+function renderDistributionHistory(){
+  if(!document.getElementById('dHistory')) return;
+  dHistory.innerHTML=(state.distributions||[]).length
+    ? state.distributions.slice(0,30).map(d=>`<div class="row ok">
+        <b>${escapeHtml(d.store)} · ${escapeHtml(d.box)}</b>
+        <span class="badge">${d.totalPieces||0} pzas</span>
+        <div class="meta">${escapeHtml(d.client)}<br>${fmtDate(d.closedAt)}</div>
+      </div>`).join('')
+    : '<div class="note">Sin cajas cerradas.</div>';
+}
+dLoad.addEventListener('click',startDistribution);
+dScanBtn.addEventListener('click',()=>scanDistribution(dScanCode.value));
+dScanCode.addEventListener('keydown',e=>{if(e.key==='Enter')scanDistribution(e.target.value);});
+dCameraBtn.addEventListener('click',()=>openScanner('dScanCode'));
+dCloseBox.addEventListener('click',closeDistribution);
+
+load();
+renderDistributionHistory();
+</script>
+</body>
+</html>
