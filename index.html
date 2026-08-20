@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>INVENTIX Core v1.1</title>
+<title>INVENTIX Core v1.3</title>
 <style>
 :root{
   --navy:#0F2747;--navy2:#08192f;--blue:#1E4DBC;--orange:#F5A623;
@@ -69,7 +69,7 @@ hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
 
 <header>
   <div class="brand">INVENTI<span>X</span> CORE</div>
-  <div class="sub">v1.1 · Persistencia local activada</div>
+  <div class="sub">v1.3 · Persistencia + Distribución CSV</div>
 </header>
 
 <main>
@@ -163,6 +163,19 @@ hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
         </select>
       </div>
     </div>
+    <div class="card" style="background:#0A1E38;margin-top:10px">
+      <h2 style="margin-bottom:6px">Importar distribución CSV</h2>
+      <div class="note">Reconoce columnas como PALLET, NUM_ORD, TIENDA, UPC, SKU, DESC, PIEZAS_ORD y PIEZAS_AGENDADAS.</div>
+      <input id="dCsvFile" type="file" accept=".csv,text/csv" style="display:none">
+      <button id="dImportCsv" class="btn secondary">📄 Importar CSV</button>
+      <label>Tienda importada</label>
+      <select id="dImportedStore">
+        <option value="">Sin archivo cargado</option>
+      </select>
+      <div id="dImportStatus" class="note" style="margin-top:6px"></div>
+      <button id="dExportCsv" class="btn ghost">⬇️ Exportar resultado CSV</button>
+    </div>
+
     <label>Código máster esperado (tienda)</label>
     <input id="dMasterExpected" placeholder="Código de barras de tienda">
     <label>Esperado por caja / tienda</label>
@@ -211,7 +224,7 @@ hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
 </nav>
 
 <script>
-const STORAGE_KEY = 'inventix_core_v1_1';
+const STORAGE_KEY = 'inventix_core_v1_3';
 let state = { inventory:{}, kardex:[], verify:[], distributions:[] };
 
 function nowISO(){ return new Date().toISOString(); }
@@ -219,7 +232,7 @@ function fmtDate(iso){ return new Date(iso).toLocaleString('es-MX'); }
 
 function load(){
   try{
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('inventix_core_v1_1');
     if(raw){
       const parsed = JSON.parse(raw);
       state = {
@@ -367,7 +380,149 @@ document.getElementById('closeScanner').addEventListener('click',closeScanner);
 document.getElementById('scanManualBtn').addEventListener('click',()=>useScanned(scanManual.value));
 
 
+
+let importedDistribution = { rows:[], stores:[], sourceName:'' };
+
+function normalizeHeader(h){
+  return String(h||'')
+    .replace(/^\uFEFF/,'')
+    .trim().toUpperCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^A-Z0-9]+/g,'_')
+    .replace(/^_+|_+$/g,'');
+}
+
+function detectDelimiter(line){
+  const candidates=[',',';','\t','|'];
+  let best=',', bestCount=-1;
+  for(const d of candidates){
+    let count=0, quoted=false;
+    for(let i=0;i<line.length;i++){
+      if(line[i]==='"') quoted=!quoted;
+      else if(!quoted && line[i]===d) count++;
+    }
+    if(count>bestCount){best=d;bestCount=count;}
+  }
+  return best;
+}
+
+function parseCsvLine(line, delimiter){
+  const out=[]; let cur='', quoted=false;
+  for(let i=0;i<line.length;i++){
+    const ch=line[i];
+    if(ch==='"'){
+      if(quoted && line[i+1]==='"'){cur+='"';i++;}
+      else quoted=!quoted;
+    }else if(ch===delimiter && !quoted){
+      out.push(cur.trim()); cur='';
+    }else cur+=ch;
+  }
+  out.push(cur.trim());
+  return out;
+}
+
+function pickColumn(map, names){
+  for(const n of names){
+    const key=normalizeHeader(n);
+    if(Object.prototype.hasOwnProperty.call(map,key)) return map[key];
+  }
+  return -1;
+}
+
+async function importDistributionCsv(file){
+  const text=(await file.text()).replace(/\r\n/g,'\n').replace(/\r/g,'\n');
+  const lines=text.split('\n').filter(x=>x.trim()!=='');
+  if(lines.length<2) throw new Error('El CSV no contiene datos');
+  const delimiter=detectDelimiter(lines[0]);
+  const headers=parseCsvLine(lines[0],delimiter).map(normalizeHeader);
+  const map={}; headers.forEach((h,i)=>map[h]=i);
+
+  const idxStore=pickColumn(map,['TIENDA','STORE','DESTINO']);
+  const idxUpc=pickColumn(map,['UPC','EAN','CODIGO','CODIGO_UPC','UPC_EAN_COD']);
+  const idxQty=pickColumn(map,['PIEZAS_AGENDADAS','PIEZAS_ORD','CANTIDAD','QTY','QUANTITY']);
+  const idxSku=pickColumn(map,['SKU','MATERIAL']);
+  const idxDesc=pickColumn(map,['DESC','DESCRIPCION','DESCRIPTION']);
+  const idxOrder=pickColumn(map,['NUM_ORD','OC','ORDEN','ORDEN_COMPRA','PO']);
+  const idxPallet=pickColumn(map,['PALLET','TARIMA']);
+
+  if(idxStore<0 || idxUpc<0 || idxQty<0){
+    throw new Error('Faltan columnas mínimas: TIENDA, UPC y PIEZAS_AGENDADAS/PIEZAS_ORD');
+  }
+
+  const rows=[];
+  for(let i=1;i<lines.length;i++){
+    const p=parseCsvLine(lines[i],delimiter);
+    const store=String(p[idxStore]||'').trim();
+    const upc=cleanCode(p[idxUpc]);
+    const q=Number(String(p[idxQty]||'').replace(',','.'));
+    if(!store || !upc || !Number.isFinite(q) || q<=0) continue;
+    rows.push({
+      store,
+      upc,
+      qty:q,
+      sku:idxSku>=0?String(p[idxSku]||'').trim():'',
+      desc:idxDesc>=0?String(p[idxDesc]||'').trim():'',
+      order:idxOrder>=0?String(p[idxOrder]||'').trim():'',
+      pallet:idxPallet>=0?String(p[idxPallet]||'').trim():'',
+      sourceRow:i+1
+    });
+  }
+  if(!rows.length) throw new Error('No encontré filas válidas en el CSV');
+
+  const stores=[];
+  for(const r of rows) if(!stores.includes(r.store)) stores.push(r.store);
+
+  importedDistribution={rows,stores,sourceName:file.name};
+  dImportedStore.innerHTML='<option value="">Selecciona tienda</option>'+stores.map(s=>`<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+  dImportStatus.textContent=`${file.name}: ${rows.length} líneas · ${stores.length} tiendas`;
+  if(stores.length===1){
+    dImportedStore.value=stores[0];
+    loadImportedStore(stores[0]);
+  }
+}
+
+function loadImportedStore(store){
+  if(!store) return;
+  const rows=importedDistribution.rows.filter(r=>r.store===store);
+  if(!rows.length) return;
+  dStore.value=store;
+  const order=[...new Set(rows.map(r=>r.order).filter(Boolean))].join('/');
+  if(order && !dBox.value) dBox.value='Caja 1';
+  dExpected.value=rows.map(r=>`${r.upc},${r.qty}`).join('\n');
+  dImportStatus.textContent=`${importedDistribution.sourceName} · ${store}: ${rows.length} renglones · ${rows.reduce((a,r)=>a+r.qty,0)} piezas${order?' · OC '+order:''}`;
+}
+
+function csvEscape(v){
+  const s=String(v??'');
+  return /[",\n;]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s;
+}
+
+function exportDistributionCsv(){
+  const lines=[['CLIENTE','TIENDA','CAJA','REGLA','UPC','CANTIDAD_ESPERADA','CANTIDAD_CONFIRMADA','ESTATUS','INICIO','CIERRE'].join(',')];
+  const all=[];
+  for(const d of (state.distributions||[])) all.push(d);
+  if(activeDistribution) all.unshift(activeDistribution);
+  if(!all.length) return toast('No hay distribuciones para exportar',true);
+
+  for(const d of all){
+    for(const r of d.rows||[]){
+      lines.push([
+        d.client,d.store,d.box,d.rule,r.code,r.expected,r.done,
+        (r.done===r.expected?'COMPLETO':'PENDIENTE'),
+        d.startedAt||'',d.closedAt||''
+      ].map(csvEscape).join(','));
+    }
+  }
+  const blob=new Blob(['\uFEFF'+lines.join('\n')],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='inventix_distribucion_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
 let activeDistribution = null;
+
 
 function parseExpected(text){
   return String(text||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean).map(row=>{
@@ -457,6 +612,16 @@ function renderDistributionHistory(){
       </div>`).join('')
     : '<div class="note">Sin cajas cerradas.</div>';
 }
+dImportCsv.addEventListener('click',()=>dCsvFile.click());
+dCsvFile.addEventListener('change',async e=>{
+  const f=e.target.files[0]; if(!f) return;
+  try{ await importDistributionCsv(f); toast('CSV importado'); }
+  catch(err){ toast(err.message||'No se pudo importar el CSV',true); }
+  e.target.value='';
+});
+dImportedStore.addEventListener('change',()=>loadImportedStore(dImportedStore.value));
+dExportCsv.addEventListener('click',exportDistributionCsv);
+
 dLoad.addEventListener('click',startDistribution);
 dScanBtn.addEventListener('click',()=>scanDistribution(dScanCode.value));
 dScanCode.addEventListener('keydown',e=>{if(e.key==='Enter')scanDistribution(e.target.value);});
