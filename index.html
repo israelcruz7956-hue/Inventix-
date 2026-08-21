@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>INVENTIX Core v1.3</title>
+<title>INVENTIX Core v1.4</title>
 <style>
 :root{
   --navy:#0F2747;--navy2:#08192f;--blue:#1E4DBC;--orange:#F5A623;
@@ -69,7 +69,7 @@ hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
 
 <header>
   <div class="brand">INVENTI<span>X</span> CORE</div>
-  <div class="sub">v1.3 · Persistencia + Distribución CSV</div>
+  <div class="sub">v1.4 · Persistencia reforzada + Distribución CSV</div>
 </header>
 
 <main>
@@ -224,7 +224,7 @@ hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
 </nav>
 
 <script>
-const STORAGE_KEY = 'inventix_core_v1_3';
+const STORAGE_KEY = 'inventix_core_v1_4';
 let state = { inventory:{}, kardex:[], verify:[], distributions:[] };
 
 function nowISO(){ return new Date().toISOString(); }
@@ -232,7 +232,9 @@ function fmtDate(iso){ return new Date(iso).toLocaleString('es-MX'); }
 
 function load(){
   try{
-    const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('inventix_core_v1_1');
+    const raw = localStorage.getItem(STORAGE_KEY)
+      || localStorage.getItem('inventix_core_v1_3')
+      || localStorage.getItem('inventix_core_v1_1');
     if(raw){
       const parsed = JSON.parse(raw);
       state = {
@@ -242,6 +244,10 @@ function load(){
         distributions: parsed.distributions || []
       };
     }
+    const ad = localStorage.getItem(STORAGE_KEY+'_activeDistribution');
+    if(ad) activeDistribution = JSON.parse(ad);
+    const imp = localStorage.getItem(STORAGE_KEY+'_importedDistribution');
+    if(imp) importedDistribution = JSON.parse(imp);
   }catch(e){ console.error(e); }
   renderAll();
 }
@@ -383,6 +389,24 @@ document.getElementById('scanManualBtn').addEventListener('click',()=>useScanned
 
 let importedDistribution = { rows:[], stores:[], sourceName:'' };
 
+function saveDistributionSession(){
+  try{
+    if(activeDistribution){
+      localStorage.setItem(STORAGE_KEY+'_activeDistribution', JSON.stringify(activeDistribution));
+    }else{
+      localStorage.removeItem(STORAGE_KEY+'_activeDistribution');
+    }
+    localStorage.setItem(STORAGE_KEY+'_importedDistribution', JSON.stringify(importedDistribution));
+  }catch(e){ console.error(e); }
+}
+
+function restoreImportedUi(){
+  if(!importedDistribution || !importedDistribution.rows || !importedDistribution.rows.length) return;
+  const stores=importedDistribution.stores || [...new Set(importedDistribution.rows.map(r=>r.store))];
+  dImportedStore.innerHTML='<option value="">Selecciona tienda</option>'+stores.map(s=>`<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+  dImportStatus.textContent=`${importedDistribution.sourceName||'CSV'}: ${importedDistribution.rows.length} líneas · ${stores.length} tiendas`;
+}
+
 function normalizeHeader(h){
   return String(h||'')
     .replace(/^\uFEFF/,'')
@@ -444,6 +468,7 @@ async function importDistributionCsv(file){
   const idxDesc=pickColumn(map,['DESC','DESCRIPCION','DESCRIPTION']);
   const idxOrder=pickColumn(map,['NUM_ORD','OC','ORDEN','ORDEN_COMPRA','PO']);
   const idxPallet=pickColumn(map,['PALLET','TARIMA']);
+  const idxMaster=pickColumn(map,['MASTER','ETIQUETA_MASTER','CODIGO_MASTER','MASTER_CODE','HU','CODIGO_TIENDA']);
 
   if(idxStore<0 || idxUpc<0 || idxQty<0){
     throw new Error('Faltan columnas mínimas: TIENDA, UPC y PIEZAS_AGENDADAS/PIEZAS_ORD');
@@ -464,6 +489,7 @@ async function importDistributionCsv(file){
       desc:idxDesc>=0?String(p[idxDesc]||'').trim():'',
       order:idxOrder>=0?String(p[idxOrder]||'').trim():'',
       pallet:idxPallet>=0?String(p[idxPallet]||'').trim():'',
+      master:idxMaster>=0?cleanCode(p[idxMaster]):'',
       sourceRow:i+1
     });
   }
@@ -473,6 +499,7 @@ async function importDistributionCsv(file){
   for(const r of rows) if(!stores.includes(r.store)) stores.push(r.store);
 
   importedDistribution={rows,stores,sourceName:file.name};
+  saveDistributionSession();
   dImportedStore.innerHTML='<option value="">Selecciona tienda</option>'+stores.map(s=>`<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
   dImportStatus.textContent=`${file.name}: ${rows.length} líneas · ${stores.length} tiendas`;
   if(stores.length===1){
@@ -487,9 +514,12 @@ function loadImportedStore(store){
   if(!rows.length) return;
   dStore.value=store;
   const order=[...new Set(rows.map(r=>r.order).filter(Boolean))].join('/');
+  const masters=[...new Set(rows.map(r=>r.master).filter(Boolean))];
   if(order && !dBox.value) dBox.value='Caja 1';
+  if(masters.length===1) dMasterExpected.value=masters[0];
   dExpected.value=rows.map(r=>`${r.upc},${r.qty}`).join('\n');
-  dImportStatus.textContent=`${importedDistribution.sourceName} · ${store}: ${rows.length} renglones · ${rows.reduce((a,r)=>a+r.qty,0)} piezas${order?' · OC '+order:''}`;
+  dImportStatus.textContent=`${importedDistribution.sourceName} · ${store}: ${rows.length} renglones · ${rows.reduce((a,r)=>a+r.qty,0)} piezas${order?' · OC '+order:''}${masters.length===1?' · Máster '+masters[0]:''}`;
+  saveDistributionSession();
 }
 
 function csvEscape(v){
@@ -498,21 +528,34 @@ function csvEscape(v){
 }
 
 function exportDistributionCsv(){
-  const lines=[['CLIENTE','TIENDA','CAJA','REGLA','UPC','CANTIDAD_ESPERADA','CANTIDAD_CONFIRMADA','ESTATUS','INICIO','CIERRE'].join(',')];
+  const lines=[['CLIENTE','TIENDA','CAJA','REGLA','UPC','SKU','DESCRIPCION','OC','PALLET','MASTER_ESPERADO','CANTIDAD_ESPERADA','CANTIDAD_CONFIRMADA','ESTATUS','INICIO','CIERRE'].join(',')];
   const all=[];
   for(const d of (state.distributions||[])) all.push(d);
   if(activeDistribution) all.unshift(activeDistribution);
-  if(!all.length) return toast('No hay distribuciones para exportar',true);
 
-  for(const d of all){
-    for(const r of d.rows||[]){
+  if(all.length){
+    for(const d of all){
+      for(const r of d.rows||[]){
+        const src=(importedDistribution.rows||[]).find(x=>x.store===d.store && x.upc===r.code) || {};
+        lines.push([
+          d.client,d.store,d.box,d.rule,r.code,src.sku||'',src.desc||'',src.order||'',src.pallet||'',
+          d.masterExpected||src.master||'',r.expected,r.done,
+          (r.done===r.expected?'COMPLETO':'PENDIENTE'),
+          d.startedAt||'',d.closedAt||''
+        ].map(csvEscape).join(','));
+      }
+    }
+  }else if((importedDistribution.rows||[]).length){
+    for(const r of importedDistribution.rows){
       lines.push([
-        d.client,d.store,d.box,d.rule,r.code,r.expected,r.done,
-        (r.done===r.expected?'COMPLETO':'PENDIENTE'),
-        d.startedAt||'',d.closedAt||''
+        '',r.store,'','',r.upc,r.sku||'',r.desc||'',r.order||'',r.pallet||'',r.master||'',
+        r.qty,0,'PENDIENTE','',''
       ].map(csvEscape).join(','));
     }
+  }else{
+    return toast('No hay datos para exportar',true);
   }
+
   const blob=new Blob(['\uFEFF'+lines.join('\n')],{type:'text/csv;charset=utf-8'});
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
@@ -556,6 +599,7 @@ function startDistribution(){
     startedAt:nowISO(), closedAt:null, status:'ABIERTA'
   };
   dWork.style.display='block';
+  saveDistributionSession();
   renderDistribution();
   toast('Modo distribución iniciado');
 }
@@ -567,6 +611,7 @@ function scanDistribution(code){
   if(code!==next.code) return toast(`UPC fuera de secuencia. Esperado: ${next.code}`,true);
   next.done++;
   dScanCode.value='';
+  saveDistributionSession();
   renderDistribution();
   toast('UPC confirmado');
 }
@@ -598,6 +643,7 @@ function closeDistribution(){
   state.distributions.unshift(activeDistribution);
   save();
   activeDistribution=null;
+  saveDistributionSession();
   dMasterScan.value=''; dScanCode.value=''; dWork.style.display='none';
   renderDistributionHistory();
   toast('Caja cerrada y validada');
@@ -629,6 +675,11 @@ dCameraBtn.addEventListener('click',()=>openScanner('dScanCode'));
 dCloseBox.addEventListener('click',closeDistribution);
 
 load();
+restoreImportedUi();
+if(activeDistribution){
+  dWork.style.display='block';
+  renderDistribution();
+}
 renderDistributionHistory();
 </script>
 </body>
