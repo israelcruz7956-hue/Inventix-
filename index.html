@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#0F2747">
 <link rel="manifest" href="manifest.json">
-<title>INVENTIX Core v1.7</title>
+<title>INVENTIX Core v1.7.1</title>
 <style>
 :root{
   --navy:#0F2747;--navy2:#08192f;--blue:#1E4DBC;--orange:#F5A623;
@@ -67,6 +67,12 @@ hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
 .dist-banner{border-radius:12px;padding:12px;margin:10px 0;font-weight:900;text-align:center;background:#16365f;color:#dce8fa}
 .dist-banner.green{background:#123f2a;color:#8fe0ad}.dist-banner.yellow{background:#574811;color:#ffe58a}.dist-banner.red{background:#512026;color:#ffadb1}
 .dist-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:10px 0}.dist-kpis>div{background:#0A1E38;border-radius:10px;padding:9px;text-align:center;border:1px solid #1E4DBC44}.dist-kpis strong{display:block;font-size:18px}.dist-kpis small{font-size:9px;color:var(--muted)}
+.camera-overlay{display:none;position:fixed;inset:0;background:#020913ee;z-index:200;padding:18px;align-items:center;justify-content:center}
+.camera-overlay.on{display:flex}
+.camera-card{width:100%;max-width:480px;background:var(--navy);border:1px solid #1E4DBC66;border-radius:16px;padding:14px;box-shadow:0 18px 60px #000c}
+.camera-card video{width:100%;max-height:58vh;object-fit:cover;background:#000;border-radius:12px;margin-top:10px}
+.camera-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.camera-hint{font-size:11px;color:var(--muted);line-height:1.45;margin-top:8px}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
@@ -75,7 +81,7 @@ hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
 
 <header>
   <div class="brand">INVENTI<span>X</span> CORE</div>
-  <div class="sub">v1.7 · Verify Tech Series + Verify multi-OC · Distribution · Excel + persistencia</div>
+  <div class="sub">v1.7.1 · Verify Tech Series + Verify multi-OC · Cámara opcional · Excel + persistencia</div>
 </header>
 
 <main>
@@ -209,7 +215,8 @@ hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
       <div id="vTechUPCStatus" class="note" style="margin-top:6px"></div>
     </div>
     <label id="vCodeLabel">UPC / Serie / IMEI</label><input id="vCode" placeholder="Código a validar" autocomplete="off" autocapitalize="off" spellcheck="false">
-    <div id="vFastNote" class="note" style="margin-top:6px">Modo ágil: lector físico o captura manual. El lector envía Enter y Verify valida en un solo evento; Inventix no solicita permiso de cámara.</div>
+    <div id="vFastNote" class="note" style="margin-top:6px">Modo ágil: lector físico o captura manual = un solo evento. La cámara queda como respaldo opcional y solo solicita permiso cuando tú la abres.</div>
+    <button id="vCameraBtn" class="btn secondary">📷 Cámara opcional</button>
     <button id="verifyBtn" class="btn primary">✅ Validar</button>
     <button id="undoVerifyBtn" class="btn ghost">↩️ Deshacer última lectura</button>
     <hr>
@@ -269,6 +276,7 @@ hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
     </div>
     <div id="dLastStatus" class="dist-banner">LISTO PARA ESCANEAR</div>
     <label>Escaneo UPC / SKU</label><input id="dScanCode" placeholder="Escanea o captura código">
+    <button id="dCameraBtn" class="btn secondary">📷 Cámara opcional</button>
     <button id="dScanBtn" class="btn secondary">✅ Confirmar artículo</button>
     <button id="dUndoBtn" class="btn ghost">↩️ Deshacer última lectura</button>
     <div id="dRows" style="margin-top:12px"></div>
@@ -286,6 +294,19 @@ hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
 </section>
 
 </main>
+
+<div id="cameraOverlay" class="camera-overlay" aria-hidden="true">
+  <div class="camera-card">
+    <h2>Escáner por cámara</h2>
+    <div id="cameraStatus" class="note">Apunta al código de barras. Al detectarlo, Verify lo procesa una sola vez.</div>
+    <video id="cameraVideo" playsinline muted></video>
+    <div class="camera-actions">
+      <button id="cameraCancel" class="btn ghost">Cancelar</button>
+      <button id="cameraTorch" class="btn secondary" style="display:none">🔦 Luz</button>
+    </div>
+    <div class="camera-hint">La cámara no se activa al abrir Inventix. El permiso se solicita únicamente al tocar “Cámara opcional”. En archivo local puede estar bloqueada; en GitHub Pages (HTTPS) funciona como respaldo del lector.</div>
+  </div>
+</div>
 
 <nav>
 <button data-page="home" class="on"><span>🏠</span>Inicio</button>
@@ -1292,11 +1313,90 @@ dTemplateBtn.addEventListener('click',async()=>{
   await downloadWorkbook('plantilla_verify_distribution.xlsx',[{name:'DISTRIBUTION',rows:[['OC','DESTINO/TIENDA','UPC/SKU','DESCRIPCION','CANTIDAD','ETIQUETA MASTER'],['OC 673505','MACSTORE BUENAVISTA','7500000000001','ARTICULO EJEMPLO',3,'MASTER-673505'],['OC 673505','MACSTORE BUENAVISTA','7500000000002','SEGUNDO ARTICULO',2,'MASTER-673505']],textColumns:['OC','UPC/SKU','ETIQUETA MASTER'],widths:[18,28,22,36,12,24]}]);
 });
 
+// Cámara opcional: nunca solicita permiso al cargar. Solo se activa por acción explícita del operador.
+let cameraStream=null, cameraDetector=null, cameraTimer=null, cameraTarget=null, cameraOnRead=null, torchOn=false;
+const cameraOverlay=document.getElementById('cameraOverlay');
+const cameraVideo=document.getElementById('cameraVideo');
+const cameraStatus=document.getElementById('cameraStatus');
+const cameraCancel=document.getElementById('cameraCancel');
+const cameraTorch=document.getElementById('cameraTorch');
+
+async function stopCameraScanner(){
+  if(cameraTimer){cancelAnimationFrame(cameraTimer);cameraTimer=null;}
+  if(cameraStream){cameraStream.getTracks().forEach(t=>t.stop());cameraStream=null;}
+  if(cameraVideo){cameraVideo.srcObject=null;}
+  if(cameraOverlay){cameraOverlay.classList.remove('on');cameraOverlay.setAttribute('aria-hidden','true');}
+  cameraTarget=null;cameraOnRead=null;cameraDetector=null;torchOn=false;
+  if(cameraTorch){cameraTorch.style.display='none';cameraTorch.textContent='🔦 Luz';}
+}
+
+async function openCameraScanner(targetInput,onRead){
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+    return toast('Cámara bloqueada en este entorno. Abre Inventix desde GitHub Pages (HTTPS) o usa lector físico.',true);
+  }
+  if(!('BarcodeDetector' in window)){
+    return toast('Este navegador no soporta lectura directa por cámara. Usa lector físico o Chrome actualizado.',true);
+  }
+  try{
+    cameraTarget=targetInput;cameraOnRead=onRead;cameraStatus.textContent='Solicitando cámara…';
+    cameraOverlay.classList.add('on');cameraOverlay.setAttribute('aria-hidden','false');
+    cameraStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}},audio:false});
+    cameraVideo.srcObject=cameraStream;await cameraVideo.play();
+    let formats=['ean_13','ean_8','code_128','code_39','upc_a','upc_e','itf','qr_code','data_matrix'];
+    try{
+      const supported=await BarcodeDetector.getSupportedFormats();
+      formats=formats.filter(x=>supported.includes(x));
+    }catch(_e){}
+    cameraDetector=new BarcodeDetector(formats.length?{formats}:undefined);
+    cameraStatus.textContent='LISTO · apunta al código';
+    const track=cameraStream.getVideoTracks()[0];
+    try{
+      const caps=track.getCapabilities?track.getCapabilities():{};
+      if(caps.torch)cameraTorch.style.display='block';
+    }catch(_e){}
+    let busy=false;
+    const tick=async()=>{
+      if(!cameraStream||!cameraDetector)return;
+      if(!busy&&cameraVideo.readyState>=2){
+        busy=true;
+        try{
+          const found=await cameraDetector.detect(cameraVideo);
+          if(found&&found.length){
+            const value=idText(found[0].rawValue||'');
+            if(value){
+              const target=cameraTarget, cb=cameraOnRead;
+              await stopCameraScanner();
+              if(target)target.value=value;
+              if(cb)cb(value);
+              return;
+            }
+          }
+        }catch(_e){}
+        busy=false;
+      }
+      cameraTimer=requestAnimationFrame(tick);
+    };
+    cameraTimer=requestAnimationFrame(tick);
+  }catch(err){
+    console.error(err);await stopCameraScanner();
+    toast(err&&err.name==='NotAllowedError'?'Permiso de cámara no concedido':'No se pudo abrir la cámara',true);
+  }
+}
+
+cameraCancel.addEventListener('click',stopCameraScanner);
+cameraOverlay.addEventListener('click',e=>{if(e.target===cameraOverlay)stopCameraScanner();});
+cameraTorch.addEventListener('click',async()=>{
+  if(!cameraStream)return;const track=cameraStream.getVideoTracks()[0];
+  try{torchOn=!torchOn;await track.applyConstraints({advanced:[{torch:torchOn}]});cameraTorch.textContent=torchOn?'🔦 Apagar luz':'🔦 Luz';}catch(_e){toast('La luz no está disponible',true);}
+});
+document.getElementById('vCameraBtn').addEventListener('click',()=>openCameraScanner(vCode,value=>registerVerifyRead(value)));
+document.getElementById('dCameraBtn').addEventListener('click',()=>openCameraScanner(dScanCode,value=>scanDistribution(value)));
+
 function renderEnvironment(){
   const secure=window.isSecureContext || location.hostname==='localhost';
   const sb=document.getElementById('secureBadge'), sn=document.getElementById('secureNote');
   if(sb){ sb.textContent=secure?'HTTPS / datos locales':'Archivo local / datos locales'; sb.className='pill ok'; }
-  if(sn){ sn.textContent='Modo ágil sin cámara: usa lector físico/Bluetooth/USB o captura manual. En Verify y Distribution, Enter valida de inmediato sin abrir permisos ni una segunda pantalla.'; }
+  if(sn){ sn.textContent='Modo ágil: lector físico/Bluetooth/USB o captura manual como primera opción. Cámara disponible solo como respaldo; no solicita permiso hasta que la abras.'; }
 }
 if('serviceWorker' in navigator && window.isSecureContext){
   window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(()=>{}));
