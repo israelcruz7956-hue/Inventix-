@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#0F2747">
 <link rel="manifest" href="manifest.json">
-<title>INVENTIX Core v1.6</title>
+<title>INVENTIX Core v1.6.2</title>
 <style>
 :root{
   --navy:#0F2747;--navy2:#08192f;--blue:#1E4DBC;--orange:#F5A623;
@@ -48,13 +48,14 @@ input:focus,select:focus{border-color:var(--orange)}
 .summary4>div{background:#0A1E38;border-radius:10px;padding:10px;text-align:center;border:1px solid #1E4DBC44}
 .summary4 strong{display:block;font-size:18px}.summary4 small{font-size:9px;color:var(--muted)}
 
-.verify-status{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:10px 0}
+.verify-status{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:10px 0}
 .sem{border-radius:10px;padding:9px 6px;text-align:center;font-size:9px;font-weight:900}
 .sem strong{display:block;font-size:17px;margin-bottom:2px}
 .sem.green{background:#123f2a;color:#8fe0ad}
 .sem.yellow{background:#574811;color:#ffe58a}
 .sem.red{background:#512026;color:#ffadb1}
 .sem.purple{background:#36205a;color:#cfb6ff}
+.sem.blue{background:#16365f;color:#9fc3ff}.sem.orange{background:#5a3a10;color:#ffd28a}
 
 .toolbar{display:flex;gap:8px}.toolbar .btn{margin-top:0}
 nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:520px;display:grid;grid-template-columns:repeat(6,1fr);background:var(--navy);border-top:1px solid #1E4DBC44;z-index:20}
@@ -90,7 +91,7 @@ hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
 
 <header>
   <div class="brand">INVENTI<span>X</span> CORE</div>
-  <div class="sub">v1.6 · Verify + Verify Distribution · Excel + persistencia</div>
+  <div class="sub">v1.6.2 · Verify multi-OC + Desabasto/Sustituto · Verify Distribution · Excel + persistencia</div>
 </header>
 
 <main>
@@ -203,11 +204,13 @@ hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
       <button id="exportVerifyBtn" class="btn primary">📤 Exportar Excel</button>
     </div>
     <input id="importVerifyFile" type="file" accept=".xlsx,.xls,.csv,text/csv,.txt,text/plain" style="display:none">
-    <div class="note" style="margin-top:8px">Excel recomendado. Columnas: OC/OV, CODIGO/UPC/SERIE/IMEI/SKU, CANTIDAD/QTY y DESCRIPCION. La cantidad genera automáticamente N validaciones esperadas. Los identificadores se tratan como texto.</div>
+    <div class="note" style="margin-top:8px">Excel recomendado. Columnas: OC/OV, CODIGO/UPC/SERIE/IMEI/SKU, CANTIDAD/QTY (también reconoce CATIDAD) y DESCRIPCION. Puede contener varias OC: Verify separa cantidades por OC y el identificador se trata como texto.</div>
     <div class="verify-status">
-      <div class="sem green"><strong id="vScanned">0</strong>OK</div>
-      <div class="sem yellow"><strong id="vMissing">0</strong>FALTAN</div>
-      <div class="sem red"><strong id="vNoExiste">0</strong>NO EXISTE / EXCESO</div>
+      <div class="sem green"><strong id="vScanned">0</strong>OK ESCANEADO</div>
+      <div class="sem yellow"><strong id="vMissing">0</strong>PENDIENTES</div>
+      <div class="sem red"><strong id="vNoExiste">0</strong>INCIDENCIAS</div>
+      <div class="sem orange"><strong id="vShortage">0</strong>DESABASTO</div>
+      <div class="sem blue"><strong id="vSubstituted">0</strong>SUSTITUIDO</div>
       <div class="sem purple"><strong id="vTotalExpected">0</strong>TOTAL ORDEN</div>
     </div>
     <div id="verifyExpectedList"></div>
@@ -216,14 +219,29 @@ hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
   <div class="card">
     <h2>Verify operativo</h2>
     <div class="grid2">
-      <div><label>OC</label><input id="vOC" placeholder="Orden de compra"></div>
+      <div><label>OC</label><input id="vOC" list="verifyOcList" placeholder="Orden de compra"><datalist id="verifyOcList"></datalist></div>
       <div><label>Operador</label><input id="vUser" placeholder="Nombre"></div>
     </div>
     <label>UPC / Serie / IMEI</label><input id="vCode" placeholder="Código a validar">
     <button id="verifyScan" class="btn secondary">📷 Escanear código</button>
     <button id="verifyBtn" class="btn primary">✅ Validar</button>
     <button id="undoVerifyBtn" class="btn ghost">↩️ Deshacer última lectura</button>
-    <div class="note" style="margin-top:8px">Solo OC y operador. Fecha, hora, resultado y secuencia se registran automáticamente.</div>
+    <hr>
+    <h2>Excepción de surtido</h2>
+    <label>UPC origen pendiente</label>
+    <input id="vExceptionOriginal" list="verifyPendingList" placeholder="UPC esperado"><datalist id="verifyPendingList"></datalist>
+    <div class="grid2">
+      <div><label>Cantidad</label><input id="vExceptionQty" type="number" min="1" value="1" inputmode="numeric"></div>
+      <div><label>UPC sustituto</label><input id="vSubstituteCode" placeholder="Solo si se enviará sustituto"></div>
+    </div>
+    <button id="vSubstituteScan" class="btn ghost">📷 Escanear UPC sustituto</button>
+    <label>Observación</label>
+    <input id="vObservation" value="SIN SUSTITUTO" placeholder="SIN SUSTITUTO">
+    <button id="closeVerifyShortageBtn" class="btn danger">⚠️ Registrar Desabasto</button>
+    <button id="verifySubstituteBtn" class="btn secondary">🔁 Mandar sustituto</button>
+    <button id="nextVerifyOCBtn" class="btn primary">➡️ Cerrar y pasar a siguiente OC</button>
+    <div id="verifyClosureNote" class="note" style="margin-top:8px"></div>
+    <div class="note" style="margin-top:8px">Para desabasto: selecciona el UPC y cantidad. Si dejas UPC origen vacío, todos los pendientes de la OC se registran como <b>SIN SUSTITUTO</b>. Para sustituto, captura UPC origen + UPC sustituto; Inventix registra la salida del sustituto y deja trazabilidad del reetiquetado/embalaje.</div>
     <div id="verifyList"></div>
   </div>
 
@@ -295,9 +313,9 @@ hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
 </nav>
 
 <script>
-const STORAGE_KEY = 'inventix_core_v1_6';
+const STORAGE_KEY = 'inventix_core_v1_6_2';
 let state = {
-  inventory:{}, kardex:[], verify:[], verifyExpected:{}, physicalCounts:[], importedFiles:[],
+  inventory:{}, kardex:[], verify:[], verifyExpected:{}, verifyClosures:[], physicalCounts:[], importedFiles:[],
   distributions:[], distributionImport:{rows:[],sourceName:'',loadedAt:null}, activeDistribution:null
 };
 
@@ -305,7 +323,7 @@ function nowISO(){ return new Date().toISOString(); }
 function fmtDate(iso){ return new Date(iso).toLocaleString('es-MX'); }
 
 function blankState(){
-  return {inventory:{},kardex:[],verify:[],verifyExpected:{},physicalCounts:[],importedFiles:[],distributions:[],distributionImport:{rows:[],sourceName:'',loadedAt:null},activeDistribution:null};
+  return {inventory:{},kardex:[],verify:[],verifyExpected:{},verifyClosures:[],physicalCounts:[],importedFiles:[],distributions:[],distributionImport:{rows:[],sourceName:'',loadedAt:null},activeDistribution:null};
 }
 function normalizeState(parsed){
   const b=blankState(); parsed=parsed||{};
@@ -314,6 +332,7 @@ function normalizeState(parsed){
     kardex:parsed.kardex||b.kardex,
     verify:parsed.verify||b.verify,
     verifyExpected:parsed.verifyExpected||b.verifyExpected,
+    verifyClosures:parsed.verifyClosures||b.verifyClosures,
     physicalCounts:parsed.physicalCounts||b.physicalCounts,
     importedFiles:parsed.importedFiles||b.importedFiles,
     distributions:parsed.distributions||b.distributions,
@@ -324,10 +343,13 @@ function normalizeState(parsed){
 function load(){
   try{
     const raw = localStorage.getItem(STORAGE_KEY)
+      || localStorage.getItem('inventix_core_v1_6_1')
+      || localStorage.getItem('inventix_core_v1_6')
       || localStorage.getItem('inventix_core_v1_4')
       || localStorage.getItem('inventix_core_v1_3')
       || localStorage.getItem('inventix_core_v1_1');
     if(raw) state=normalizeState(JSON.parse(raw));
+    state.verifyExpected=migrateVerifyExpectedObject(state.verifyExpected);
 
     // Migra la sesión de Distribution de v1.4 si existe.
     if(!state.activeDistribution){
@@ -476,7 +498,7 @@ async function readDataFile(file){
   if(!window.XLSX) throw new Error('No se cargó el motor Excel. Conecta el teléfono a internet y vuelve a abrir Inventix; en la APK quedará integrado offline.');
   const wb=XLSX.read(buffer,{type:'array',cellDates:false});
   const sheet=wb.Sheets[wb.SheetNames[0]];
-  const aoa=XLSX.utils.sheet_to_json(sheet,{header:1,defval:'',raw:true});
+  const aoa=XLSX.utils.sheet_to_json(sheet,{header:1,defval:'',raw:false});
   if(!aoa.length) return {rows:[],hash,kind:'EXCEL'};
   const headers=(aoa.shift()||[]).map(normHeader);
   const rows=aoa.filter(r=>r.some(x=>String(x??'').trim()!=='')).map(r=>{
@@ -535,14 +557,68 @@ function registerImportedFile(hash,kind,name,rows){
   state.importedFiles=state.importedFiles.slice(0,100);
 }
 
-function expectedSummary(){
-  const rows=Object.values(state.verifyExpected||{});
+function verifyExpectedKey(oc,code){ return idText(oc)+'§'+idText(code); }
+function migrateVerifyExpectedObject(obj){
+  const out={};
+  for(const [oldKey,raw] of Object.entries(obj||{})){
+    const x=raw||{};
+    const code=idText(x.code || String(oldKey).split('§').pop()); if(!code) continue;
+    const oc=idText(x.reference||x.oc||(String(oldKey).includes('§')?String(oldKey).split('§')[0]:''));
+    const key=verifyExpectedKey(oc,code);
+    if(!out[key]) out[key]={code,expected:0,scanned:0,shortage:0,substituted:0,desc:x.desc||'',reference:oc,exceptions:[]};
+    const t=out[key];
+    t.expected+=Number(x.expected||0);
+    t.scanned+=Number(x.scanned||0);
+    t.shortage+=Number(x.shortage||0);
+    t.substituted+=Number(x.substituted||0);
+    if(x.desc)t.desc=x.desc;
+    if(Array.isArray(x.exceptions))t.exceptions.push(...x.exceptions);
+  }
+  return out;
+}
+function verifyOCs(){
+  return [...new Set(Object.values(state.verifyExpected||{}).map(x=>idText(x.reference)).filter(Boolean))];
+}
+function verifyRowsForOC(oc){
+  oc=idText(oc);
+  return Object.values(state.verifyExpected||{}).filter(x=>idText(x.reference)===oc);
+}
+function getVerifyExpected(oc,code){ return state.verifyExpected?.[verifyExpectedKey(oc,code)] || null; }
+function verifyResolved(row){
+  return Math.min(Number(row.scanned||0),Number(row.expected||0))+Number(row.shortage||0)+Number(row.substituted||0);
+}
+function verifyPending(row){ return Math.max(Number(row.expected||0)-verifyResolved(row),0); }
+function expectedSummary(oc){
+  oc=idText(oc||document.getElementById('vOC')?.value||'');
+  const all=Object.values(state.verifyExpected||{});
+  const rows=oc?all.filter(x=>idText(x.reference)===oc):all;
   const total=rows.reduce((a,x)=>a+Number(x.expected||0),0);
   const scanned=rows.reduce((a,x)=>a+Math.min(Number(x.scanned||0),Number(x.expected||0)),0);
-  const missing=rows.reduce((a,x)=>a+Math.max(Number(x.expected||0)-Number(x.scanned||0),0),0);
-  const bad=state.verify.filter(x=>x.result==='NO EXISTE'||x.result==='EXCEDENTE').length;
-  return {total,scanned,missing,bad};
+  const shortage=rows.reduce((a,x)=>a+Number(x.shortage||0),0);
+  const substituted=rows.reduce((a,x)=>a+Number(x.substituted||0),0);
+  const missing=rows.reduce((a,x)=>a+verifyPending(x),0);
+  const bad=state.verify.filter(x=>(!oc||idText(x.oc)===oc)&&['NO EXISTE','EXCEDENTE','OTRA OC'].includes(x.result)).length;
+  return {total,scanned,shortage,substituted,missing,bad};
 }
+function verifyClosureForOC(oc){ return (state.verifyClosures||[]).find(x=>idText(x.oc)===idText(oc)); }
+function upsertVerifyClosure(oc,status,observation=''){
+  state.verifyClosures=state.verifyClosures||[]; oc=idText(oc);
+  const summary=expectedSummary(oc);
+  const rec={oc,status,observation:String(observation||'').trim(),time:nowISO(),summary};
+  const i=state.verifyClosures.findIndex(x=>idText(x.oc)===oc);
+  if(i>=0)state.verifyClosures[i]=rec; else state.verifyClosures.unshift(rec);
+  return rec;
+}
+function refreshVerifySelectors(){
+  const ocEl=document.getElementById('verifyOcList');
+  if(ocEl) ocEl.innerHTML=verifyOCs().map(oc=>`<option value="${escapeHtml(oc)}"></option>`).join('');
+  const current=idText(document.getElementById('vOC')?.value||'');
+  const pendingEl=document.getElementById('verifyPendingList');
+  if(pendingEl) pendingEl.innerHTML=verifyRowsForOC(current).filter(x=>verifyPending(x)>0).map(x=>`<option value="${escapeHtml(x.code)}">${escapeHtml(x.desc||'')} · faltan ${verifyPending(x)}</option>`).join('');
+  const note=document.getElementById('verifyClosureNote'),cl=verifyClosureForOC(current);
+  if(note) note.textContent=cl?`OC ${current} cerrada: ${cl.status}${cl.observation?' · '+cl.observation:''}`:'';
+}
+
 
 function addMovement(type, code, quantity, location, user, desc='', reference='', documentNo=''){
   code=cleanCode(code); quantity=qty(quantity);
@@ -604,7 +680,7 @@ function renderAll(){
   kx.innerHTML=state.kardex.length?state.kardex.map(m=>`
     <div class="row ${m.type==='ENTRADA'?'ok':'out'}">
       <b>${m.type}</b> · ${escapeHtml(m.reference||(m.type==='ENTRADA'?'SIN OC':'SIN OV'))} · ${m.code} · ${m.qty} pzas
-      <div class="meta">${escapeHtml(m.desc)}<br>${m.documentNo?'Documento: '+escapeHtml(m.documentNo)+'<br>':''}${escapeHtml(m.location||'Sin ubicación')} · ${escapeHtml(m.user)}<br>${fmtDate(m.time)} · Saldo ${m.balance}</div>
+      <div class="meta">${escapeHtml(m.desc)}<br>${m.documentNo?'Documento: '+escapeHtml(m.documentNo)+'<br>':''}${m.originalCode?'UPC origen: '+escapeHtml(m.originalCode)+'<br>':''}${m.observation?'Obs: '+escapeHtml(m.observation)+'<br>':''}${escapeHtml(m.location||'Sin ubicación')} · ${escapeHtml(m.user)}<br>${fmtDate(m.time)} · Saldo ${m.balance===null||m.balance===undefined?'N/D':m.balance}</div>
     </div>`).join(''):'<div class="note">Sin movimientos.</div>';
 
 
@@ -617,32 +693,35 @@ function renderAll(){
   }
 
   const vs=expectedSummary();
-  const vals=[vs.total,vs.scanned,vs.missing,vs.bad];
-  ['vTotalExpected','vScanned','vMissing','vNoExiste'].forEach((id,i)=>{
+  const vals=[vs.total,vs.scanned,vs.missing,vs.bad,vs.shortage,vs.substituted];
+  ['vTotalExpected','vScanned','vMissing','vNoExiste','vShortage','vSubstituted'].forEach((id,i)=>{
     const el=document.getElementById(id); if(el) el.textContent=vals[i];
   });
   const vel=document.getElementById('verifyExpectedList');
   if(vel){
-    const rows=Object.values(state.verifyExpected||{});
-    vel.innerHTML=rows.length?rows.slice(0,40).map(x=>{
-      const diff=Number(x.expected||0)-Number(x.scanned||0);
-      const status=x.scanned>x.expected?'EXCEDENTE':diff<=0?'COMPLETO':'FALTAN '+diff;
-      return `<div class="row ${diff<=0&&x.scanned<=x.expected?'ok':x.scanned>x.expected?'out':'verify'}">
+    const currentOC=idText(document.getElementById('vOC')?.value||'');
+    const rows=currentOC?verifyRowsForOC(currentOC):Object.values(state.verifyExpected||{});
+    vel.innerHTML=rows.length?rows.slice(0,60).map(x=>{
+      const pending=verifyPending(x),excess=Math.max(Number(x.scanned||0)-Number(x.expected||0),0);
+      let status=pending>0?'FALTAN '+pending:(Number(x.shortage||0)>0||Number(x.substituted||0)>0?'RESUELTO CON EXCEPCIÓN':'COMPLETO');
+      if(excess>0)status='EXCEDENTE';
+      return `<div class="row ${pending===0&&excess===0?'ok':excess>0?'out':'verify'}">
         <b>${escapeHtml(x.code)}</b> · ${x.scanned||0}/${x.expected} · ${status}
-        <div class="meta">${escapeHtml(x.desc||'')}${x.reference?'<br>Ref: '+escapeHtml(x.reference):''}</div>
+        <div class="meta">${escapeHtml(x.desc||'')}${x.shortage?'<br>Desabasto: '+x.shortage:''}${x.substituted?'<br>Sustituido: '+x.substituted:''}${x.reference?'<br>OC: '+escapeHtml(x.reference):''}</div>
       </div>`;
     }).join(''):'<div class="note">Importa una orden para comparar esperado vs escaneado.</div>';
   }
 
   const vl=document.getElementById('verifyList');
-  vl.innerHTML=state.verify.slice(0,30).map(v=>`
+  refreshVerifySelectors();
+  vl.innerHTML=state.verify.slice(0,40).map(v=>`
     <div class="row verify">
       <b>${escapeHtml(v.code)}</b> · ${v.result}
       <div class="meta">
         ${v.oc?'OC: '+escapeHtml(v.oc)+'<br>':''}
         ${v.ov?'OV: '+escapeHtml(v.ov)+'<br>':''}
         ${v.documentNo?'Documento: '+escapeHtml(v.documentNo)+'<br>':''}
-        ${escapeHtml(v.user||'Sin responsable')}<br>${fmtDate(v.time)}
+        ${v.qty?'Cantidad: '+v.qty+'<br>':''}${v.substituteCode?'Sustituto: '+escapeHtml(v.substituteCode)+'<br>':''}${v.observation?'Obs: '+escapeHtml(v.observation)+'<br>':''}${escapeHtml(v.user||'Sin responsable')}<br>${fmtDate(v.time)}
       </div>
     </div>`).join('');
 }
@@ -671,39 +750,40 @@ document.getElementById('saveExit').addEventListener('click',()=>{
 });
 let lastVerifyRead={code:'',time:0};
 function registerVerifyRead(code){
-  code=cleanCode(code);
-  const oc=String(vOC.value||'').trim().toUpperCase();
+  code=idText(code);
+  const oc=idText(vOC.value||'');
   const user=String(vUser.value||'').trim();
-  if(!oc) return toast('Ingresa la OC',true);
+  if(!oc) return toast('Ingresa o selecciona la OC',true);
   if(!user) return toast('Ingresa el operador',true);
   if(!code) return toast('Ingresa o escanea un código',true);
 
   const now=Date.now();
-  if(lastVerifyRead.code===code && (now-lastVerifyRead.time)<1500){
-    toast('Lectura duplicada evitada',true);
-    return false;
-  }
+  if(lastVerifyRead.code===code && (now-lastVerifyRead.time)<1500){toast('Lectura duplicada evitada',true);return false;}
   lastVerifyRead={code,time:now};
 
-  let result='OK';
-  const exp=state.verifyExpected[code];
+  let result='OK',expectedKey='',detail='';
+  const exp=getVerifyExpected(oc,code);
   if(Object.keys(state.verifyExpected||{}).length){
-    if(!exp) result='NO EXISTE';
-    else{
-      exp.scanned=Number(exp.scanned||0)+1;
-      if(exp.scanned>Number(exp.expected||0)) result='EXCEDENTE';
-      else if(exp.scanned===Number(exp.expected||0)) result='COMPLETO';
+    if(!exp){
+      const other=Object.values(state.verifyExpected||{}).find(x=>x.code===code&&idText(x.reference)!==oc);
+      if(other){result='OTRA OC';detail='Pertenece a OC '+other.reference;}
+      else result='NO EXISTE';
+    }else{
+      expectedKey=verifyExpectedKey(oc,code);
+      if(verifyPending(exp)<=0){result='EXCEDENTE';detail='La cantidad esperada ya quedó cubierta';}
+      else{
+        exp.scanned=Number(exp.scanned||0)+1;
+        result=verifyPending(exp)===0?'COMPLETO':'OK';
+      }
     }
   }
   state.verify.unshift({
     id:crypto.randomUUID?crypto.randomUUID():String(Date.now()+Math.random()),
-    code,result,oc,user,time:nowISO()
+    code,result,oc,user,time:nowISO(),expectedKey,detail
   });
   save(); vCode.value='';
-  toast(result==='NO EXISTE'?'NO EXISTE en la orden':
-        result==='EXCEDENTE'?'EXCEDENTE detectado':
-        result==='COMPLETO'?'Código COMPLETO':'OK',
-        result==='NO EXISTE'||result==='EXCEDENTE');
+  toast(result==='NO EXISTE'?'NO EXISTE en la orden':result==='OTRA OC'?detail:result==='EXCEDENTE'?'EXCEDENTE detectado':result==='COMPLETO'?'Código COMPLETO':'OK',
+        ['NO EXISTE','OTRA OC','EXCEDENTE'].includes(result));
   return true;
 }
 document.getElementById('verifyBtn').addEventListener('click',()=>registerVerifyRead(vCode.value));
@@ -711,15 +791,98 @@ document.getElementById('verifyBtn').addEventListener('click',()=>registerVerify
 document.getElementById('undoVerifyBtn').addEventListener('click',()=>{
   const last=state.verify[0];
   if(!last) return toast('No hay lecturas para deshacer',true);
-  if(last.result!=='NO EXISTE'){
-    const exp=state.verifyExpected[last.code];
+  if(['OK','COMPLETO'].includes(last.result)){
+    const exp=state.verifyExpected[last.expectedKey||verifyExpectedKey(last.oc,last.code)];
     if(exp && Number(exp.scanned||0)>0) exp.scanned=Number(exp.scanned||0)-1;
   }
-  state.verify.shift();
-  save();
-  toast('Última lectura deshecha');
+  state.verify.shift();save();toast('Última lectura deshecha');
 });
 
+function verifyExceptionTarget(){
+  const oc=idText(vOC.value),code=idText(vExceptionOriginal.value);
+  if(!oc)return {error:'Selecciona la OC'};
+  if(!code)return {error:'Captura el UPC origen pendiente'};
+  const row=getVerifyExpected(oc,code);
+  if(!row)return {error:'Ese UPC no pertenece a la OC activa'};
+  const pending=verifyPending(row);
+  if(pending<=0)return {error:'Ese UPC ya no tiene piezas pendientes'};
+  return {oc,code,row,pending};
+}
+function registerShortage(){
+  const oc=idText(vOC.value),user=String(vUser.value||'').trim();
+  if(!oc)return toast('Selecciona la OC',true);if(!user)return toast('Ingresa el operador',true);
+  const origin=idText(vExceptionOriginal.value),obs=String(vObservation.value||'SIN SUSTITUTO').trim()||'SIN SUSTITUTO';
+  let total=0;
+  if(origin){
+    const t=verifyExceptionTarget();if(t.error)return toast(t.error,true);
+    const q=Math.min(Math.max(1,qty(vExceptionQty.value)||1),t.pending);
+    t.row.shortage=Number(t.row.shortage||0)+q;total=q;
+    t.row.exceptions=t.row.exceptions||[];t.row.exceptions.push({type:'DESABASTO',qty:q,observation:obs,time:nowISO(),user});
+    state.verify.unshift({id:crypto.randomUUID?crypto.randomUUID():String(Date.now()+Math.random()),code:t.code,result:'DESABASTO',qty:q,oc,user,observation:obs,time:nowISO(),expectedKey:verifyExpectedKey(oc,t.code)});
+  }else{
+    for(const row of verifyRowsForOC(oc)){
+      const q=verifyPending(row);if(q<=0)continue;
+      row.shortage=Number(row.shortage||0)+q;total+=q;
+      row.exceptions=row.exceptions||[];row.exceptions.push({type:'DESABASTO',qty:q,observation:obs,time:nowISO(),user});
+      state.verify.unshift({id:crypto.randomUUID?crypto.randomUUID():String(Date.now()+Math.random()),code:row.code,result:'DESABASTO',qty:q,oc,user,observation:obs,time:nowISO(),expectedKey:verifyExpectedKey(oc,row.code)});
+    }
+  }
+  if(total<=0)return toast('La OC no tiene pendientes por justificar',true);
+  if(expectedSummary(oc).missing===0)upsertVerifyClosure(oc,'CERRADA CON DESABASTO',obs);
+  vExceptionOriginal.value='';vExceptionQty.value='1';vObservation.value='SIN SUSTITUTO';save();toast(`Desabasto registrado: ${total} pza(s) · SIN SUSTITUTO`);
+}
+
+document.getElementById('closeVerifyShortageBtn').addEventListener('click',registerShortage);
+
+function consumeInventoryForSubstitute(code,quantity){
+  code=idText(code);quantity=Number(quantity||0);const prod=state.inventory[code];
+  if(!prod)return {applied:false,balance:null,location:'VERIFY · SIN BASE INVENTARIO'};
+  if(Number(prod.qty||0)<quantity)return {error:`Stock insuficiente del sustituto ${code}`};
+  let remaining=quantity;const used=[];
+  for(const [loc,val] of Object.entries(prod.locations||{})){
+    if(remaining<=0)break;const available=Number(val||0);if(available<=0)continue;
+    const take=Math.min(available,remaining);prod.locations[loc]=available-take;remaining-=take;used.push(`${loc}:${take}`);
+  }
+  // Si el inventario total existe pero no está distribuido por ubicación, consume el total y deja evidencia VERIFY.
+  prod.qty=Number(prod.qty||0)-quantity;state.inventory[code]=prod;
+  return {applied:true,balance:prod.qty,location:used.length?used.join(' · '):'VERIFY · SIN UBICACIÓN'};
+}
+function registerSubstitute(){
+  const t=verifyExceptionTarget();if(t.error)return toast(t.error,true);
+  const user=String(vUser.value||'').trim();if(!user)return toast('Ingresa el operador',true);
+  const sub=idText(vSubstituteCode.value);if(!sub)return toast('Captura el UPC sustituto',true);if(sub===t.code)return toast('El sustituto debe ser un UPC diferente al origen',true);
+  const q=Math.min(Math.max(1,qty(vExceptionQty.value)||1),t.pending);
+  const inv=consumeInventoryForSubstitute(sub,q);if(inv.error)return toast(inv.error,true);
+  const manual=String(vObservation.value||'').trim();
+  const obs=`UPC ORIGEN ${t.code} → UPC SUSTITUTO ${sub}. REETIQUETADO Y EMBALADO PARA SU ENVÍO${manual&&manual!=='SIN SUSTITUTO'?' · '+manual:''}`;
+  t.row.substituted=Number(t.row.substituted||0)+q;
+  t.row.exceptions=t.row.exceptions||[];t.row.exceptions.push({type:'SUSTITUTO',qty:q,substituteCode:sub,observation:obs,time:nowISO(),user});
+  state.verify.unshift({id:crypto.randomUUID?crypto.randomUUID():String(Date.now()+Math.random()),code:t.code,result:'SUSTITUTO',qty:q,substituteCode:sub,oc:t.oc,user,observation:obs,time:nowISO(),expectedKey:verifyExpectedKey(t.oc,t.code)});
+  const subProd=state.inventory[sub];
+  state.kardex.unshift({id:crypto.randomUUID?crypto.randomUUID():String(Date.now()+Math.random()),type:'SALIDA SUSTITUTO',code:sub,desc:subProd?.desc||`Sustituto de ${t.code}`,qty:q,location:inv.location,user,reference:t.oc,documentNo:'VERIFY',time:nowISO(),balance:inv.balance,originalCode:t.code,observation:obs,stockApplied:inv.applied});
+  if(expectedSummary(t.oc).missing===0)upsertVerifyClosure(t.oc,'CERRADA CON SUSTITUTO',obs);
+  vExceptionOriginal.value='';vSubstituteCode.value='';vExceptionQty.value='1';vObservation.value='SIN SUSTITUTO';save();toast(`Sustituto registrado: ${q} pza(s) · ${sub}`);
+}
+document.getElementById('verifySubstituteBtn').addEventListener('click',registerSubstitute);
+document.getElementById('vSubstituteScan').addEventListener('click',()=>openScanner('vSubstituteCode'));
+
+function closeAndNextVerifyOC(){
+  const oc=idText(vOC.value);if(!oc)return toast('Selecciona la OC',true);
+  const sum=expectedSummary(oc);if(sum.missing>0)return toast(`No se puede cerrar: faltan ${sum.missing} pieza(s). Registra desabasto o sustituto.`,true);
+  const existing=verifyClosureForOC(oc);
+  if(!existing){
+    const status=sum.shortage>0&&sum.substituted>0?'CERRADA CON DESABASTO Y SUSTITUTO':sum.shortage>0?'CERRADA CON DESABASTO':sum.substituted>0?'CERRADA CON SUSTITUTO':'COMPLETA';
+    upsertVerifyClosure(oc,status,'');
+  }
+  const ocs=verifyOCs(),closed=new Set((state.verifyClosures||[]).map(x=>idText(x.oc)));
+  let idx=ocs.indexOf(oc),next='';
+  for(let step=1;step<=ocs.length;step++){const cand=ocs[(idx+step)%ocs.length];if(cand&&!closed.has(cand)){next=cand;break;}}
+  if(next){vOC.value=next;vCode.value='';vExceptionOriginal.value='';save();toast(`OC ${oc} cerrada · siguiente ${next}`);}
+  else{save();toast(`OC ${oc} cerrada · no quedan OC pendientes`);}
+}
+document.getElementById('nextVerifyOCBtn').addEventListener('click',closeAndNextVerifyOC);
+document.getElementById('vOC').addEventListener('change',()=>{renderAll();});
+document.getElementById('vOC').addEventListener('input',()=>{renderAll();});
 document.getElementById('exportBtn').addEventListener('click',()=>{
   const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
@@ -836,47 +999,52 @@ document.getElementById('importVerifyFile').addEventListener('change',async e=>{
   const f=e.target.files[0]; if(!f)return;
   try{
     const data=await readDataFile(f);
-    if(importedFileMatch(data.hash,'VERIFY')){toast('OC/archivo duplicado: ya fue cargado',true);e.target.value='';return;}
+    if(importedFileMatch(data.hash,'VERIFY') && !confirm('Este archivo ya fue cargado. ¿Deseas reimportarlo y reiniciar Verify con este archivo?')){e.target.value='';return;}
     const rows=data.rows; if(!rows.length) return toast('Archivo de orden vacío',true);
-    const expected={}; let detectedOC='';
+    const expected={}; const ocOrder=[];
     for(const r of rows){
       const code=idText(pick(r,['CODIGO','CÓDIGO','UPC','SERIE','IMEI','SKU','MATERIAL'])); if(!code) continue;
-      const q=Math.max(1,qty(pick(r,['CANTIDAD','QTY','CANTIDAD OC','TOTAL','PIEZAS']))||1);
-      const desc=pick(r,['DESCRIPCION','DESCRIPCIÓN','PRODUCTO','DESC']);
-      const ref=idText(pick(r,['OC','OV','ORDEN','PEDIDO','REFERENCIA','PO']));
-      if(ref && !detectedOC) detectedOC=ref;
-      if(!expected[code]) expected[code]={code,expected:0,scanned:0,desc,reference:ref};
-      expected[code].expected+=q;
-      if(desc) expected[code].desc=desc;
-      if(ref) expected[code].reference=ref;
+      const ref=idText(pick(r,['OC','OV','ORDEN','PEDIDO','REFERENCIA','PO'])); if(!ref) continue;
+      // CATIDAD se reconoce deliberadamente por archivos capturados en piso con ese encabezado.
+      const q=Math.max(1,qty(pick(r,['CANTIDAD','CATIDAD','CANT','CANT.','CANT ED','CANT. ED.','QTY','CANTIDAD OC','TOTAL','PIEZAS']))||1);
+      const desc=pick(r,['DESCRIPCION','DESCRIPCIÓN','PRODUCTO','DESC','MODELO','NO.PARTE','NO PARTE']);
+      const key=verifyExpectedKey(ref,code);
+      if(!expected[key]) expected[key]={code,expected:0,scanned:0,shortage:0,substituted:0,desc,reference:ref,exceptions:[]};
+      expected[key].expected+=q;if(desc)expected[key].desc=desc;
+      if(!ocOrder.includes(ref))ocOrder.push(ref);
     }
-    state.verifyExpected=expected; state.verify=[];
-    if(detectedOC) vOC.value=detectedOC;
+    if(!Object.keys(expected).length)return toast('No encontré filas válidas con OC + UPC + CANTIDAD',true);
+    state.verifyExpected=expected;state.verify=[];state.verifyClosures=[];
+    if(ocOrder[0])vOC.value=ocOrder[0];
+    // Registra nueva carga; reemplaza huellas anteriores del mismo archivo Verify para permitir correcciones de plantilla.
+    state.importedFiles=(state.importedFiles||[]).filter(x=>!(x.hash===data.hash&&x.kind==='VERIFY'));
     registerImportedFile(data.hash,'VERIFY',f.name,rows.length);
-    save(); toast('Orden cargada: '+Object.keys(expected).length+' códigos · '+expectedSummary().total+' piezas esperadas');
+    save();const s=expectedSummary(vOC.value);toast(`Verify cargado: ${ocOrder.length} OC · ${s.total} piezas en OC ${vOC.value}`);
   }catch(err){console.error(err);toast(err.message||'No se pudo importar la orden',true);}
   e.target.value='';
 });
 document.getElementById('exportVerifyBtn').addEventListener('click',async()=>{
   const expectedRows=Object.values(state.verifyExpected||{});
   if(!expectedRows.length && !state.verify.length) return toast('No hay datos de Verify para exportar',true);
-  const oc=idText(vOC.value||state.verify[0]?.oc||'');
   const operator=String(vUser.value||state.verify[0]?.user||'').trim();
-  const detail=[['OC','OPERADOR','CODIGO','DESCRIPCION','ESPERADO','ESCANEADO','DIFERENCIA','STATUS']];
+  const detail=[['OC','OPERADOR','CODIGO','DESCRIPCION','ESPERADO','ESCANEADO','DESABASTO','SUSTITUIDO','PENDIENTE','STATUS','OBSERVACIONES']];
   expectedRows.forEach(x=>{
-    const diff=Number(x.expected||0)-Number(x.scanned||0);
-    const st=x.scanned>x.expected?'EXCEDENTE':diff<=0?'COMPLETO':'FALTAN';
-    detail.push([x.reference||oc,operator,x.code,x.desc||'',x.expected,x.scanned||0,diff,st]);
+    const pending=verifyPending(x),excess=Math.max(Number(x.scanned||0)-Number(x.expected||0),0);
+    let st=excess>0?'EXCEDENTE':pending>0?'FALTAN':Number(x.shortage||0)>0&&Number(x.substituted||0)>0?'DESABASTO + SUSTITUTO':Number(x.shortage||0)>0?'DESABASTO':Number(x.substituted||0)>0?'SUSTITUIDO':'COMPLETO';
+    const obs=(x.exceptions||[]).map(e=>e.observation||e.type).filter(Boolean).join(' | ');
+    detail.push([x.reference,operator,x.code,x.desc||'',x.expected,x.scanned||0,x.shortage||0,x.substituted||0,pending,st,obs]);
   });
-  state.verify.filter(x=>x.result==='NO EXISTE').forEach(x=>detail.push([x.oc||oc,x.user||operator,x.code,'',0,1,-1,'NO EXISTE']));
-  const scans=[['FECHA_HORA','OC','OPERADOR','CODIGO','RESULTADO']];
-  state.verify.slice().reverse().forEach(x=>scans.push([x.time,x.oc||oc,x.user||operator,x.code,x.result]));
-  const sum=expectedSummary();
-  const summary=[['INDICADOR','VALOR'],['OC',oc],['OPERADOR',operator],['TOTAL ESPERADO',sum.total],['OK ESCANEADOS',sum.scanned],['FALTANTES',sum.missing],['NO EXISTE / EXCESO',sum.bad]];
-  await downloadWorkbook('inventix_verify_'+(oc||'resultado')+'_'+dateTag()+'.xlsx',[
-    {name:'RESUMEN',rows:summary,textColumns:['VALOR'],widths:[24,28]},
-    {name:'DETALLE',rows:detail,textColumns:['OC','CODIGO'],widths:[18,20,22,34,12,12,12,16]},
-    {name:'LECTURAS',rows:scans,textColumns:['OC','CODIGO'],widths:[22,18,22,24,18]}
+  const scans=[['FECHA_HORA','OC','OPERADOR','UPC_ORIGEN','RESULTADO','CANTIDAD','UPC_SUSTITUTO','OBSERVACION']];
+  state.verify.slice().reverse().forEach(x=>scans.push([x.time,x.oc||'',x.user||operator,x.code,x.result,x.qty||1,x.substituteCode||'',x.observation||x.detail||'']));
+  const summary=[['OC','TOTAL ESPERADO','OK ESCANEADO','DESABASTO','SUSTITUIDO','PENDIENTE','INCIDENCIAS','CIERRE','OBSERVACION']];
+  verifyOCs().forEach(oc=>{const sm=expectedSummary(oc),cl=verifyClosureForOC(oc);summary.push([oc,sm.total,sm.scanned,sm.shortage,sm.substituted,sm.missing,sm.bad,cl?.status||'ABIERTA',cl?.observation||'']);});
+  const substitutions=[['FECHA_HORA','OC','OPERADOR','UPC_ORIGEN','UPC_SUSTITUTO','CANTIDAD','MOVIMIENTO','OBSERVACION']];
+  state.verify.filter(x=>x.result==='SUSTITUTO').slice().reverse().forEach(x=>substitutions.push([x.time,x.oc,x.user,x.code,x.substituteCode,x.qty||1,'SALIDA SUSTITUTO',x.observation||'']));
+  await downloadWorkbook('inventix_verify_resultado_'+dateTag()+'.xlsx',[
+    {name:'RESUMEN_OC',rows:summary,textColumns:['OC'],widths:[18,14,14,12,12,12,12,28,42]},
+    {name:'DETALLE',rows:detail,textColumns:['OC','CODIGO'],widths:[18,20,22,34,12,12,12,12,12,22,52]},
+    {name:'LECTURAS',rows:scans,textColumns:['OC','UPC_ORIGEN','UPC_SUSTITUTO'],widths:[22,18,20,22,20,10,22,56]},
+    {name:'SUSTITUTOS',rows:substitutions,textColumns:['OC','UPC_ORIGEN','UPC_SUSTITUTO'],widths:[22,18,20,22,22,10,20,60]}
   ]);
 });
 
