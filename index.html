@@ -81,7 +81,7 @@ hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
 
 <header>
   <div class="brand">INVENTI<span>X</span> CORE</div>
-  <div class="sub">v1.7.6 · Verify Tech + Verify Distribution · Trazabilidad · Cámara continua · Excel + persistencia · Modo pruebas</div>
+  <div class="sub">v1.7.7 · Verify Tech + Verify Distribution · Trazabilidad · Cámara continua · Excel + persistencia · Reset visible</div>
 </header>
 
 <main>
@@ -203,6 +203,8 @@ hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
     <input id="importVerifyFile" type="file" accept=".xlsx,.xls,.csv,text/csv,.txt,text/plain" style="display:none">
     <button id="templateVerifyTechBtn" class="btn ghost">📱 Plantilla Verify Tech · Series</button>
     <div class="note" style="margin-top:8px"><b>Verify Cantidad:</b> OC/OV · UPC/SKU · CANTIDAD · DESCRIPCION. <b>Verify Tech:</b> OC/OV · UPC/SKU · SERIE/IMEI · MODELO/DESCRIPCION. En Tech, cada fila representa una serie única y la cantidad esperada por UPC se obtiene contando sus series.</div>
+    <button id="resetVerifyInlineBtn" class="btn danger">♻️ Reiniciar Verify · nueva práctica</button>
+    <div class="note" style="margin-top:6px">Borra solo la práctica de Verify de este teléfono/navegador: archivo importado, lecturas, excepciones, cierres y Tech. Inventario y Distribution se conservan.</div>
     <div class="verify-status">
       <div class="sem green"><strong id="vScanned">0</strong>OK ESCANEADO</div>
       <div class="sem yellow"><strong id="vMissing">0</strong>PENDIENTES</div>
@@ -266,6 +268,8 @@ hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
     <label>OC / destino importado</label>
     <select id="dImportedGroup"><option value="">Sin archivo cargado</option></select>
     <div id="dImportStatus" class="note" style="margin-top:6px"></div>
+    <button id="resetDistributionInlineBtn" class="btn danger">♻️ Reiniciar Distribution · nueva práctica</button>
+    <div class="note" style="margin-top:6px">Borra solo la práctica de Distribution de este teléfono/navegador: base importada, distribución activa e historial. Verify e inventario se conservan.</div>
   </div>
 
   <div class="card">
@@ -1139,6 +1143,8 @@ document.getElementById('resetVerifyBtn').addEventListener('click',resetVerifyPr
 document.getElementById('resetDistributionBtn').addEventListener('click',resetDistributionPractice);
 document.getElementById('resetOperationBtn').addEventListener('click',resetOperationPractice);
 document.getElementById('resetAllBtn').addEventListener('click',resetAllDevice);
+document.getElementById('resetVerifyInlineBtn').addEventListener('click',resetVerifyPractice);
+document.getElementById('resetDistributionInlineBtn').addEventListener('click',resetDistributionPractice);
 
 
 document.getElementById('importInvBtn').addEventListener('click',()=>importInvFile.click());
