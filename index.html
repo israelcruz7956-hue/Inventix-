@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#0F2747">
 <link rel="manifest" href="manifest.json">
-<title>INVENTIX Core v1.7.1</title>
+<title>INVENTIX Core v1.7.5</title>
 <style>
 :root{
   --navy:#0F2747;--navy2:#08192f;--blue:#1E4DBC;--orange:#F5A623;
@@ -81,7 +81,7 @@ hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
 
 <header>
   <div class="brand">INVENTI<span>X</span> CORE</div>
-  <div class="sub">v1.7.1 · Verify Tech Series + Verify multi-OC · Cámara opcional · Excel + persistencia</div>
+  <div class="sub">v1.7.6 · Verify Tech + Verify Distribution · Trazabilidad · Cámara continua · Excel + persistencia · Modo pruebas</div>
 </header>
 
 <main>
@@ -111,6 +111,17 @@ hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
     </div>
     <input id="importFile" type="file" accept=".json,application/json" style="display:none">
     <div class="note" style="margin-top:8px">El respaldo JSON permite recuperar datos aunque cambies de teléfono o limpies el navegador.</div>
+  </div>
+  <div class="card">
+    <h2>Modo pruebas · reinicio controlado</h2>
+    <div class="note">Para prácticas de implementación. Cada acción borra únicamente los datos guardados en <b>este navegador de este teléfono</b>. Antes de una prueba importante puedes generar un respaldo JSON.</div>
+    <div class="toolbar" style="margin-top:10px">
+      <button id="resetVerifyBtn" class="btn ghost">♻️ Reiniciar Verify</button>
+      <button id="resetDistributionBtn" class="btn ghost">♻️ Reiniciar Distribution</button>
+      <button id="resetOperationBtn" class="btn ghost">♻️ Reiniciar operación</button>
+      <button id="resetAllBtn" class="btn danger">🧹 Borrar todo este dispositivo</button>
+    </div>
+    <div class="note" style="margin-top:8px"><b>Verify:</b> orden importada, lecturas, cierres y Tech. <b>Distribution:</b> base importada, distribución activa e historial. <b>Operación:</b> inventario, Kardex y toma física. <b>Borrar todo:</b> deja Inventix como recién abierto en este navegador.</div>
   </div>
 </section>
 
@@ -215,13 +226,14 @@ hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
       <div id="vTechUPCStatus" class="note" style="margin-top:6px"></div>
     </div>
     <label id="vCodeLabel">UPC / Serie / IMEI</label><input id="vCode" placeholder="Código a validar" autocomplete="off" autocapitalize="off" spellcheck="false">
-    <div id="vFastNote" class="note" style="margin-top:6px">Modo ágil: lector físico o captura manual = un solo evento. La cámara queda como respaldo opcional y solo solicita permiso cuando tú la abres.</div>
-    <button id="vCameraBtn" class="btn secondary">📷 Cámara opcional</button>
+    <div id="vFastNote" class="note" style="margin-top:6px">Modo ágil: lector físico o captura manual = un solo evento. Cámara continua: autoriza una vez, escanea todo el lote y ciérrala al terminar.</div>
+    <div class="note" style="margin-top:6px"><b>Trazabilidad:</b> cada lectura registra automáticamente operador, fecha y hora.</div>
+    <button id="vCameraBtn" class="btn secondary">📷 Abrir cámara continua</button>
     <button id="verifyBtn" class="btn primary">✅ Validar</button>
     <button id="undoVerifyBtn" class="btn ghost">↩️ Deshacer última lectura</button>
     <hr>
     <h2>Excepción de surtido</h2>
-    <label>UPC origen pendiente</label>
+    <label>UPC origen / excepción</label>
     <input id="vExceptionOriginal" list="verifyPendingList" placeholder="UPC esperado"><datalist id="verifyPendingList"></datalist>
     <div class="grid2">
       <div><label>Cantidad</label><input id="vExceptionQty" type="number" min="1" value="1" inputmode="numeric"></div>
@@ -230,10 +242,11 @@ hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
     <label>Observación</label>
     <input id="vObservation" value="SIN SUSTITUTO" placeholder="SIN SUSTITUTO">
     <button id="closeVerifyShortageBtn" class="btn danger">⚠️ Registrar Desabasto</button>
+    <button id="undoShortageBtn" class="btn ghost">↩️ Revertir desabasto</button>
     <button id="verifySubstituteBtn" class="btn secondary">🔁 Mandar sustituto</button>
     <button id="nextVerifyOCBtn" class="btn primary">➡️ Cerrar y pasar a siguiente OC</button>
     <div id="verifyClosureNote" class="note" style="margin-top:8px"></div>
-    <div class="note" style="margin-top:8px">Para desabasto: selecciona el UPC y cantidad. Si dejas UPC origen vacío, todos los pendientes de la OC se registran como <b>SIN SUSTITUTO</b>. Para sustituto, captura UPC origen + UPC sustituto; Inventix registra la salida del sustituto y deja trazabilidad del reetiquetado/embalaje.</div>
+    <div class="note" style="margin-top:8px">Para desabasto: selecciona el UPC y cantidad. Si dejas UPC origen vacío, todos los pendientes de la OC se registran como <b>SIN SUSTITUTO</b>. Si después llega la mercancía, usa <b>Revertir desabasto</b>: Inventix conserva el evento original, reabre la OC y vuelve a dejar esas piezas pendientes para escanearlas. Para sustituto, captura UPC origen + UPC sustituto; Inventix registra la salida del sustituto y deja trazabilidad del reetiquetado/embalaje.</div>
     <div id="verifyList"></div>
   </div>
 
@@ -242,6 +255,7 @@ hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
   <div class="card">
     <h2>Verify Distribution</h2>
     <div class="note">Asegura desde el primer conteo y empaquetado que cada artículo termine exactamente en la OC, tienda/destino y Etiqueta Master correctos.</div>
+    <div class="note" style="margin-top:6px"><b>Trazabilidad:</b> cada UPC/SKU escaneado conserva operador, fecha y hora del evento.</div>
     <div class="toolbar" style="margin-top:10px">
       <button id="dImportBtn" class="btn secondary">📥 Importar Excel</button>
       <button id="dTemplateBtn" class="btn ghost">🧾 Plantilla Excel</button>
@@ -257,10 +271,11 @@ hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
   <div class="card">
     <h2>Preparar distribución</h2>
     <div class="grid2">
-      <div><label>OC</label><input id="dOC" placeholder="OC 673505"></div>
-      <div><label>Destino / Tienda</label><input id="dStore" placeholder="MACSTORE BUENAVISTA"></div>
+      <div><label>OC</label><input id="dOC" placeholder="673505"></div>
+      <div><label>Operador</label><input id="dUser" placeholder="Nombre"></div>
     </div>
-    <label>Etiqueta Master esperada</label><input id="dMasterExpected" placeholder="Master / código de etiqueta">
+    <label>Destino / Tienda</label><input id="dStore" placeholder="MACSTORE BUENAVISTA">
+    <label>Etiqueta Master esperada <span class="note">(opcional si no tiene código de barras)</span></label><input id="dMasterExpected" placeholder="Master / código de etiqueta">
     <label>Esperado de esta OC / Master</label>
     <textarea id="dExpected" rows="7" style="width:100%;background:#0A1E38;border:1.5px solid #1E4DBC55;border-radius:10px;color:white;padding:11px 12px;font-size:14px" placeholder="UPC,CANTIDAD,DESCRIPCION&#10;7500000000001,3,ARTICULO A&#10;7500000000002,2,ARTICULO B"></textarea>
     <button id="dStartBtn" class="btn primary">▶️ Iniciar validación</button>
@@ -276,15 +291,15 @@ hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
     </div>
     <div id="dLastStatus" class="dist-banner">LISTO PARA ESCANEAR</div>
     <label>Escaneo UPC / SKU</label><input id="dScanCode" placeholder="Escanea o captura código">
-    <button id="dCameraBtn" class="btn secondary">📷 Cámara opcional</button>
+    <button id="dCameraBtn" class="btn secondary">📷 Abrir cámara continua</button>
     <button id="dScanBtn" class="btn secondary">✅ Confirmar artículo</button>
     <button id="dUndoBtn" class="btn ghost">↩️ Deshacer última lectura</button>
     <div id="dRows" style="margin-top:12px"></div>
     <hr>
     <h2>Cierre de Etiqueta Master</h2>
-    <div class="note">El cierre exige que todo lo solicitado esté completo. Si el Excel trae una Master, debe coincidir; si no, la lectura capturada queda asociada como Master de la distribución.</div>
-    <label>Escanear / capturar Etiqueta Master</label><input id="dMasterScan" placeholder="Etiqueta Master">
-    <button id="dCloseBtn" class="btn primary">🔒 Cerrar y validar Master</button>
+    <div class="note">El cierre exige que todo lo solicitado esté completo. Si la Master tiene código, se valida. Si no tiene código de barras, Inventix permite confirmar visualmente la tienda/destino y deja evidencia del cierre.</div>
+    <label>Escanear / capturar Etiqueta Master <span class="note">(opcional)</span></label><input id="dMasterScan" placeholder="Etiqueta Master / dejar vacío para confirmación visual">
+    <button id="dCloseBtn" class="btn primary">🔒 Confirmar destino y cerrar Master</button>
   </div>
 
   <div class="card">
@@ -298,13 +313,13 @@ hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
 <div id="cameraOverlay" class="camera-overlay" aria-hidden="true">
   <div class="camera-card">
     <h2>Escáner por cámara</h2>
-    <div id="cameraStatus" class="note">Apunta al código de barras. Al detectarlo, Verify lo procesa una sola vez.</div>
+    <div id="cameraStatus" class="note">Autoriza una sola vez y deja la cámara abierta. Cada código se procesa una sola vez; retíralo del cuadro antes de presentar el siguiente.</div>
     <video id="cameraVideo" playsinline muted></video>
     <div class="camera-actions">
-      <button id="cameraCancel" class="btn ghost">Cancelar</button>
+      <button id="cameraCancel" class="btn ghost">Cerrar cámara</button>
       <button id="cameraTorch" class="btn secondary" style="display:none">🔦 Luz</button>
     </div>
-    <div class="camera-hint">La cámara no se activa al abrir Inventix. El permiso se solicita únicamente al tocar “Cámara opcional”. En archivo local puede estar bloqueada; en GitHub Pages (HTTPS) funciona como respaldo del lector.</div>
+    <div class="camera-hint">La cámara no se activa al abrir Inventix. Al tocar “Abrir cámara continua” se solicita permiso una sola vez para esa sesión; permanece abierta para escanear todo el lote hasta que pulses “Cerrar cámara”.</div>
   </div>
 </div>
 
@@ -318,7 +333,7 @@ hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
 </nav>
 
 <script>
-const STORAGE_KEY = 'inventix_core_v1_7';
+const STORAGE_KEY = 'inventix_core_v1_7_6';
 let state = {
   inventory:{}, kardex:[], verify:[], verifyExpected:{}, verifyClosures:[], verifyTechUPC:{}, physicalCounts:[], importedFiles:[],
   distributions:[], distributionImport:{rows:[],sourceName:'',loadedAt:null}, activeDistribution:null
@@ -326,6 +341,8 @@ let state = {
 
 function nowISO(){ return new Date().toISOString(); }
 function fmtDate(iso){ return new Date(iso).toLocaleString('es-MX'); }
+function localDateOnly(iso){ try{return new Date(iso).toLocaleDateString('es-MX');}catch(_e){return '';} }
+function localTimeOnly(iso){ try{return new Date(iso).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit',second:'2-digit'});}catch(_e){return '';} }
 
 function blankState(){
   return {inventory:{},kardex:[],verify:[],verifyExpected:{},verifyClosures:[],verifyTechUPC:{},physicalCounts:[],importedFiles:[],distributions:[],distributionImport:{rows:[],sourceName:'',loadedAt:null},activeDistribution:null};
@@ -349,6 +366,8 @@ function normalizeState(parsed){
 function load(){
   try{
     const raw = localStorage.getItem(STORAGE_KEY)
+      || localStorage.getItem('inventix_core_v1_7_2')
+      || localStorage.getItem('inventix_core_v1_7')
       || localStorage.getItem('inventix_core_v1_6_2')
       || localStorage.getItem('inventix_core_v1_6_1')
       || localStorage.getItem('inventix_core_v1_6')
@@ -681,7 +700,7 @@ function refreshVerifySelectors(){
   if(ocEl) ocEl.innerHTML=verifyOCs().map(oc=>`<option value="${escapeHtml(oc)}"></option>`).join('');
   const current=idText(document.getElementById('vOC')?.value||'');
   const pendingEl=document.getElementById('verifyPendingList');
-  if(pendingEl) pendingEl.innerHTML=verifyRowsForOC(current).filter(x=>verifyPending(x)>0).map(x=>`<option value="${escapeHtml(x.code)}">${escapeHtml(x.desc||'')} · faltan ${verifyPending(x)}</option>`).join('');
+  if(pendingEl) pendingEl.innerHTML=verifyRowsForOC(current).filter(x=>verifyPending(x)>0||Number(x.shortage||0)>0).map(x=>`<option value="${escapeHtml(x.code)}">${escapeHtml(x.desc||'')} · faltan ${verifyPending(x)}${Number(x.shortage||0)>0?' · desabasto '+Number(x.shortage||0):''}</option>`).join('');
   const note=document.getElementById('verifyClosureNote'),cl=verifyClosureForOC(current);
   if(note) note.textContent=cl?`OC ${current} cerrada: ${cl.status}${cl.observation?' · '+cl.observation:''}`:'';
   refreshVerifyTechPanel();
@@ -776,7 +795,7 @@ function renderAll(){
       const tech=isSeriesRow(x);
       return `<div class="row ${pending===0&&excess===0?'ok':excess>0?'out':'verify'}">
         <b>${escapeHtml(x.code)}</b> · ${x.scanned||0}/${x.expected} · ${status}
-        <div class="meta">${tech?'TECH · SERIES':'CANTIDAD'}${x.desc?' · '+escapeHtml(x.desc):''}${x.shortage?'<br>Desabasto: '+x.shortage:''}${x.substituted?'<br>Sustituido: '+x.substituted:''}${x.reference?'<br>OC: '+escapeHtml(x.reference):''}</div>
+        <div class="meta">${tech?'TECH · SERIES':'CANTIDAD'}${x.desc?' · '+escapeHtml(x.desc):''}${x.shortage?'<br>Desabasto: '+x.shortage:''}${x.substituted?'<br>Sustituido: '+x.substituted:''}${x.reference?'<br>OC: '+escapeHtml(x.reference):''}${x.lastScannedBy?'<br>Última lectura: '+escapeHtml(x.lastScannedBy)+' · '+escapeHtml(fmtDate(x.lastScannedAt)):''}</div>
       </div>`;
     }).join(''):'<div class="note">Importa una orden para comparar esperado vs escaneado.</div>';
   }
@@ -845,6 +864,7 @@ function registerVerifyRead(rawCode){
       if(target.scanned){result='DUPLICADA';detail='La serie ya fue validada';}
       else{
         target.scanned=true;target.scannedAt=nowISO();target.user=user;
+        exp.lastScannedBy=user;exp.lastScannedAt=target.scannedAt;
         exp.scanned=Object.values(exp.series||{}).filter(v=>v.scanned).length;
         result=verifyPending(exp)===0?'COMPLETO':'OK';
       }
@@ -868,7 +888,7 @@ function registerVerifyRead(rawCode){
       }else{
         expectedKey=verifyExpectedKey(oc,inputCode);
         if(verifyPending(exp)<=0){result='EXCEDENTE';detail='La cantidad esperada ya quedó cubierta';}
-        else{exp.scanned=Number(exp.scanned||0)+1;result=verifyPending(exp)===0?'COMPLETO':'OK';}
+        else{exp.scanned=Number(exp.scanned||0)+1;exp.lastScannedBy=user;exp.lastScannedAt=nowISO();result=verifyPending(exp)===0?'COMPLETO':'OK';}
       }
     }
   }
@@ -904,8 +924,11 @@ document.getElementById('vTechUPC').addEventListener('change',e=>{
 });
 
 document.getElementById('undoVerifyBtn').addEventListener('click',()=>{
-  const last=state.verify[0];
-  if(!last) return toast('No hay lecturas para deshacer',true);
+  const oc=idText(vOC.value);
+  const controlEvents=new Set(['DESABASTO','SUSTITUTO','DESABASTO REVERSADO','OC REABIERTA']);
+  const idx=state.verify.findIndex(x=>(!oc||idText(x.oc)===oc)&&!controlEvents.has(x.result));
+  if(idx<0) return toast('No hay lecturas de esta OC para deshacer',true);
+  const last=state.verify[idx];
   if(['OK','COMPLETO'].includes(last.result)){
     const exp=state.verifyExpected[last.expectedKey||verifyExpectedKey(last.oc,last.code)];
     if(exp){
@@ -914,9 +937,11 @@ document.getElementById('undoVerifyBtn').addEventListener('click',()=>{
         exp.scanned=Object.values(exp.series||{}).filter(v=>v.scanned).length;
         state.verifyTechUPC=state.verifyTechUPC||{};state.verifyTechUPC[idText(last.oc)]=idText(last.code);
       }else if(Number(exp.scanned||0)>0) exp.scanned=Number(exp.scanned||0)-1;
+      const prev=state.verify.find((ev,i)=>i!==idx && ['OK','COMPLETO'].includes(ev.result) && idText(ev.oc)===idText(last.oc) && idText(ev.code)===idText(last.code));
+      exp.lastScannedBy=prev?.user||'';exp.lastScannedAt=prev?.time||'';
     }
   }
-  state.verify.shift();save();toast('Última lectura deshecha');setTimeout(()=>vCode.focus(),20);
+  state.verify.splice(idx,1);save();toast('Última lectura de la OC deshecha');setTimeout(()=>vCode.focus(),20);
 });
 
 function verifyExceptionTarget(){
@@ -954,6 +979,56 @@ function registerShortage(){
 }
 
 document.getElementById('closeVerifyShortageBtn').addEventListener('click',registerShortage);
+
+function reopenVerifyOC(oc,reason,user){
+  oc=idText(oc);
+  state.verifyClosures=state.verifyClosures||[];
+  state.verifyClosures=state.verifyClosures.filter(x=>idText(x.oc)!==oc);
+  state.verify.unshift({
+    id:crypto.randomUUID?crypto.randomUUID():String(Date.now()+Math.random()),
+    code:'OC '+oc,result:'OC REABIERTA',qty:0,oc,user:user||'',
+    observation:reason||'REAPERTURA POR REVERSA DE EXCEPCIÓN',time:nowISO(),mode:'CONTROL'
+  });
+}
+function reverseShortage(){
+  const oc=idText(vOC.value),user=String(vUser.value||'').trim();
+  if(!oc)return toast('Selecciona la OC',true);
+  if(!user)return toast('Ingresa el operador',true);
+  const origin=idText(vExceptionOriginal.value);
+  const reason='MERCANCÍA RECIBIDA POSTERIORMENTE · DESABASTO REVERSADO';
+  let total=0;
+  const reverseRow=(row,requested)=>{
+    const available=Number(row.shortage||0);
+    if(available<=0)return 0;
+    const q=Math.min(Math.max(1,Number(requested||1)),available);
+    row.shortage=available-q;
+    row.exceptions=row.exceptions||[];
+    row.exceptions.push({type:'REVERSA_DESABASTO',qty:q,observation:reason,time:nowISO(),user});
+    state.verify.unshift({
+      id:crypto.randomUUID?crypto.randomUUID():String(Date.now()+Math.random()),
+      code:row.code,result:'DESABASTO REVERSADO',qty:q,oc,user,observation:reason,time:nowISO(),
+      expectedKey:verifyExpectedKey(oc,row.code),mode:row.mode||'QUANTITY'
+    });
+    return q;
+  };
+  if(origin){
+    const row=getVerifyExpected(oc,origin);
+    if(!row)return toast('Ese UPC no pertenece a la OC activa',true);
+    if(Number(row.shortage||0)<=0)return toast('Ese UPC no tiene desabasto por revertir',true);
+    total=reverseRow(row,Math.max(1,qty(vExceptionQty.value)||1));
+  }else{
+    for(const row of verifyRowsForOC(oc)){
+      const available=Number(row.shortage||0);
+      if(available>0)total+=reverseRow(row,available);
+    }
+  }
+  if(total<=0)return toast('La OC no tiene desabasto por revertir',true);
+  reopenVerifyOC(oc,reason,user);
+  vExceptionOriginal.value='';vExceptionQty.value='1';vObservation.value='SIN SUSTITUTO';
+  save();toast(`Desabasto revertido: ${total} pza(s) · OC ${oc} reabierta`);
+  setTimeout(()=>vCode.focus(),30);
+}
+document.getElementById('undoShortageBtn').addEventListener('click',reverseShortage);
 
 function consumeInventoryForSubstitute(code,quantity){
   code=idText(code);quantity=Number(quantity||0);const prod=state.inventory[code];
@@ -1015,6 +1090,55 @@ document.getElementById('importFile').addEventListener('change',async(e)=>{
   catch(err){ toast('Archivo de respaldo inválido',true); }
 });
 
+function clearImportedKind(kind){
+  state.importedFiles=(state.importedFiles||[]).filter(x=>x.kind!==kind);
+}
+function resetVerifyPractice(){
+  if(!confirm('¿Reiniciar Verify en este dispositivo? Se borrarán orden esperada, lecturas, cierres, excepciones y selección Tech. Inventario y Distribution se conservan.')) return;
+  stopCameraScanner();
+  state.verify=[]; state.verifyExpected={}; state.verifyClosures=[]; state.verifyTechUPC={};
+  clearImportedKind('VERIFY');
+  if(typeof vOC!=='undefined') vOC.value='';
+  if(typeof vUser!=='undefined') vUser.value='';
+  if(typeof vCode!=='undefined') vCode.value='';
+  if(typeof vExceptionOriginal!=='undefined') vExceptionOriginal.value='';
+  if(typeof vSubstituteCode!=='undefined') vSubstituteCode.value='';
+  if(typeof vObservation!=='undefined') vObservation.value='SIN SUSTITUTO';
+  save(); toast('Verify reiniciado · listo para nueva práctica');
+}
+function resetDistributionPractice(){
+  if(!confirm('¿Reiniciar Verify Distribution en este dispositivo? Se borrarán base importada, distribución activa e historial. Verify e inventario se conservan.')) return;
+  stopCameraScanner();
+  state.distributionImport={rows:[],sourceName:'',loadedAt:null};
+  state.activeDistribution=null; state.distributions=[];
+  clearImportedKind('DISTRIBUTION');
+  ['dOC','dUser','dStore','dMasterExpected','dExpected','dScanCode','dMasterScan'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  save(); restoreDistributionUI(); toast('Distribution reiniciado · listo para nueva práctica');
+}
+function resetOperationPractice(){
+  if(!confirm('¿Reiniciar operación en este dispositivo? Se borrarán inventario, Kardex y toma física. Verify y Distribution se conservan.')) return;
+  stopCameraScanner();
+  state.inventory={}; state.kardex=[]; state.physicalCounts=[];
+  clearImportedKind('INVENTARIO');
+  save(); toast('Operación reiniciada');
+}
+function resetAllDevice(){
+  if(!confirm('ATENCIÓN: esto borrará TODAS las pruebas guardadas en este navegador de este teléfono. ¿Continuar?')) return;
+  if(!confirm('Última confirmación: ¿dejar Inventix como recién abierto?')) return;
+  stopCameraScanner();
+  state=blankState();
+  [
+    STORAGE_KEY,'inventix_core_v1_7_2','inventix_core_v1_7','inventix_core_v1_6_2','inventix_core_v1_6_1','inventix_core_v1_6',
+    'inventix_core_v1_4','inventix_core_v1_3','inventix_core_v1_1',
+    'inventix_core_v1_4_activeDistribution','inventix_core_v1_4_importedDistribution'
+  ].forEach(k=>localStorage.removeItem(k));
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(state));
+  location.reload();
+}
+document.getElementById('resetVerifyBtn').addEventListener('click',resetVerifyPractice);
+document.getElementById('resetDistributionBtn').addEventListener('click',resetDistributionPractice);
+document.getElementById('resetOperationBtn').addEventListener('click',resetOperationPractice);
+document.getElementById('resetAllBtn').addEventListener('click',resetAllDevice);
 
 
 document.getElementById('importInvBtn').addEventListener('click',()=>importInvFile.click());
@@ -1131,12 +1255,14 @@ document.getElementById('exportVerifyBtn').addEventListener('click',async()=>{
     const obs=(x.exceptions||[]).map(e=>e.observation||e.type).filter(Boolean).join(' | ');
     detail.push([x.reference,operator,isSeriesRow(x)?'TECH SERIES':'CANTIDAD',x.code,x.desc||'',x.expected,x.scanned||0,x.shortage||0,x.substituted||0,pending,st,obs]);
   });
-  const scans=[['FECHA_HORA','OC','OPERADOR','MODO','UPC/CODIGO','SERIE/IMEI','RESULTADO','CANTIDAD','UPC_SUSTITUTO','OBSERVACION']];
-  state.verify.slice().reverse().forEach(x=>scans.push([x.time,x.oc||'',x.user||operator,x.mode||'QUANTITY',x.code,x.series||'',x.result,x.qty||1,x.substituteCode||'',x.observation||x.detail||'']));
+  const scans=[['FECHA_HORA','FECHA','HORA','OC','OPERADOR','MODO','UPC/CODIGO','SERIE/IMEI','RESULTADO','CANTIDAD','UPC_SUSTITUTO','OBSERVACION']];
+  state.verify.slice().reverse().forEach(x=>scans.push([x.time,localDateOnly(x.time),localTimeOnly(x.time),x.oc||'',x.user||operator,x.mode||'QUANTITY',x.code,x.series||'',x.result,x.qty||1,x.substituteCode||'',x.observation||x.detail||'']));
   const summary=[['OC','TOTAL ESPERADO','OK ESCANEADO','DESABASTO','SUSTITUIDO','PENDIENTE','INCIDENCIAS','CIERRE','OBSERVACION']];
   verifyOCs().forEach(oc=>{const sm=expectedSummary(oc),cl=verifyClosureForOC(oc);summary.push([oc,sm.total,sm.scanned,sm.shortage,sm.substituted,sm.missing,sm.bad,cl?.status||'ABIERTA',cl?.observation||'']);});
   const substitutions=[['FECHA_HORA','OC','OPERADOR','UPC_ORIGEN','UPC_SUSTITUTO','CANTIDAD','MOVIMIENTO','OBSERVACION']];
   state.verify.filter(x=>x.result==='SUSTITUTO').slice().reverse().forEach(x=>substitutions.push([x.time,x.oc,x.user,x.code,x.substituteCode,x.qty||1,'SALIDA SUSTITUTO',x.observation||'']));
+  const exceptions=[['FECHA_HORA','OC','OPERADOR','UPC','EVENTO','CANTIDAD','OBSERVACION']];
+  state.verify.filter(x=>['DESABASTO','DESABASTO REVERSADO','OC REABIERTA'].includes(x.result)).slice().reverse().forEach(x=>exceptions.push([x.time,x.oc,x.user,x.code,x.result,x.qty||0,x.observation||'']));
   const tech=[['OC','UPC','MODELO/DESCRIPCION','SERIE/IMEI','STATUS','OPERADOR','FECHA_HORA']];
   expectedRows.filter(isSeriesRow).forEach(x=>{
     Object.values(x.series||{}).forEach(sr=>tech.push([x.reference,x.code,x.desc||'',sr.serie,sr.scanned?'VALIDADA':'PENDIENTE',sr.user||'',sr.scannedAt||'']));
@@ -1144,8 +1270,9 @@ document.getElementById('exportVerifyBtn').addEventListener('click',async()=>{
   const defs=[
     {name:'RESUMEN_OC',rows:summary,textColumns:['OC'],widths:[18,14,14,12,12,12,12,28,42]},
     {name:'DETALLE',rows:detail,textColumns:['OC','UPC/CODIGO'],widths:[18,20,16,22,34,12,12,12,12,12,22,52]},
-    {name:'LECTURAS',rows:scans,textColumns:['OC','UPC/CODIGO','SERIE/IMEI','UPC_SUSTITUTO'],widths:[22,18,20,14,22,24,20,10,22,56]},
-    {name:'SUSTITUTOS',rows:substitutions,textColumns:['OC','UPC_ORIGEN','UPC_SUSTITUTO'],widths:[22,18,20,22,22,10,20,60]}
+    {name:'LECTURAS',rows:scans,textColumns:['OC','UPC/CODIGO','SERIE/IMEI','UPC_SUSTITUTO'],widths:[22,14,14,18,20,14,22,24,20,10,22,56]},
+    {name:'SUSTITUTOS',rows:substitutions,textColumns:['OC','UPC_ORIGEN','UPC_SUSTITUTO'],widths:[22,18,20,22,22,10,20,60]},
+    {name:'EXCEPCIONES',rows:exceptions,textColumns:['OC','UPC'],widths:[22,18,20,22,24,10,60]}
   ];
   if(tech.length>1)defs.push({name:'SERIES_TECH',rows:tech,textColumns:['OC','UPC','SERIE/IMEI'],widths:[18,22,34,26,14,20,22]});
   await downloadWorkbook('inventix_verify_resultado_'+dateTag()+'.xlsx',defs);
@@ -1202,32 +1329,35 @@ function restoreDistributionUI(){
 }
 async function importDistributionFile(file){
   const data=await readDataFile(file);
-  if(importedFileMatch(data.hash,'DISTRIBUTION')) throw new Error('Archivo de Distribution duplicado: ya fue cargado');
+  if(importedFileMatch(data.hash,'DISTRIBUTION') && !confirm('Este archivo ya fue cargado. ¿Deseas reimportarlo y reiniciar la distribución activa con este archivo?')) return;
   const rows=[];
   for(let i=0;i<data.rows.length;i++){
     const r=data.rows[i];
     const oc=idText(pick(r,['OC','OV','PEDIDO','ORDEN','ORDEN COMPRA','ORDEN_COMPRA','NUM ORD','NUM_ORD','PO']));
     const store=String(pick(r,['DESTINO/TIENDA','DESTINO','TIENDA','STORE','SUCURSAL','CLIENTE DESTINO','CLIENTE_DESTINO'])||'').trim().toUpperCase();
     const code=idText(pick(r,['UPC/SKU','UPC','SKU','CODIGO','CÓDIGO','MATERIAL','EAN','SERIE','IMEI']));
-    const desc=String(pick(r,['DESCRIPCION','DESCRIPCIÓN','DESC','PRODUCTO'])||'').trim();
-    const q=qty(pick(r,['CANTIDAD','QTY','PIEZAS','PIEZAS ORD','PIEZAS_ORD','PIEZAS AGENDADAS','PIEZAS_AGENDADAS','TOTAL']));
+    const desc=String(pick(r,['DESCRIPCION','DESCRIPCIÓN','DESC','PRODUCTO','MODELO','MODELO/DESCRIPCION','NO.PARTE','NO PARTE'])||'').trim();
+    const q=qty(pick(r,['CANTIDAD','CATIDAD','CANT','CANT.','CANT ED','CANT. ED.','QTY','PIEZAS','PIEZAS ORD','PIEZAS_ORD','PIEZAS AGENDADAS','PIEZAS_AGENDADAS','CANTIDAD OC','TOTAL']));
     const master=idText(pick(r,['ETIQUETA MASTER','ETIQUETA_MASTER','MASTER','MASTER CODE','MASTER_CODE','CODIGO MASTER','CODIGO_MASTER','HU']));
     if(!oc||!store||!code||q<=0) continue;
     rows.push({oc,store,code,sku:idText(pick(r,['SKU'])),desc,qty:q,master,sourceRow:i+2});
   }
   if(!rows.length) throw new Error('No encontré filas válidas. Se requieren OC, DESTINO/TIENDA, UPC/SKU y CANTIDAD.');
   state.distributionImport={rows,sourceName:file.name,loadedAt:nowISO()};
+  state.activeDistribution=null;
+  state.importedFiles=(state.importedFiles||[]).filter(x=>!(x.hash===data.hash&&x.kind==='DISTRIBUTION'));
   registerImportedFile(data.hash,'DISTRIBUTION',file.name,rows.length);
   save();restoreDistributionUI();
   toast(`Distribution cargado: ${distGroups().length} OC/Master · ${rows.reduce((a,r)=>a+r.qty,0)} piezas`);
 }
 function startDistribution(){
   const rows=parseDistExpected(dExpected.value);
-  const oc=idText(dOC.value),store=String(dStore.value||'').trim().toUpperCase();
+  const oc=idText(dOC.value),store=String(dStore.value||'').trim().toUpperCase(),user=String(dUser.value||'').trim();
   if(!oc)return toast('Ingresa o selecciona la OC',true);
+  if(!user)return toast('Ingresa el operador',true);
   if(!store)return toast('Ingresa o selecciona la tienda / destino',true);
   if(!rows.length)return toast('No hay UPC/SKU esperados para esta distribución',true);
-  state.activeDistribution={id:crypto.randomUUID?crypto.randomUUID():String(Date.now()+Math.random()),oc,store,masterExpected:idText(dMasterExpected.value),rows,scans:[],startedAt:nowISO(),closedAt:null,status:'ABIERTA'};
+  state.activeDistribution={id:crypto.randomUUID?crypto.randomUUID():String(Date.now()+Math.random()),oc,store,user,masterExpected:idText(dMasterExpected.value),rows,scans:[],startedAt:nowISO(),closedAt:null,status:'ABIERTA'};
   save();renderDistribution();toast('Verify Distribution iniciado');
 }
 function findOtherDestination(code){
@@ -1249,54 +1379,70 @@ function scanDistribution(input){
     if(other){result='DESTINO INCORRECTO';message=`DESTINO INCORRECTO · pertenece a ${other.oc} · ${other.store}`;}
     else{result='NO SOLICITADO';message=`NO SOLICITADO · ${code} no pertenece a la distribución cargada`;}
   }
-  d.scans=d.scans||[];d.scans.push({id:crypto.randomUUID?crypto.randomUUID():String(Date.now()+Math.random()),time:nowISO(),oc:d.oc,store:d.store,masterExpected:d.masterExpected,code,result,message});
+  const eventTime=nowISO();
+  if(row&&result==='CORRECTO'){row.lastScannedBy=d.user||String(dUser.value||'').trim();row.lastScannedAt=eventTime;}
+  if(row&&result==='EXCESO'){row.lastAttemptBy=d.user||String(dUser.value||'').trim();row.lastAttemptAt=eventTime;}
+  d.scans=d.scans||[];d.scans.push({id:crypto.randomUUID?crypto.randomUUID():String(Date.now()+Math.random()),time:eventTime,oc:d.oc,store:d.store,user:d.user||String(dUser.value||'').trim(),masterExpected:d.masterExpected,code,result,message});
   dScanCode.value='';save();renderDistribution();setDistBanner(result,message);toast(message,result!=='CORRECTO');
 }
 function undoDistribution(){
   const d=state.activeDistribution;if(!d||(d.scans||[]).length===0)return toast('No hay lectura para deshacer',true);
-  const last=d.scans.pop();if(last.result==='CORRECTO'){const row=d.rows.find(r=>r.code===last.code);if(row&&row.done>0)row.done--;}
-  else if(last.result==='EXCESO'){const row=d.rows.find(r=>r.code===last.code);if(row&&row.excess>0)row.excess--;}
+  const last=d.scans.pop();if(last.result==='CORRECTO'){const row=d.rows.find(r=>r.code===last.code);if(row&&row.done>0)row.done--;if(row){const prev=[...(d.scans||[])].reverse().find(x=>x.code===last.code&&x.result==='CORRECTO');row.lastScannedBy=prev?.user||'';row.lastScannedAt=prev?.time||'';}}
+  else if(last.result==='EXCESO'){const row=d.rows.find(r=>r.code===last.code);if(row&&row.excess>0)row.excess--;if(row){const prev=[...(d.scans||[])].reverse().find(x=>x.code===last.code&&x.result==='EXCESO');row.lastAttemptBy=prev?.user||'';row.lastAttemptAt=prev?.time||'';}}
   save();renderDistribution();setDistBanner('',`DESHECHO · ${last.code}`);toast('Última lectura deshecha');
 }
 function closeDistribution(){
   const d=state.activeDistribution;if(!d)return toast('No hay distribución activa',true);
   const t=distTotals(d);if(t.pending>0)return toast(`No se puede cerrar: faltan ${t.pending} piezas`,true);
-  const master=idText(dMasterScan.value);if(!master)return toast('Escanea o captura la Etiqueta Master',true);
-  if(d.masterExpected&&master!==d.masterExpected)return toast(`MASTER INCORRECTA. Esperada: ${d.masterExpected}`,true);
-  d.masterScanned=master;d.closedAt=nowISO();d.status='CERRADA';d.totalPieces=t.expected;d.incidents=t.incidents;
+  const master=idText(dMasterScan.value);
+  if(d.masterExpected){
+    if(!master)return toast('Escanea o captura la Etiqueta Master esperada',true);
+    if(master!==d.masterExpected)return toast(`MASTER INCORRECTA. Esperada: ${d.masterExpected}`,true);
+    d.masterScanned=master;d.masterValidation='CODIGO VALIDADO';
+  }else{
+    if(master){d.masterScanned=master;d.masterValidation='CODIGO CAPTURADO';}
+    else{
+      if(!confirm(`Confirma visualmente que la Etiqueta Master corresponde a:
+${d.store}
+OC ${d.oc}`))return;
+      d.masterScanned='CONFIRMACION VISUAL';d.masterValidation=`DESTINO CONFIRMADO · ${d.store}`;
+    }
+  }
+  d.closedAt=nowISO();d.status='CERRADA';d.totalPieces=t.expected;d.incidents=t.incidents;
   state.distributions=state.distributions||[];state.distributions.unshift(JSON.parse(JSON.stringify(d)));state.activeDistribution=null;
   dMasterScan.value='';dScanCode.value='';save();renderDistribution();renderDistributionHistory();setDistBanner('CORRECTO','MASTER VALIDADA · DISTRIBUCIÓN COMPLETA');toast('Etiqueta Master cerrada y validada');
 }
 function renderDistribution(){
   const d=state.activeDistribution;if(!d){dWork.style.display='none';return;}
   dWork.style.display='block';const t=distTotals(d);
-  dSummary.innerHTML=`<b>${escapeHtml(d.oc)}</b> · ${escapeHtml(d.store)}${d.masterExpected?'<br>Master esperada: '+escapeHtml(d.masterExpected):'<br>Master se asignará al cierre'}`;
+  if(dUser&&!dUser.value&&d.user)dUser.value=d.user;
+  dSummary.innerHTML=`<b>${escapeHtml(d.oc)}</b> · ${escapeHtml(d.store)}${d.user?'<br>Operador: '+escapeHtml(d.user):''}${d.masterExpected?'<br>Master esperada: '+escapeHtml(d.masterExpected):'<br>Master: confirmación visual permitida'}`;
   dOk.textContent=t.done;dPending.textContent=t.pending;dIncidents.textContent=t.incidents;
-  dRows.innerHTML=d.rows.map(r=>`<div class="row ${r.done>=r.expected?'ok':'verify'}"><b>${escapeHtml(r.code)}</b> <span class="badge">${r.done}/${r.expected}</span><div class="meta">${escapeHtml(r.desc||'')}${r.excess?'<br>Excesos detectados: '+r.excess:''}</div></div>`).join('');
+  dRows.innerHTML=d.rows.map(r=>`<div class="row ${r.done>=r.expected?'ok':'verify'}"><b>${escapeHtml(r.code)}</b> <span class="badge">${r.done}/${r.expected}</span><div class="meta">${escapeHtml(r.desc||'')}${r.excess?'<br>Excesos detectados: '+r.excess:''}${r.lastScannedBy?'<br>Última lectura: '+escapeHtml(r.lastScannedBy)+' · '+escapeHtml(fmtDate(r.lastScannedAt)):''}</div></div>`).join('');
   if((d.scans||[]).length){const last=d.scans[d.scans.length-1];setDistBanner(last.result,last.message);}else setDistBanner('','LISTO PARA ESCANEAR');
 }
 function renderDistributionHistory(){
   if(!dHistory)return;const arr=state.distributions||[];
-  dHistory.innerHTML=arr.length?arr.slice(0,40).map(d=>`<div class="row ok"><b>${escapeHtml(d.oc)} · ${escapeHtml(d.store)}</b> <span class="badge">${d.totalPieces||0} pzas</span><div class="meta">Master: ${escapeHtml(d.masterScanned||d.masterExpected||'SIN MASTER')} · Incidencias: ${d.incidents||0}<br>${fmtDate(d.closedAt)}</div></div>`).join(''):'<div class="note">Sin distribuciones cerradas.</div>';
+  dHistory.innerHTML=arr.length?arr.slice(0,40).map(d=>`<div class="row ok"><b>${escapeHtml(d.oc)} · ${escapeHtml(d.store)}</b> <span class="badge">${d.totalPieces||0} pzas</span><div class="meta">Operador: ${escapeHtml(d.user||'SIN OPERADOR')}<br>Master: ${escapeHtml(d.masterScanned||d.masterExpected||'SIN MASTER')} · ${escapeHtml(d.masterValidation||'')} · Incidencias: ${d.incidents||0}<br>${fmtDate(d.closedAt)}</div></div>`).join(''):'<div class="note">Sin distribuciones cerradas.</div>';
 }
 async function exportDistributionExcel(){
   const base=[['OC','DESTINO/TIENDA','UPC/SKU','DESCRIPCION','CANTIDAD','ETIQUETA MASTER']];
   distRows().forEach(r=>base.push([r.oc,r.store,r.code,r.desc||'',r.qty,r.master||'']));
-  const summary=[['OC','DESTINO/TIENDA','ETIQUETA MASTER','ESPERADO','VALIDADO','PENDIENTE','INCIDENCIAS','ESTATUS','INICIO','CIERRE']];
-  const detail=[['OC','DESTINO/TIENDA','ETIQUETA MASTER','UPC/SKU','DESCRIPCION','ESPERADO','VALIDADO','EXCESOS','ESTATUS']];
-  const scans=[['FECHA_HORA','OC','DESTINO/TIENDA','ETIQUETA MASTER','UPC/SKU','RESULTADO','DETALLE']];
+  const summary=[['OC','OPERADOR','DESTINO/TIENDA','ETIQUETA MASTER','VALIDACION MASTER','ESPERADO','VALIDADO','PENDIENTE','INCIDENCIAS','ESTATUS','INICIO','CIERRE']];
+  const detail=[['OC','OPERADOR','DESTINO/TIENDA','ETIQUETA MASTER','UPC/SKU','DESCRIPCION','ESPERADO','VALIDADO','EXCESOS','ESTATUS','ULTIMO_OPERADOR','ULTIMA_FECHA_HORA']];
+  const scans=[['FECHA_HORA','FECHA','HORA','OC','OPERADOR','DESTINO/TIENDA','ETIQUETA MASTER','UPC/SKU','RESULTADO','DETALLE']];
   const all=[...(state.distributions||[])];if(state.activeDistribution)all.unshift(state.activeDistribution);
   all.forEach(d=>{
-    const t=distTotals(d);summary.push([d.oc,d.store,d.masterScanned||d.masterExpected||'',t.expected,t.done,t.pending,t.incidents,d.status||'ABIERTA',d.startedAt||'',d.closedAt||'']);
-    (d.rows||[]).forEach(r=>detail.push([d.oc,d.store,d.masterScanned||d.masterExpected||'',r.code,r.desc||'',r.expected,r.done||0,r.excess||0,(r.done||0)>=r.expected?'COMPLETO':'PENDIENTE']));
-    (d.scans||[]).forEach(x=>scans.push([x.time,d.oc,d.store,d.masterScanned||d.masterExpected||'',x.code,x.result,x.message||'']));
+    const t=distTotals(d);summary.push([d.oc,d.user||'',d.store,d.masterScanned||d.masterExpected||'',d.masterValidation||'',t.expected,t.done,t.pending,t.incidents,d.status||'ABIERTA',d.startedAt||'',d.closedAt||'']);
+    (d.rows||[]).forEach(r=>detail.push([d.oc,d.user||'',d.store,d.masterScanned||d.masterExpected||'',r.code,r.desc||'',r.expected,r.done||0,r.excess||0,(r.done||0)>=r.expected?'COMPLETO':'PENDIENTE',r.lastScannedBy||'',r.lastScannedAt||'']));
+    (d.scans||[]).forEach(x=>scans.push([x.time,localDateOnly(x.time),localTimeOnly(x.time),d.oc,x.user||d.user||'',d.store,d.masterScanned||d.masterExpected||'',x.code,x.result,x.message||'']));
   });
   if(base.length===1&&all.length===0)return toast('No hay datos de Distribution para exportar',true);
-  await downloadWorkbook('inventix_verify_distribution_'+dateTag()+'.xlsx',[
+  await downloadWorkbook('inventix_verify_distribution_resultado_'+dateTag()+'.xlsx',[
     {name:'BASE_IMPORTADA',rows:base,textColumns:['OC','UPC/SKU','ETIQUETA MASTER'],widths:[18,28,22,36,12,24]},
-    {name:'RESUMEN',rows:summary,textColumns:['OC','ETIQUETA MASTER'],widths:[18,28,24,12,12,12,12,16,22,22]},
-    {name:'DETALLE',rows:detail,textColumns:['OC','ETIQUETA MASTER','UPC/SKU'],widths:[18,28,24,22,36,12,12,12,16]},
-    {name:'LECTURAS',rows:scans,textColumns:['OC','ETIQUETA MASTER','UPC/SKU'],widths:[22,18,28,24,22,22,46]}
+    {name:'RESUMEN_OC',rows:summary,textColumns:['OC','ETIQUETA MASTER'],widths:[18,20,28,24,28,12,12,12,12,16,22,22]},
+    {name:'DETALLE',rows:detail,textColumns:['OC','ETIQUETA MASTER','UPC/SKU'],widths:[18,20,28,24,22,36,12,12,12,16,20,22]},
+    {name:'LECTURAS',rows:scans,textColumns:['OC','ETIQUETA MASTER','UPC/SKU'],widths:[22,14,14,18,20,28,24,22,22,46]}
   ]);
 }
 
@@ -1313,8 +1459,11 @@ dTemplateBtn.addEventListener('click',async()=>{
   await downloadWorkbook('plantilla_verify_distribution.xlsx',[{name:'DISTRIBUTION',rows:[['OC','DESTINO/TIENDA','UPC/SKU','DESCRIPCION','CANTIDAD','ETIQUETA MASTER'],['OC 673505','MACSTORE BUENAVISTA','7500000000001','ARTICULO EJEMPLO',3,'MASTER-673505'],['OC 673505','MACSTORE BUENAVISTA','7500000000002','SEGUNDO ARTICULO',2,'MASTER-673505']],textColumns:['OC','UPC/SKU','ETIQUETA MASTER'],widths:[18,28,22,36,12,24]}]);
 });
 
-// Cámara opcional: nunca solicita permiso al cargar. Solo se activa por acción explícita del operador.
+// Cámara continua: el permiso se solicita una sola vez por sesión de escaneo.
+// La cámara permanece abierta hasta que el operador la cierre.
+// Un mismo código no puede contarse dos veces mientras siga visible en el cuadro.
 let cameraStream=null, cameraDetector=null, cameraTimer=null, cameraTarget=null, cameraOnRead=null, torchOn=false;
+let cameraLockedValue='', cameraClearFrames=0, cameraBusy=false;
 const cameraOverlay=document.getElementById('cameraOverlay');
 const cameraVideo=document.getElementById('cameraVideo');
 const cameraStatus=document.getElementById('cameraStatus');
@@ -1327,6 +1476,7 @@ async function stopCameraScanner(){
   if(cameraVideo){cameraVideo.srcObject=null;}
   if(cameraOverlay){cameraOverlay.classList.remove('on');cameraOverlay.setAttribute('aria-hidden','true');}
   cameraTarget=null;cameraOnRead=null;cameraDetector=null;torchOn=false;
+  cameraLockedValue='';cameraClearFrames=0;cameraBusy=false;
   if(cameraTorch){cameraTorch.style.display='none';cameraTorch.textContent='🔦 Luz';}
 }
 
@@ -1337,8 +1487,15 @@ async function openCameraScanner(targetInput,onRead){
   if(!('BarcodeDetector' in window)){
     return toast('Este navegador no soporta lectura directa por cámara. Usa lector físico o Chrome actualizado.',true);
   }
+  // Si la cámara ya está abierta, reutilizamos el mismo permiso y solo cambiamos el destino.
+  if(cameraStream){
+    cameraTarget=targetInput;cameraOnRead=onRead;
+    cameraOverlay.classList.add('on');cameraOverlay.setAttribute('aria-hidden','false');
+    cameraStatus.textContent='LISTO · cámara activa · apunta al código';
+    return;
+  }
   try{
-    cameraTarget=targetInput;cameraOnRead=onRead;cameraStatus.textContent='Solicitando cámara…';
+    cameraTarget=targetInput;cameraOnRead=onRead;cameraStatus.textContent='Solicitando permiso una sola vez…';
     cameraOverlay.classList.add('on');cameraOverlay.setAttribute('aria-hidden','false');
     cameraStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}},audio:false});
     cameraVideo.srcObject=cameraStream;await cameraVideo.play();
@@ -1348,31 +1505,41 @@ async function openCameraScanner(targetInput,onRead){
       formats=formats.filter(x=>supported.includes(x));
     }catch(_e){}
     cameraDetector=new BarcodeDetector(formats.length?{formats}:undefined);
-    cameraStatus.textContent='LISTO · apunta al código';
+    cameraStatus.textContent='LISTO · escanea en continuo · retira cada código antes del siguiente';
     const track=cameraStream.getVideoTracks()[0];
     try{
       const caps=track.getCapabilities?track.getCapabilities():{};
       if(caps.torch)cameraTorch.style.display='block';
     }catch(_e){}
-    let busy=false;
+
     const tick=async()=>{
       if(!cameraStream||!cameraDetector)return;
-      if(!busy&&cameraVideo.readyState>=2){
-        busy=true;
+      if(!cameraBusy&&cameraVideo.readyState>=2){
+        cameraBusy=true;
         try{
           const found=await cameraDetector.detect(cameraVideo);
-          if(found&&found.length){
-            const value=idText(found[0].rawValue||'');
-            if(value){
-              const target=cameraTarget, cb=cameraOnRead;
-              await stopCameraScanner();
-              if(target)target.value=value;
-              if(cb)cb(value);
-              return;
+          let value='';
+          if(found&&found.length)value=idText(found[0].rawValue||'');
+
+          if(value){
+            cameraClearFrames=0;
+            if(!cameraLockedValue){
+              cameraLockedValue=value;
+              if(cameraTarget)cameraTarget.value=value;
+              const cb=cameraOnRead;
+              if(cb)await Promise.resolve(cb(value));
+              cameraStatus.textContent='LEÍDO '+value+' · retira el código para habilitar el siguiente';
+            }
+          }else if(cameraLockedValue){
+            // Exigimos varios cuadros limpios para evitar dobles lecturas del mismo UPC.
+            cameraClearFrames++;
+            if(cameraClearFrames>=4){
+              cameraLockedValue='';cameraClearFrames=0;
+              cameraStatus.textContent='LISTO · presenta el siguiente código';
             }
           }
         }catch(_e){}
-        busy=false;
+        cameraBusy=false;
       }
       cameraTimer=requestAnimationFrame(tick);
     };
@@ -1396,7 +1563,7 @@ function renderEnvironment(){
   const secure=window.isSecureContext || location.hostname==='localhost';
   const sb=document.getElementById('secureBadge'), sn=document.getElementById('secureNote');
   if(sb){ sb.textContent=secure?'HTTPS / datos locales':'Archivo local / datos locales'; sb.className='pill ok'; }
-  if(sn){ sn.textContent='Modo ágil: lector físico/Bluetooth/USB o captura manual como primera opción. Cámara disponible solo como respaldo; no solicita permiso hasta que la abras.'; }
+  if(sn){ sn.textContent='Modo ágil: lector físico/Bluetooth/USB o captura manual. Cámara continua opcional: autoriza una vez y escanea todo el lote sin volver a pedir permiso hasta cerrarla.'; }
 }
 if('serviceWorker' in navigator && window.isSecureContext){
   window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(()=>{}));
