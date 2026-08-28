@@ -81,7 +81,7 @@ hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
 
 <header>
   <div class="brand">INVENTI<span>X</span> CORE</div>
-  <div class="sub">v1.7.7 · Verify Tech + Verify Distribution · Trazabilidad · Cámara continua · Excel + persistencia · Reset visible</div>
+  <div class="sub">v1.7.8 · Verify Tech + Verify Distribution · MacStore 2 UPC + 1 modelo · Trazabilidad · Cámara continua · Excel + persistencia · Reset visible</div>
 </header>
 
 <main>
@@ -256,15 +256,15 @@ hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
 <section id="distribution" class="page">
   <div class="card">
     <h2>Verify Distribution</h2>
-    <div class="note">Asegura desde el primer conteo y empaquetado que cada artículo termine exactamente en la OC, tienda/destino y Etiqueta Master correctos.</div>
-    <div class="note" style="margin-top:6px"><b>Trazabilidad:</b> cada UPC/SKU escaneado conserva operador, fecha y hora del evento.</div>
+    <div class="note">Asegura desde el primer conteo y empaquetado que cada caja termine exactamente en la OC y destino correctos, respetando la secuencia de lectura definida.</div>
+    <div class="note" style="margin-top:6px"><b>Trazabilidad:</b> cada UPC o MODELO escaneado conserva operador, fecha y hora del evento, incluyendo número de caja y paso de secuencia cuando aplica.</div>
     <div class="toolbar" style="margin-top:10px">
       <button id="dImportBtn" class="btn secondary">📥 Importar Excel</button>
       <button id="dTemplateBtn" class="btn ghost">🧾 Plantilla Excel</button>
       <button id="dExportBtn" class="btn ghost">📤 Exportar Excel</button>
     </div>
     <input id="dImportFile" type="file" accept=".xlsx,.xls,.csv,text/csv,.txt,text/plain" style="display:none">
-    <div class="note" style="margin-top:8px">Base genérica: <b>OC · DESTINO/TIENDA · UPC/SKU · DESCRIPCION · CANTIDAD · ETIQUETA MASTER</b>. OV/Pedido también se reconoce como alias de OC.</div>
+    <div class="note" style="margin-top:8px">Base compatible con MacStore: <b>OC · DESTINO/TIENDA · UPC · MODELO · CANTIDAD/CAJAS · DESCRIPCION</b>. Si existen UPC + MODELO, Inventix activa automáticamente la secuencia por caja <b>UPC → UPC → MODELO</b>. Sin MODELO conserva el modo genérico.</div>
     <label>OC / destino importado</label>
     <select id="dImportedGroup"><option value="">Sin archivo cargado</option></select>
     <div id="dImportStatus" class="note" style="margin-top:6px"></div>
@@ -279,9 +279,10 @@ hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
       <div><label>Operador</label><input id="dUser" placeholder="Nombre"></div>
     </div>
     <label>Destino / Tienda</label><input id="dStore" placeholder="MACSTORE BUENAVISTA">
-    <label>Etiqueta Master esperada <span class="note">(opcional si no tiene código de barras)</span></label><input id="dMasterExpected" placeholder="Master / código de etiqueta">
-    <label>Esperado de esta OC / Master</label>
-    <textarea id="dExpected" rows="7" style="width:100%;background:#0A1E38;border:1.5px solid #1E4DBC55;border-radius:10px;color:white;padding:11px 12px;font-size:14px" placeholder="UPC,CANTIDAD,DESCRIPCION&#10;7500000000001,3,ARTICULO A&#10;7500000000002,2,ARTICULO B"></textarea>
+    <input id="dMasterExpected" type="hidden" value="">
+    <div id="dModeInfo" class="note" style="margin-top:8px"><b>Modo:</b> se define al seleccionar la OC/destino importado.</div>
+    <label>Esperado de esta OC / destino</label>
+    <textarea id="dExpected" rows="7" style="width:100%;background:#0A1E38;border:1.5px solid #1E4DBC55;border-radius:10px;color:white;padding:11px 12px;font-size:14px" placeholder="UPC,MODELO,CAJAS,DESCRIPCION&#10;4895241109027,EXTMAG005,77,EJEMPLO MACSTORE"></textarea>
     <button id="dStartBtn" class="btn primary">▶️ Iniciar validación</button>
   </div>
 
@@ -294,16 +295,16 @@ hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
       <div><strong id="dIncidents">0</strong><small>INCIDENCIAS</small></div>
     </div>
     <div id="dLastStatus" class="dist-banner">LISTO PARA ESCANEAR</div>
-    <label>Escaneo UPC / SKU</label><input id="dScanCode" placeholder="Escanea o captura código">
+    <label>Escaneo UPC / modelo</label><input id="dScanCode" placeholder="Escanea UPC o código de modelo">
     <button id="dCameraBtn" class="btn secondary">📷 Abrir cámara continua</button>
     <button id="dScanBtn" class="btn secondary">✅ Confirmar artículo</button>
     <button id="dUndoBtn" class="btn ghost">↩️ Deshacer última lectura</button>
     <div id="dRows" style="margin-top:12px"></div>
     <hr>
-    <h2>Cierre de Etiqueta Master</h2>
-    <div class="note">El cierre exige que todo lo solicitado esté completo. Si la Master tiene código, se valida. Si no tiene código de barras, Inventix permite confirmar visualmente la tienda/destino y deja evidencia del cierre.</div>
-    <label>Escanear / capturar Etiqueta Master <span class="note">(opcional)</span></label><input id="dMasterScan" placeholder="Etiqueta Master / dejar vacío para confirmación visual">
-    <button id="dCloseBtn" class="btn primary">🔒 Confirmar destino y cerrar Master</button>
+    <h2>Cierre de destino</h2>
+    <div class="note">La etiqueta Master de MacStore no requiere código de barras para este flujo: <b>solo muestra el destino</b>. El cierre exige completar todas las cajas y confirmar visualmente que el destino de la etiqueta coincide con el seleccionado en Inventix.</div>
+    <input id="dMasterScan" type="hidden" value="">
+    <button id="dCloseBtn" class="btn primary">🔒 Confirmar destino y cerrar distribución</button>
   </div>
 
   <div class="card">
@@ -1286,15 +1287,19 @@ document.getElementById('exportVerifyBtn').addEventListener('click',async()=>{
 
 
 // ---------------- VERIFY DISTRIBUTION ----------------
+// v1.7.8: MacStore detecta automáticamente filas con UPC + MODELO.
+// En ese modo cada caja exige exactamente: UPC -> UPC -> MODELO.
 function distRows(){return state.distributionImport?.rows||[];}
+function isBoxModeRow(r){return (r?.mode||'')==='BOX_2UPC_1MODEL';}
 function distGroups(){
   const map=new Map();
   for(const r of distRows()){
-    const key=[r.oc||'',r.store||'',r.master||''].join('§');
-    if(!map.has(key)) map.set(key,{key,oc:r.oc||'',store:r.store||'',master:r.master||'',rows:[],pieces:0});
-    const g=map.get(key);g.rows.push(r);g.pieces+=Number(r.qty||0);
+    const key=[r.oc||'',r.store||''].join('§');
+    if(!map.has(key)) map.set(key,{key,oc:r.oc||'',store:r.store||'',rows:[],records:0,boxes:0,genericPieces:0,boxRows:0});
+    const g=map.get(key),q=Number(r.qty||0);g.rows.push(r);
+    if(isBoxModeRow(r)){g.boxRows++;g.boxes+=q;g.records+=q*3;}else{g.genericPieces+=q;g.records+=q;}
   }
-  return [...map.values()];
+  return [...map.values()].map(g=>({...g,mode:g.boxRows===g.rows.length?'BOX_2UPC_1MODEL':'GENERIC'}));
 }
 function aggregateDistExpected(rows){
   const map=new Map();
@@ -1305,32 +1310,70 @@ function aggregateDistExpected(rows){
   }
   return [...map.values()];
 }
+function aggregateBoxExpected(rows){
+  const map=new Map();
+  for(const r of rows){
+    const upc=idText(r.upc||r.code),model=idText(r.model);if(!upc||!model)continue;
+    const key=upc+'§'+model;
+    if(!map.has(key))map.set(key,{key,upc,model,desc:r.desc||'',expectedBoxes:0,doneBoxes:0,excess:0,lastScannedBy:'',lastScannedAt:''});
+    const x=map.get(key);x.expectedBoxes+=Number(r.qty||r.boxes||0);if(r.desc)x.desc=r.desc;
+  }
+  return [...map.values()];
+}
 function parseDistExpected(text){
   const out=[];
   for(const line of String(text||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean)){
     const p=line.split(/[,;\t|]/).map(x=>x.trim());
-    if(normHeader(p[0])==='UPC'||normHeader(p[0])==='CODIGO')continue;
+    if(['UPC','CODIGO','UPC/SKU'].includes(normHeader(p[0])))continue;
     const code=idText(p[0]),q=qty(p[1]); if(code&&q>0)out.push({code,desc:p.slice(2).join(' '),expected:q,done:0,excess:0});
   }
   return aggregateDistExpected(out.map(x=>({code:x.code,desc:x.desc,qty:x.expected})));
 }
+function parseDistBoxExpected(text){
+  const out=[];
+  for(const line of String(text||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean)){
+    const p=line.split(/[,;\t|]/).map(x=>x.trim());
+    if(['UPC','UPC/SKU'].includes(normHeader(p[0])))continue;
+    const upc=idText(p[0]),model=idText(p[1]),q=qty(p[2]);
+    if(upc&&model&&q>0)out.push({upc,model,qty:q,desc:p.slice(3).join(' ')});
+  }
+  return aggregateBoxExpected(out);
+}
 function distTotals(d){
+  const incidents=(d.scans||[]).filter(x=>x.result!=='CORRECTO').length;
+  if(d.mode==='BOX_2UPC_1MODEL'){
+    const boxesExpected=(d.rows||[]).reduce((a,r)=>a+Number(r.expectedBoxes||0),0);
+    const boxesDone=(d.rows||[]).reduce((a,r)=>a+Number(r.doneBoxes||0),0);
+    const expected=boxesExpected*3;
+    const done=(d.scans||[]).filter(x=>x.result==='CORRECTO').length;
+    return {expected,done,pending:Math.max(expected-done,0),incidents,boxesExpected,boxesDone,boxesPending:Math.max(boxesExpected-boxesDone,0)};
+  }
   const expected=(d.rows||[]).reduce((a,r)=>a+Number(r.expected||0),0);
   const done=(d.rows||[]).reduce((a,r)=>a+Number(r.done||0),0);
-  const incidents=(d.scans||[]).filter(x=>x.result!=='CORRECTO').length;
-  return {expected,done,pending:Math.max(expected-done,0),incidents};
+  return {expected,done,pending:Math.max(expected-done,0),incidents,boxesExpected:0,boxesDone:0,boxesPending:0};
 }
 function fillDistributionGroup(key){
   const g=distGroups().find(x=>x.key===key); if(!g)return;
-  dOC.value=g.oc;dStore.value=g.store;dMasterExpected.value=g.master;
-  const agg=aggregateDistExpected(g.rows);
-  dExpected.value=agg.map(r=>`${r.code},${r.expected},${r.desc||''}`).join('\n');
-  dImportStatus.textContent=`${state.distributionImport.sourceName||'Archivo'} · ${g.oc||'SIN OC'} · ${g.store||'SIN DESTINO'} · ${g.pieces} piezas${g.master?' · Master '+g.master:''}`;
+  dOC.value=g.oc;dStore.value=g.store;dMasterExpected.value='';
+  dExpected.dataset.mode=g.mode;
+  if(g.mode==='BOX_2UPC_1MODEL'){
+    const agg=aggregateBoxExpected(g.rows);
+    dExpected.value=agg.map(r=>`${r.upc},${r.model},${r.expectedBoxes},${r.desc||''}`).join('\n');
+    if(window.dModeInfo)dModeInfo.innerHTML=`<b>Modo MacStore:</b> ${g.boxes} cajas · ${g.records} registros esperados · secuencia obligatoria <b>UPC → UPC → MODELO</b>.`;
+    dImportStatus.textContent=`${state.distributionImport.sourceName||'Archivo'} · ${g.oc||'SIN OC'} · ${g.store||'SIN DESTINO'} · ${g.boxes} cajas · ${g.records} lecturas`;
+  }else{
+    const agg=aggregateDistExpected(g.rows);dExpected.value=agg.map(r=>`${r.code},${r.expected},${r.desc||''}`).join('\n');
+    if(window.dModeInfo)dModeInfo.innerHTML='<b>Modo genérico:</b> validación por cantidad de código.';
+    dImportStatus.textContent=`${state.distributionImport.sourceName||'Archivo'} · ${g.oc||'SIN OC'} · ${g.records} piezas`;
+  }
 }
 function restoreDistributionUI(){
   const groups=distGroups();
-  dImportedGroup.innerHTML=groups.length?'<option value="">Selecciona OC / destino</option>'+groups.map(g=>`<option value="${escapeHtml(g.key)}">${escapeHtml(g.oc||'SIN OC')} · ${escapeHtml(g.store||'SIN DESTINO')} · ${g.pieces} pzas${g.master?' · '+escapeHtml(g.master):''}</option>`).join(''):'<option value="">Sin archivo cargado</option>';
-  if(groups.length) dImportStatus.textContent=`${state.distributionImport.sourceName||'Archivo'}: ${distRows().length} renglones · ${groups.length} OC/Master · ${distRows().reduce((a,r)=>a+Number(r.qty||0),0)} piezas`;
+  dImportedGroup.innerHTML=groups.length?'<option value="">Selecciona OC / destino</option>'+groups.map(g=>`<option value="${escapeHtml(g.key)}">${escapeHtml(g.oc||'SIN OC')} · ${escapeHtml(g.store||'SIN DESTINO')} · ${g.mode==='BOX_2UPC_1MODEL'?g.boxes+' cajas / '+g.records+' lecturas':g.records+' pzas'}</option>`).join(''):'<option value="">Sin archivo cargado</option>';
+  if(groups.length){
+    const boxCount=groups.filter(g=>g.mode==='BOX_2UPC_1MODEL').length;
+    dImportStatus.textContent=`${state.distributionImport.sourceName||'Archivo'}: ${distRows().length} renglones · ${groups.length} OC/destino${boxCount?' · '+boxCount+' con secuencia por caja':''}`;
+  }
   renderDistribution();renderDistributionHistory();
 }
 async function importDistributionFile(file){
@@ -1341,114 +1384,162 @@ async function importDistributionFile(file){
     const r=data.rows[i];
     const oc=idText(pick(r,['OC','OV','PEDIDO','ORDEN','ORDEN COMPRA','ORDEN_COMPRA','NUM ORD','NUM_ORD','PO']));
     const store=String(pick(r,['DESTINO/TIENDA','DESTINO','TIENDA','STORE','SUCURSAL','CLIENTE DESTINO','CLIENTE_DESTINO'])||'').trim().toUpperCase();
-    const code=idText(pick(r,['UPC/SKU','UPC','SKU','CODIGO','CÓDIGO','MATERIAL','EAN','SERIE','IMEI']));
-    const desc=String(pick(r,['DESCRIPCION','DESCRIPCIÓN','DESC','PRODUCTO','MODELO','MODELO/DESCRIPCION','NO.PARTE','NO PARTE'])||'').trim();
-    const q=qty(pick(r,['CANTIDAD','CATIDAD','CANT','CANT.','CANT ED','CANT. ED.','QTY','PIEZAS','PIEZAS ORD','PIEZAS_ORD','PIEZAS AGENDADAS','PIEZAS_AGENDADAS','CANTIDAD OC','TOTAL']));
-    const master=idText(pick(r,['ETIQUETA MASTER','ETIQUETA_MASTER','MASTER','MASTER CODE','MASTER_CODE','CODIGO MASTER','CODIGO_MASTER','HU']));
+    const upc=idText(pick(r,['UPC','CVE_ART_P','CVE ART P','CVEARTP','EAN','CODIGO BARRAS','CÓDIGO BARRAS','UPC/SKU']));
+    const model=idText(pick(r,['MODELO','CVE_ART','CVE ART','CVEART','SKU MODELO','SKU_MODELO','MODEL','NO.PARTE','NO PARTE']));
+    const genericCode=idText(pick(r,['UPC/SKU','UPC','SKU','CODIGO','CÓDIGO','MATERIAL','EAN','SERIE','IMEI']));
+    const code=upc||genericCode;
+    const desc=String(pick(r,['DESCRIPCION','DESCRIPCIÓN','DESC','PRODUCTO','MODELO/DESCRIPCION'])||'').trim();
+    const q=qty(pick(r,['CANTIDAD/CAJAS','CAJAS','CANTIDAD','CATIDAD','CANT','CANT.','CANT ED','CANT. ED.','QTY','PIEZAS','PIEZAS ORD','PIEZAS_ORD','PIEZAS AGENDADAS','PIEZAS_AGENDADAS','CANTIDAD OC','TOTAL']));
     if(!oc||!store||!code||q<=0) continue;
-    rows.push({oc,store,code,sku:idText(pick(r,['SKU'])),desc,qty:q,master,sourceRow:i+2});
+    const mode=(upc&&model)?'BOX_2UPC_1MODEL':'GENERIC';
+    rows.push({oc,store,code,upc:upc||code,model,sku:idText(pick(r,['SKU'])),desc,qty:q,boxes:mode==='BOX_2UPC_1MODEL'?q:0,master:'',mode,sourceRow:i+2});
   }
-  if(!rows.length) throw new Error('No encontré filas válidas. Se requieren OC, DESTINO/TIENDA, UPC/SKU y CANTIDAD.');
-  state.distributionImport={rows,sourceName:file.name,loadedAt:nowISO()};
-  state.activeDistribution=null;
+  if(!rows.length) throw new Error('No encontré filas válidas. Para MacStore se requieren OC, DESTINO/TIENDA, UPC, MODELO y CANTIDAD/CAJAS.');
+  state.distributionImport={rows,sourceName:file.name,loadedAt:nowISO()};state.activeDistribution=null;
   state.importedFiles=(state.importedFiles||[]).filter(x=>!(x.hash===data.hash&&x.kind==='DISTRIBUTION'));
-  registerImportedFile(data.hash,'DISTRIBUTION',file.name,rows.length);
-  save();restoreDistributionUI();
-  toast(`Distribution cargado: ${distGroups().length} OC/Master · ${rows.reduce((a,r)=>a+r.qty,0)} piezas`);
+  registerImportedFile(data.hash,'DISTRIBUTION',file.name,rows.length);save();restoreDistributionUI();
+  const groups=distGroups(),boxes=groups.reduce((a,g)=>a+(g.mode==='BOX_2UPC_1MODEL'?g.boxes:0),0);
+  toast(`Distribution cargado: ${groups.length} OC/destino${boxes?' · '+boxes+' cajas':''}`);
 }
 function startDistribution(){
-  const rows=parseDistExpected(dExpected.value);
+  const mode=dExpected.dataset.mode==='BOX_2UPC_1MODEL'?'BOX_2UPC_1MODEL':'GENERIC';
+  const rows=mode==='BOX_2UPC_1MODEL'?parseDistBoxExpected(dExpected.value):parseDistExpected(dExpected.value);
   const oc=idText(dOC.value),store=String(dStore.value||'').trim().toUpperCase(),user=String(dUser.value||'').trim();
-  if(!oc)return toast('Ingresa o selecciona la OC',true);
-  if(!user)return toast('Ingresa el operador',true);
-  if(!store)return toast('Ingresa o selecciona la tienda / destino',true);
-  if(!rows.length)return toast('No hay UPC/SKU esperados para esta distribución',true);
-  state.activeDistribution={id:crypto.randomUUID?crypto.randomUUID():String(Date.now()+Math.random()),oc,store,user,masterExpected:idText(dMasterExpected.value),rows,scans:[],startedAt:nowISO(),closedAt:null,status:'ABIERTA'};
-  save();renderDistribution();toast('Verify Distribution iniciado');
+  if(!oc)return toast('Ingresa o selecciona la OC',true);if(!user)return toast('Ingresa el operador',true);if(!store)return toast('Ingresa o selecciona la tienda / destino',true);
+  if(!rows.length)return toast(mode==='BOX_2UPC_1MODEL'?'No hay cajas UPC + MODELO esperadas para esta distribución':'No hay UPC/SKU esperados para esta distribución',true);
+  state.activeDistribution={id:crypto.randomUUID?crypto.randomUUID():String(Date.now()+Math.random()),oc,store,user,masterExpected:'',mode,rows,scans:[],currentBox:null,startedAt:nowISO(),closedAt:null,status:'ABIERTA'};
+  save();renderDistribution();toast(mode==='BOX_2UPC_1MODEL'?'MacStore iniciado · secuencia 2 UPC + 1 MODELO':'Verify Distribution iniciado');
 }
 function findOtherDestination(code){
-  return distRows().find(r=>idText(r.code)===code && !(idText(r.oc)===idText(state.activeDistribution?.oc)&&String(r.store).toUpperCase()===String(state.activeDistribution?.store).toUpperCase()));
+  return distRows().find(r=>[idText(r.code),idText(r.upc),idText(r.model)].includes(code) && !(idText(r.oc)===idText(state.activeDistribution?.oc)&&String(r.store).toUpperCase()===String(state.activeDistribution?.store).toUpperCase()));
 }
 function setDistBanner(result,message){
   if(!dLastStatus)return;dLastStatus.className='dist-banner '+(result==='CORRECTO'?'green':result==='EXCESO'?'yellow':result?'red':'');dLastStatus.textContent=message||result||'LISTO PARA ESCANEAR';
 }
-function scanDistribution(input){
-  const d=state.activeDistribution;if(!d)return toast('Primero inicia una distribución',true);
-  const code=idText(input);if(!code)return toast('Escanea o captura UPC/SKU',true);
+function distAlert(message){try{if(navigator.vibrate)navigator.vibrate([180,80,180]);}catch(_e){}toast(message,true);}
+function scanDistributionBox(d,code){
+  const eventTime=nowISO(),user=d.user||String(dUser.value||'').trim();let result='CORRECTO',message='',row=null,step=1,expectedCode='UPC DE CAJA',boxNumber='';
+  if(!d.currentBox){
+    row=(d.rows||[]).find(r=>r.upc===code&&Number(r.doneBoxes||0)<Number(r.expectedBoxes||0));
+    if(row){
+      boxNumber=(d.rows||[]).reduce((a,r)=>a+Number(r.doneBoxes||0),0)+1;step=1;expectedCode=row.upc;
+      d.currentBox={batchKey:row.key,upc:row.upc,model:row.model,step:2,boxNumber};
+      message=`CAJA ${boxNumber} · 1/3 UPC OK · falta segundo UPC ${row.upc}`;
+    }else{
+      const exhausted=(d.rows||[]).find(r=>r.upc===code&&Number(r.doneBoxes||0)>=Number(r.expectedBoxes||0));
+      const modelHere=(d.rows||[]).find(r=>r.model===code&&Number(r.doneBoxes||0)<Number(r.expectedBoxes||0));
+      const other=findOtherDestination(code);
+      if(exhausted){result='EXCESO';message=`EXCESO · ${code} ya completó todas sus cajas`;}
+      else if(modelHere){result='SECUENCIA INCORRECTA';message=`SECUENCIA INCORRECTA · no puedes iniciar con MODELO ${code}; primero escanea UPC ${modelHere.upc}`;}
+      else if(other){result='DESTINO INCORRECTO';message=`DESTINO INCORRECTO · ${code} pertenece a ${other.oc} · ${other.store}`;}
+      else{result='NO SOLICITADO';message=`NO SOLICITADO · ${code} no pertenece a este destino`;}
+    }
+  }else{
+    row=(d.rows||[]).find(r=>r.key===d.currentBox.batchKey);boxNumber=d.currentBox.boxNumber;step=Number(d.currentBox.step||2);
+    if(!row){result='SECUENCIA INCORRECTA';message='No se pudo recuperar la caja activa; reinicia esta distribución.';}
+    else if(step===2){
+      expectedCode=row.upc;
+      if(code===row.upc){d.currentBox.step=3;message=`CAJA ${boxNumber} · 2/3 UPC OK · ahora MODELO ${row.model}`;}
+      else{
+        result='SECUENCIA INCORRECTA';
+        if(code===row.model)message=`ALERTA · CAJA ${boxNumber}: solo llevas 1 UPC. Falta segundo UPC ${row.upc} antes del MODELO ${row.model}`;
+        else if((d.rows||[]).some(r=>r.model===code))message=`ALERTA · CAJA ${boxNumber}: MODELO antes de tiempo. Esperado segundo UPC ${row.upc}`;
+        else message=`ALERTA · CAJA ${boxNumber}: esperado segundo UPC ${row.upc}, recibido ${code}`;
+      }
+    }else{
+      step=3;expectedCode=row.model;
+      if(code===row.model){
+        row.doneBoxes=Number(row.doneBoxes||0)+1;d.currentBox=null;
+        message=`CAJA ${boxNumber} COMPLETA · 3/3 · 2 UPC + 1 MODELO · ${row.doneBoxes}/${row.expectedBoxes} cajas`;
+      }else{
+        result='SECUENCIA INCORRECTA';
+        if(code===row.upc)message=`ALERTA · CAJA ${boxNumber}: detecté 3 UPC. Después de 2 UPC debe ir MODELO ${row.model}`;
+        else if((d.rows||[]).some(r=>r.model===code))message=`ALERTA · CAJA ${boxNumber}: MODELO incorrecto. Esperado ${row.model}, recibido ${code}`;
+        else message=`ALERTA · CAJA ${boxNumber}: esperado MODELO ${row.model}, recibido ${code}`;
+      }
+    }
+  }
+  if(row&&result==='CORRECTO'){row.lastScannedBy=user;row.lastScannedAt=eventTime;}
+  if(row&&result==='EXCESO'){row.excess=Number(row.excess||0)+1;row.lastAttemptBy=user;row.lastAttemptAt=eventTime;}
+  d.scans=d.scans||[];d.scans.push({id:crypto.randomUUID?crypto.randomUUID():String(Date.now()+Math.random()),time:eventTime,oc:d.oc,store:d.store,user,code,result,message,boxNumber,step,expectedCode,batchKey:row?.key||''});
+  dScanCode.value='';save();renderDistribution();setDistBanner(result,message);if(result==='CORRECTO')toast(message);else distAlert(message);
+}
+function scanDistributionGeneric(d,code){
   const last=(d.scans||[])[d.scans.length-1];if(last&&last.code===code&&(Date.now()-new Date(last.time).getTime())<1200)return toast('Lectura duplicada evitada',true);
   let result='CORRECTO',message='',row=d.rows.find(r=>r.code===code);
-  if(row){
-    if(Number(row.done||0)>=Number(row.expected||0)){row.excess=Number(row.excess||0)+1;result='EXCESO';message=`EXCESO · ${code} ya completó ${row.expected}/${row.expected}`;}
-    else{row.done=Number(row.done||0)+1;message=`CORRECTO · ${code} · ${row.done}/${row.expected}`;}
-  }else{
-    const other=findOtherDestination(code);
-    if(other){result='DESTINO INCORRECTO';message=`DESTINO INCORRECTO · pertenece a ${other.oc} · ${other.store}`;}
-    else{result='NO SOLICITADO';message=`NO SOLICITADO · ${code} no pertenece a la distribución cargada`;}
-  }
-  const eventTime=nowISO();
-  if(row&&result==='CORRECTO'){row.lastScannedBy=d.user||String(dUser.value||'').trim();row.lastScannedAt=eventTime;}
-  if(row&&result==='EXCESO'){row.lastAttemptBy=d.user||String(dUser.value||'').trim();row.lastAttemptAt=eventTime;}
-  d.scans=d.scans||[];d.scans.push({id:crypto.randomUUID?crypto.randomUUID():String(Date.now()+Math.random()),time:eventTime,oc:d.oc,store:d.store,user:d.user||String(dUser.value||'').trim(),masterExpected:d.masterExpected,code,result,message});
-  dScanCode.value='';save();renderDistribution();setDistBanner(result,message);toast(message,result!=='CORRECTO');
+  if(row){if(Number(row.done||0)>=Number(row.expected||0)){row.excess=Number(row.excess||0)+1;result='EXCESO';message=`EXCESO · ${code} ya completó ${row.expected}/${row.expected}`;}else{row.done=Number(row.done||0)+1;message=`CORRECTO · ${code} · ${row.done}/${row.expected}`;}}
+  else{const other=findOtherDestination(code);if(other){result='DESTINO INCORRECTO';message=`DESTINO INCORRECTO · pertenece a ${other.oc} · ${other.store}`;}else{result='NO SOLICITADO';message=`NO SOLICITADO · ${code} no pertenece a la distribución cargada`;}}
+  const eventTime=nowISO();if(row&&result==='CORRECTO'){row.lastScannedBy=d.user||String(dUser.value||'').trim();row.lastScannedAt=eventTime;}if(row&&result==='EXCESO'){row.lastAttemptBy=d.user||String(dUser.value||'').trim();row.lastAttemptAt=eventTime;}
+  d.scans=d.scans||[];d.scans.push({id:crypto.randomUUID?crypto.randomUUID():String(Date.now()+Math.random()),time:eventTime,oc:d.oc,store:d.store,user:d.user||String(dUser.value||'').trim(),code,result,message});
+  dScanCode.value='';save();renderDistribution();setDistBanner(result,message);if(result==='CORRECTO')toast(message);else distAlert(message);
+}
+function scanDistribution(input){
+  const d=state.activeDistribution;if(!d)return toast('Primero inicia una distribución',true);const code=idText(input);if(!code)return toast('Escanea o captura UPC / modelo',true);
+  if(d.mode==='BOX_2UPC_1MODEL')return scanDistributionBox(d,code);return scanDistributionGeneric(d,code);
 }
 function undoDistribution(){
   const d=state.activeDistribution;if(!d||(d.scans||[]).length===0)return toast('No hay lectura para deshacer',true);
-  const last=d.scans.pop();if(last.result==='CORRECTO'){const row=d.rows.find(r=>r.code===last.code);if(row&&row.done>0)row.done--;if(row){const prev=[...(d.scans||[])].reverse().find(x=>x.code===last.code&&x.result==='CORRECTO');row.lastScannedBy=prev?.user||'';row.lastScannedAt=prev?.time||'';}}
-  else if(last.result==='EXCESO'){const row=d.rows.find(r=>r.code===last.code);if(row&&row.excess>0)row.excess--;if(row){const prev=[...(d.scans||[])].reverse().find(x=>x.code===last.code&&x.result==='EXCESO');row.lastAttemptBy=prev?.user||'';row.lastAttemptAt=prev?.time||'';}}
+  const last=d.scans.pop();
+  if(d.mode==='BOX_2UPC_1MODEL'){
+    if(last.result==='CORRECTO'){
+      const row=(d.rows||[]).find(r=>r.key===last.batchKey);
+      if(row){
+        if(Number(last.step)===3){if(row.doneBoxes>0)row.doneBoxes--;d.currentBox={batchKey:row.key,upc:row.upc,model:row.model,step:3,boxNumber:last.boxNumber};}
+        else if(Number(last.step)===2)d.currentBox={batchKey:row.key,upc:row.upc,model:row.model,step:2,boxNumber:last.boxNumber};
+        else d.currentBox=null;
+        const prev=[...(d.scans||[])].reverse().find(x=>x.batchKey===row.key&&x.result==='CORRECTO');row.lastScannedBy=prev?.user||'';row.lastScannedAt=prev?.time||'';
+      }
+    }else if(last.result==='EXCESO'){const row=(d.rows||[]).find(r=>r.key===last.batchKey);if(row&&row.excess>0)row.excess--;}
+  }else{
+    if(last.result==='CORRECTO'){const row=d.rows.find(r=>r.code===last.code);if(row&&row.done>0)row.done--;if(row){const prev=[...(d.scans||[])].reverse().find(x=>x.code===last.code&&x.result==='CORRECTO');row.lastScannedBy=prev?.user||'';row.lastScannedAt=prev?.time||'';}}
+    else if(last.result==='EXCESO'){const row=d.rows.find(r=>r.code===last.code);if(row&&row.excess>0)row.excess--;}
+  }
   save();renderDistribution();setDistBanner('',`DESHECHO · ${last.code}`);toast('Última lectura deshecha');
 }
 function closeDistribution(){
-  const d=state.activeDistribution;if(!d)return toast('No hay distribución activa',true);
-  const t=distTotals(d);if(t.pending>0)return toast(`No se puede cerrar: faltan ${t.pending} piezas`,true);
-  const master=idText(dMasterScan.value);
-  if(d.masterExpected){
-    if(!master)return toast('Escanea o captura la Etiqueta Master esperada',true);
-    if(master!==d.masterExpected)return toast(`MASTER INCORRECTA. Esperada: ${d.masterExpected}`,true);
-    d.masterScanned=master;d.masterValidation='CODIGO VALIDADO';
-  }else{
-    if(master){d.masterScanned=master;d.masterValidation='CODIGO CAPTURADO';}
-    else{
-      if(!confirm(`Confirma visualmente que la Etiqueta Master corresponde a:
-${d.store}
-OC ${d.oc}`))return;
-      d.masterScanned='CONFIRMACION VISUAL';d.masterValidation=`DESTINO CONFIRMADO · ${d.store}`;
-    }
-  }
-  d.closedAt=nowISO();d.status='CERRADA';d.totalPieces=t.expected;d.incidents=t.incidents;
+  const d=state.activeDistribution;if(!d)return toast('No hay distribución activa',true);const t=distTotals(d);
+  if(t.pending>0)return toast(d.mode==='BOX_2UPC_1MODEL'?`No se puede cerrar: faltan ${t.boxesPending} cajas / ${t.pending} registros`:`No se puede cerrar: faltan ${t.pending} piezas`,true);
+  if(d.mode==='BOX_2UPC_1MODEL'&&d.currentBox)return toast('No se puede cerrar: hay una caja con secuencia incompleta',true);
+  if(!confirm(`Confirma visualmente que la etiqueta Master muestra el destino:\n\n${d.store}\n\nLa etiqueta no necesita código de barras para este flujo.`))return;
+  d.masterScanned='SIN CODIGO';d.masterValidation=`DESTINO CONFIRMADO VISUALMENTE · ${d.store}`;
+  d.closedAt=nowISO();d.status='CERRADA';d.totalPieces=t.expected;d.totalBoxes=t.boxesExpected||0;d.incidents=t.incidents;
   state.distributions=state.distributions||[];state.distributions.unshift(JSON.parse(JSON.stringify(d)));state.activeDistribution=null;
-  dMasterScan.value='';dScanCode.value='';save();renderDistribution();renderDistributionHistory();setDistBanner('CORRECTO','MASTER VALIDADA · DISTRIBUCIÓN COMPLETA');toast('Etiqueta Master cerrada y validada');
+  dMasterScan.value='';dScanCode.value='';save();renderDistribution();renderDistributionHistory();setDistBanner('CORRECTO','DESTINO CONFIRMADO · DISTRIBUCIÓN COMPLETA');toast('Destino confirmado y distribución cerrada');
 }
 function renderDistribution(){
-  const d=state.activeDistribution;if(!d){dWork.style.display='none';return;}
-  dWork.style.display='block';const t=distTotals(d);
-  if(dUser&&!dUser.value&&d.user)dUser.value=d.user;
-  dSummary.innerHTML=`<b>${escapeHtml(d.oc)}</b> · ${escapeHtml(d.store)}${d.user?'<br>Operador: '+escapeHtml(d.user):''}${d.masterExpected?'<br>Master esperada: '+escapeHtml(d.masterExpected):'<br>Master: confirmación visual permitida'}`;
+  const d=state.activeDistribution;if(!d){dWork.style.display='none';return;}dWork.style.display='block';const t=distTotals(d);if(dUser&&!dUser.value&&d.user)dUser.value=d.user;
+  if(d.mode==='BOX_2UPC_1MODEL'){
+    const active=d.currentBox?`<br><b>Caja ${d.currentBox.boxNumber} en curso:</b> ${d.currentBox.step===2?'falta segundo UPC '+escapeHtml(d.currentBox.upc):'falta MODELO '+escapeHtml(d.currentBox.model)}`:'';
+    dSummary.innerHTML=`<b>${escapeHtml(d.oc)}</b> · ${escapeHtml(d.store)}${d.user?'<br>Operador: '+escapeHtml(d.user):''}<br><b>MacStore:</b> ${t.boxesDone}/${t.boxesExpected} cajas · ${t.done}/${t.expected} registros${active}`;
+  }else dSummary.innerHTML=`<b>${escapeHtml(d.oc)}</b> · ${escapeHtml(d.store)}${d.user?'<br>Operador: '+escapeHtml(d.user):''}<br>Modo genérico por cantidad`;
   dOk.textContent=t.done;dPending.textContent=t.pending;dIncidents.textContent=t.incidents;
-  dRows.innerHTML=d.rows.map(r=>`<div class="row ${r.done>=r.expected?'ok':'verify'}"><b>${escapeHtml(r.code)}</b> <span class="badge">${r.done}/${r.expected}</span><div class="meta">${escapeHtml(r.desc||'')}${r.excess?'<br>Excesos detectados: '+r.excess:''}${r.lastScannedBy?'<br>Última lectura: '+escapeHtml(r.lastScannedBy)+' · '+escapeHtml(fmtDate(r.lastScannedAt)):''}</div></div>`).join('');
+  if(d.mode==='BOX_2UPC_1MODEL')dRows.innerHTML=d.rows.map(r=>`<div class="row ${r.doneBoxes>=r.expectedBoxes?'ok':'verify'}"><b>UPC ${escapeHtml(r.upc)}</b> <span class="badge">CAJAS ${r.doneBoxes}/${r.expectedBoxes}</span><div class="meta">MODELO: <b>${escapeHtml(r.model)}</b>${r.desc?'<br>'+escapeHtml(r.desc):''}${r.excess?'<br>Excesos detectados: '+r.excess:''}${r.lastScannedBy?'<br>Última lectura: '+escapeHtml(r.lastScannedBy)+' · '+escapeHtml(fmtDate(r.lastScannedAt)):''}</div></div>`).join('');
+  else dRows.innerHTML=d.rows.map(r=>`<div class="row ${r.done>=r.expected?'ok':'verify'}"><b>${escapeHtml(r.code)}</b> <span class="badge">${r.done}/${r.expected}</span><div class="meta">${escapeHtml(r.desc||'')}${r.excess?'<br>Excesos detectados: '+r.excess:''}${r.lastScannedBy?'<br>Última lectura: '+escapeHtml(r.lastScannedBy)+' · '+escapeHtml(fmtDate(r.lastScannedAt)):''}</div></div>`).join('');
   if((d.scans||[]).length){const last=d.scans[d.scans.length-1];setDistBanner(last.result,last.message);}else setDistBanner('','LISTO PARA ESCANEAR');
 }
 function renderDistributionHistory(){
   if(!dHistory)return;const arr=state.distributions||[];
-  dHistory.innerHTML=arr.length?arr.slice(0,40).map(d=>`<div class="row ok"><b>${escapeHtml(d.oc)} · ${escapeHtml(d.store)}</b> <span class="badge">${d.totalPieces||0} pzas</span><div class="meta">Operador: ${escapeHtml(d.user||'SIN OPERADOR')}<br>Master: ${escapeHtml(d.masterScanned||d.masterExpected||'SIN MASTER')} · ${escapeHtml(d.masterValidation||'')} · Incidencias: ${d.incidents||0}<br>${fmtDate(d.closedAt)}</div></div>`).join(''):'<div class="note">Sin distribuciones cerradas.</div>';
+  dHistory.innerHTML=arr.length?arr.slice(0,40).map(d=>{const t=distTotals(d);return `<div class="row ok"><b>${escapeHtml(d.oc)} · ${escapeHtml(d.store)}</b> <span class="badge">${d.mode==='BOX_2UPC_1MODEL'?(d.totalBoxes||t.boxesExpected)+' cajas':(d.totalPieces||0)+' pzas'}</span><div class="meta">Operador: ${escapeHtml(d.user||'SIN OPERADOR')}<br>${escapeHtml(d.masterValidation||'DESTINO SIN CONFIRMAR')} · Incidencias: ${d.incidents||0}<br>${fmtDate(d.closedAt)}</div></div>`;}).join(''):'<div class="note">Sin distribuciones cerradas.</div>';
 }
 async function exportDistributionExcel(){
-  const base=[['OC','DESTINO/TIENDA','UPC/SKU','DESCRIPCION','CANTIDAD','ETIQUETA MASTER']];
-  distRows().forEach(r=>base.push([r.oc,r.store,r.code,r.desc||'',r.qty,r.master||'']));
-  const summary=[['OC','OPERADOR','DESTINO/TIENDA','ETIQUETA MASTER','VALIDACION MASTER','ESPERADO','VALIDADO','PENDIENTE','INCIDENCIAS','ESTATUS','INICIO','CIERRE']];
-  const detail=[['OC','OPERADOR','DESTINO/TIENDA','ETIQUETA MASTER','UPC/SKU','DESCRIPCION','ESPERADO','VALIDADO','EXCESOS','ESTATUS','ULTIMO_OPERADOR','ULTIMA_FECHA_HORA']];
-  const scans=[['FECHA_HORA','FECHA','HORA','OC','OPERADOR','DESTINO/TIENDA','ETIQUETA MASTER','UPC/SKU','RESULTADO','DETALLE']];
+  const base=[['OC','DESTINO/TIENDA','UPC','MODELO','CANTIDAD/CAJAS','DESCRIPCION','MODO']];
+  distRows().forEach(r=>base.push([r.oc,r.store,r.upc||r.code,r.model||'',r.qty,r.desc||'',isBoxModeRow(r)?'2 UPC + 1 MODELO':'GENERIC']));
+  const summary=[['OC','OPERADOR','DESTINO/TIENDA','MODO','CAJAS_ESPERADAS','CAJAS_COMPLETAS','REGISTROS_ESPERADOS','VALIDADOS','PENDIENTES','INCIDENCIAS','ESTATUS','INICIO','CIERRE','VALIDACION_DESTINO']];
+  const detail=[['OC','OPERADOR','DESTINO/TIENDA','MODO','UPC','MODELO','DESCRIPCION','CAJAS/ESPERADO','CAJAS/VALIDADO','PENDIENTE','EXCESOS','ULTIMO_OPERADOR','ULTIMA_FECHA_HORA']];
+  const scans=[['FECHA_HORA','FECHA','HORA','OC','OPERADOR','DESTINO/TIENDA','CAJA','PASO','ESPERADO','LEIDO','RESULTADO','DETALLE']];
   const all=[...(state.distributions||[])];if(state.activeDistribution)all.unshift(state.activeDistribution);
   all.forEach(d=>{
-    const t=distTotals(d);summary.push([d.oc,d.user||'',d.store,d.masterScanned||d.masterExpected||'',d.masterValidation||'',t.expected,t.done,t.pending,t.incidents,d.status||'ABIERTA',d.startedAt||'',d.closedAt||'']);
-    (d.rows||[]).forEach(r=>detail.push([d.oc,d.user||'',d.store,d.masterScanned||d.masterExpected||'',r.code,r.desc||'',r.expected,r.done||0,r.excess||0,(r.done||0)>=r.expected?'COMPLETO':'PENDIENTE',r.lastScannedBy||'',r.lastScannedAt||'']));
-    (d.scans||[]).forEach(x=>scans.push([x.time,localDateOnly(x.time),localTimeOnly(x.time),d.oc,x.user||d.user||'',d.store,d.masterScanned||d.masterExpected||'',x.code,x.result,x.message||'']));
+    const t=distTotals(d);summary.push([d.oc,d.user||'',d.store,d.mode==='BOX_2UPC_1MODEL'?'2 UPC + 1 MODELO':'GENERIC',t.boxesExpected||'',t.boxesDone||'',t.expected,t.done,t.pending,t.incidents,d.status||'ABIERTA',d.startedAt||'',d.closedAt||'',d.masterValidation||'']);
+    if(d.mode==='BOX_2UPC_1MODEL')(d.rows||[]).forEach(r=>detail.push([d.oc,d.user||'',d.store,'2 UPC + 1 MODELO',r.upc,r.model,r.desc||'',r.expectedBoxes,r.doneBoxes||0,Math.max(r.expectedBoxes-(r.doneBoxes||0),0),r.excess||0,r.lastScannedBy||'',r.lastScannedAt||'']));
+    else (d.rows||[]).forEach(r=>detail.push([d.oc,d.user||'',d.store,'GENERIC',r.code,'',r.desc||'',r.expected,r.done||0,Math.max(r.expected-(r.done||0),0),r.excess||0,r.lastScannedBy||'',r.lastScannedAt||'']));
+    (d.scans||[]).forEach(x=>scans.push([x.time,localDateOnly(x.time),localTimeOnly(x.time),d.oc,x.user||d.user||'',d.store,x.boxNumber||'',x.step||'',x.expectedCode||'',x.code,x.result,x.message||'']));
   });
   if(base.length===1&&all.length===0)return toast('No hay datos de Distribution para exportar',true);
   await downloadWorkbook('inventix_verify_distribution_resultado_'+dateTag()+'.xlsx',[
-    {name:'BASE_IMPORTADA',rows:base,textColumns:['OC','UPC/SKU','ETIQUETA MASTER'],widths:[18,28,22,36,12,24]},
-    {name:'RESUMEN_OC',rows:summary,textColumns:['OC','ETIQUETA MASTER'],widths:[18,20,28,24,28,12,12,12,12,16,22,22]},
-    {name:'DETALLE',rows:detail,textColumns:['OC','ETIQUETA MASTER','UPC/SKU'],widths:[18,20,28,24,22,36,12,12,12,16,20,22]},
-    {name:'LECTURAS',rows:scans,textColumns:['OC','ETIQUETA MASTER','UPC/SKU'],widths:[22,14,14,18,20,28,24,22,22,46]}
+    {name:'BASE_IMPORTADA',rows:base,textColumns:['OC','UPC','MODELO'],widths:[18,30,22,20,16,38,22]},
+    {name:'RESUMEN_OC',rows:summary,textColumns:['OC'],widths:[18,20,30,22,16,16,18,14,14,14,16,22,22,42]},
+    {name:'DETALLE',rows:detail,textColumns:['OC','UPC','MODELO'],widths:[18,20,30,22,22,20,38,16,16,14,12,20,22]},
+    {name:'LECTURAS',rows:scans,textColumns:['OC','ESPERADO','LEIDO'],widths:[22,14,14,18,20,30,10,10,22,22,24,60]}
   ]);
 }
 
@@ -1462,7 +1553,7 @@ dUndoBtn.addEventListener('click',undoDistribution);
 dCloseBtn.addEventListener('click',closeDistribution);
 dExportBtn.addEventListener('click',exportDistributionExcel);
 dTemplateBtn.addEventListener('click',async()=>{
-  await downloadWorkbook('plantilla_verify_distribution.xlsx',[{name:'DISTRIBUTION',rows:[['OC','DESTINO/TIENDA','UPC/SKU','DESCRIPCION','CANTIDAD','ETIQUETA MASTER'],['OC 673505','MACSTORE BUENAVISTA','7500000000001','ARTICULO EJEMPLO',3,'MASTER-673505'],['OC 673505','MACSTORE BUENAVISTA','7500000000002','SEGUNDO ARTICULO',2,'MASTER-673505']],textColumns:['OC','UPC/SKU','ETIQUETA MASTER'],widths:[18,28,22,36,12,24]}]);
+  await downloadWorkbook('plantilla_verify_distribution_macstore.xlsx',[{name:'DISTRIBUTION',rows:[['OC','DESTINO/TIENDA','UPC','MODELO','CANTIDAD/CAJAS','DESCRIPCION'],['673442','MACSTORE MAZATLAN','4895241109027','EXTMAG005',77,'EJEMPLO MACSTORE']],textColumns:['OC','UPC','MODELO'],widths:[18,30,22,20,18,38]}]);
 });
 
 // Cámara continua: el permiso se solicita una sola vez por sesión de escaneo.
