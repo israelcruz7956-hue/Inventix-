@@ -81,7 +81,7 @@ hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
 
 <header>
   <div class="brand">INVENTI<span>X</span> CORE</div>
-  <div class="sub">v1.7.8 · Verify Tech + Verify Distribution · MacStore 2 UPC + 1 modelo · Trazabilidad · Cámara continua · Excel + persistencia · Reset visible</div>
+  <div class="sub">v1.7.9 · Verify Tech + Distribution · Semáforo de lectura · MacStore 2 UPC + 1 modelo · Trazabilidad · Cámara continua · Excel + persistencia</div>
 </header>
 
 <main>
@@ -228,6 +228,8 @@ hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
       <div id="vTechUPCStatus" class="note" style="margin-top:6px"></div>
     </div>
     <label id="vCodeLabel">UPC / Serie / IMEI</label><input id="vCode" placeholder="Código a validar" autocomplete="off" autocapitalize="off" spellcheck="false">
+
+    <div id="vLastStatus" class="dist-banner">LISTO PARA ESCANEAR</div>
     <div id="vFastNote" class="note" style="margin-top:6px">Modo ágil: lector físico o captura manual = un solo evento. Cámara continua: autoriza una vez, escanea todo el lote y ciérrala al terminar.</div>
     <div class="note" style="margin-top:6px"><b>Trazabilidad:</b> cada lectura registra automáticamente operador, fecha y hora.</div>
     <button id="vCameraBtn" class="btn secondary">📷 Abrir cámara continua</button>
@@ -841,6 +843,15 @@ document.getElementById('saveExit').addEventListener('click',()=>{
   if(ok){ sQty.value=''; }
   setTimeout(()=>btn.disabled=false,800);
 });
+function hulkVibrate(pattern){try{if(navigator.vibrate)navigator.vibrate(pattern);}catch(_e){}}
+function setVerifyBanner(result,message){
+  const el=document.getElementById('vLastStatus'); if(!el)return;
+  const good=['OK','COMPLETO'].includes(result);
+  const warn=['EXCEDENTE','DUPLICADA'].includes(result);
+  el.className='dist-banner '+(good?'green':warn?'yellow':result?'red':'');
+  el.textContent=message||result||'LISTO PARA ESCANEAR';
+}
+
 let lastVerifyRead={key:'',time:0};
 function registerVerifyRead(rawCode){
   const inputCode=idText(rawCode);
@@ -919,6 +930,14 @@ function registerVerifyRead(rawCode){
     const nextUPC=tech?idText(state.verifyTechUPC?.[oc]||''):'';
     msg=tech&&nextUPC&&nextUPC!==activeUPC?`UPC ${activeUPC} COMPLETO · siguiente ${nextUPC}`:(tech?'UPC COMPLETO':'Código COMPLETO');
   }else msg='OK';
+  setVerifyBanner(result,msg);
+  if(bad){
+    hulkVibrate([180,80,180]);
+  }else if(result==='COMPLETO'){
+    hulkVibrate([70,40,70]);
+  }else{
+    hulkVibrate(60);
+  }
   toast(msg,bad);
   return true;
 }
