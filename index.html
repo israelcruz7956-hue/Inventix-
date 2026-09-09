@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#0F2747">
 <link rel="manifest" href="manifest.json">
-<title>INVENTIX Core v1.7.5</title>
+<title>INVENTIX Core v1.8.1 Office Depot UPC</title>
 <style>
 :root{
   --navy:#0F2747;--navy2:#08192f;--blue:#1E4DBC;--orange:#F5A623;
@@ -67,12 +67,6 @@ hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
 .dist-banner{border-radius:12px;padding:12px;margin:10px 0;font-weight:900;text-align:center;background:#16365f;color:#dce8fa}
 .dist-banner.green{background:#123f2a;color:#8fe0ad}.dist-banner.yellow{background:#574811;color:#ffe58a}.dist-banner.red{background:#512026;color:#ffadb1}
 .dist-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:10px 0}.dist-kpis>div{background:#0A1E38;border-radius:10px;padding:9px;text-align:center;border:1px solid #1E4DBC44}.dist-kpis strong{display:block;font-size:18px}.dist-kpis small{font-size:9px;color:var(--muted)}
-.camera-overlay{display:none;position:fixed;inset:0;background:#020913ee;z-index:200;padding:18px;align-items:center;justify-content:center}
-.camera-overlay.on{display:flex}
-.camera-card{width:100%;max-width:480px;background:var(--navy);border:1px solid #1E4DBC66;border-radius:16px;padding:14px;box-shadow:0 18px 60px #000c}
-.camera-card video{width:100%;max-height:58vh;object-fit:cover;background:#000;border-radius:12px;margin-top:10px}
-.camera-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.camera-hint{font-size:11px;color:var(--muted);line-height:1.45;margin-top:8px}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
@@ -81,7 +75,7 @@ hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
 
 <header>
   <div class="brand">INVENTI<span>X</span> CORE</div>
-  <div class="sub">v1.7.9 · Verify Tech + Distribution · Semáforo de lectura · MacStore 2 UPC + 1 modelo · Trazabilidad · Cámara continua · Excel + persistencia</div>
+  <div class="sub">v1.8.1 · OFFICE DEPOT ACTIVO · Bloque/Tienda + SKU secuencia + validación UPC · Excel multihoja + persistencia</div>
 </header>
 
 <main>
@@ -111,17 +105,6 @@ hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
     </div>
     <input id="importFile" type="file" accept=".json,application/json" style="display:none">
     <div class="note" style="margin-top:8px">El respaldo JSON permite recuperar datos aunque cambies de teléfono o limpies el navegador.</div>
-  </div>
-  <div class="card">
-    <h2>Modo pruebas · reinicio controlado</h2>
-    <div class="note">Para prácticas de implementación. Cada acción borra únicamente los datos guardados en <b>este navegador de este teléfono</b>. Antes de una prueba importante puedes generar un respaldo JSON.</div>
-    <div class="toolbar" style="margin-top:10px">
-      <button id="resetVerifyBtn" class="btn ghost">♻️ Reiniciar Verify</button>
-      <button id="resetDistributionBtn" class="btn ghost">♻️ Reiniciar Distribution</button>
-      <button id="resetOperationBtn" class="btn ghost">♻️ Reiniciar operación</button>
-      <button id="resetAllBtn" class="btn danger">🧹 Borrar todo este dispositivo</button>
-    </div>
-    <div class="note" style="margin-top:8px"><b>Verify:</b> orden importada, lecturas, cierres y Tech. <b>Distribution:</b> base importada, distribución activa e historial. <b>Operación:</b> inventario, Kardex y toma física. <b>Borrar todo:</b> deja Inventix como recién abierto en este navegador.</div>
   </div>
 </section>
 
@@ -203,8 +186,6 @@ hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
     <input id="importVerifyFile" type="file" accept=".xlsx,.xls,.csv,text/csv,.txt,text/plain" style="display:none">
     <button id="templateVerifyTechBtn" class="btn ghost">📱 Plantilla Verify Tech · Series</button>
     <div class="note" style="margin-top:8px"><b>Verify Cantidad:</b> OC/OV · UPC/SKU · CANTIDAD · DESCRIPCION. <b>Verify Tech:</b> OC/OV · UPC/SKU · SERIE/IMEI · MODELO/DESCRIPCION. En Tech, cada fila representa una serie única y la cantidad esperada por UPC se obtiene contando sus series.</div>
-    <button id="resetVerifyInlineBtn" class="btn danger">♻️ Reiniciar Verify · nueva práctica</button>
-    <div class="note" style="margin-top:6px">Borra solo la práctica de Verify de este teléfono/navegador: archivo importado, lecturas, excepciones, cierres y Tech. Inventario y Distribution se conservan.</div>
     <div class="verify-status">
       <div class="sem green"><strong id="vScanned">0</strong>OK ESCANEADO</div>
       <div class="sem yellow"><strong id="vMissing">0</strong>PENDIENTES</div>
@@ -228,16 +209,12 @@ hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
       <div id="vTechUPCStatus" class="note" style="margin-top:6px"></div>
     </div>
     <label id="vCodeLabel">UPC / Serie / IMEI</label><input id="vCode" placeholder="Código a validar" autocomplete="off" autocapitalize="off" spellcheck="false">
-
-    <div id="vLastStatus" class="dist-banner">LISTO PARA ESCANEAR</div>
-    <div id="vFastNote" class="note" style="margin-top:6px">Modo ágil: lector físico o captura manual = un solo evento. Cámara continua: autoriza una vez, escanea todo el lote y ciérrala al terminar.</div>
-    <div class="note" style="margin-top:6px"><b>Trazabilidad:</b> cada lectura registra automáticamente operador, fecha y hora.</div>
-    <button id="vCameraBtn" class="btn secondary">📷 Abrir cámara continua</button>
+    <div id="vFastNote" class="note" style="margin-top:6px">Modo ágil: lector físico o captura manual. El lector envía Enter y Verify valida en un solo evento; Inventix no solicita permiso de cámara.</div>
     <button id="verifyBtn" class="btn primary">✅ Validar</button>
     <button id="undoVerifyBtn" class="btn ghost">↩️ Deshacer última lectura</button>
     <hr>
     <h2>Excepción de surtido</h2>
-    <label>UPC origen / excepción</label>
+    <label>UPC origen pendiente</label>
     <input id="vExceptionOriginal" list="verifyPendingList" placeholder="UPC esperado"><datalist id="verifyPendingList"></datalist>
     <div class="grid2">
       <div><label>Cantidad</label><input id="vExceptionQty" type="number" min="1" value="1" inputmode="numeric"></div>
@@ -246,11 +223,10 @@ hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
     <label>Observación</label>
     <input id="vObservation" value="SIN SUSTITUTO" placeholder="SIN SUSTITUTO">
     <button id="closeVerifyShortageBtn" class="btn danger">⚠️ Registrar Desabasto</button>
-    <button id="undoShortageBtn" class="btn ghost">↩️ Revertir desabasto</button>
     <button id="verifySubstituteBtn" class="btn secondary">🔁 Mandar sustituto</button>
     <button id="nextVerifyOCBtn" class="btn primary">➡️ Cerrar y pasar a siguiente OC</button>
     <div id="verifyClosureNote" class="note" style="margin-top:8px"></div>
-    <div class="note" style="margin-top:8px">Para desabasto: selecciona el UPC y cantidad. Si dejas UPC origen vacío, todos los pendientes de la OC se registran como <b>SIN SUSTITUTO</b>. Si después llega la mercancía, usa <b>Revertir desabasto</b>: Inventix conserva el evento original, reabre la OC y vuelve a dejar esas piezas pendientes para escanearlas. Para sustituto, captura UPC origen + UPC sustituto; Inventix registra la salida del sustituto y deja trazabilidad del reetiquetado/embalaje.</div>
+    <div class="note" style="margin-top:8px">Para desabasto: selecciona el UPC y cantidad. Si dejas UPC origen vacío, todos los pendientes de la OC se registran como <b>SIN SUSTITUTO</b>. Para sustituto, captura UPC origen + UPC sustituto; Inventix registra la salida del sustituto y deja trazabilidad del reetiquetado/embalaje.</div>
     <div id="verifyList"></div>
   </div>
 
@@ -258,33 +234,35 @@ hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
 <section id="distribution" class="page">
   <div class="card">
     <h2>Verify Distribution</h2>
-    <div class="note">Asegura desde el primer conteo y empaquetado que cada caja termine exactamente en la OC y destino correctos, respetando la secuencia de lectura definida.</div>
-    <div class="note" style="margin-top:6px"><b>Trazabilidad:</b> cada UPC o MODELO escaneado conserva operador, fecha y hora del evento, incluyendo número de caja y paso de secuencia cuando aplica.</div>
+    <div class="note">Asegura desde el primer conteo y empaquetado que cada artículo termine exactamente en la OC y destino correctos. El perfil activo define los candados: Master escaneable, secuencia de producto o validación visual por tienda.</div>
+    <label>Perfil de distribución</label>
+    <select id="dProfile">
+      <option value="AUTO">Auto detectar</option>
+      <option value="GENERIC">Genérico / Master</option>
+      <option value="OFFICE_DEPOT">Office Depot · bloque/tienda + UPC</option>
+    </select>
+    <div id="dProfileNote" class="note" style="margin-top:6px">Auto detectar: Inventix reconoce el formato de la distribución.</div>
     <div class="toolbar" style="margin-top:10px">
       <button id="dImportBtn" class="btn secondary">📥 Importar Excel</button>
       <button id="dTemplateBtn" class="btn ghost">🧾 Plantilla Excel</button>
       <button id="dExportBtn" class="btn ghost">📤 Exportar Excel</button>
     </div>
     <input id="dImportFile" type="file" accept=".xlsx,.xls,.csv,text/csv,.txt,text/plain" style="display:none">
-    <div class="note" style="margin-top:8px">Base compatible con MacStore: <b>OC · DESTINO/TIENDA · UPC · MODELO · CANTIDAD/CAJAS · DESCRIPCION</b>. Si existen UPC + MODELO, Inventix activa automáticamente la secuencia por caja <b>UPC → UPC → MODELO</b>. Sin MODELO conserva el modo genérico.</div>
+    <div class="note" style="margin-top:8px"><b>Genérico:</b> OC · DESTINO/TIENDA · UPC/SKU · DESCRIPCION · CANTIDAD · ETIQUETA MASTER. <b>Office Depot:</b> ORDER_NO · LOC_ID · SKU (secuencia) · UPC · CANT/MAX_CANT y marcadores BLOQUE. El número de tienda se revisa visualmente y el artículo se valida por UPC. El libro puede traer varias hojas: Inventix busca la hoja compatible.</div>
     <label>OC / destino importado</label>
     <select id="dImportedGroup"><option value="">Sin archivo cargado</option></select>
     <div id="dImportStatus" class="note" style="margin-top:6px"></div>
-    <button id="resetDistributionInlineBtn" class="btn danger">♻️ Reiniciar Distribution · nueva práctica</button>
-    <div class="note" style="margin-top:6px">Borra solo la práctica de Distribution de este teléfono/navegador: base importada, distribución activa e historial. Verify e inventario se conservan.</div>
   </div>
 
   <div class="card">
     <h2>Preparar distribución</h2>
     <div class="grid2">
-      <div><label>OC</label><input id="dOC" placeholder="673505"></div>
-      <div><label>Operador</label><input id="dUser" placeholder="Nombre"></div>
+      <div><label>OC</label><input id="dOC" placeholder="OC 673505"></div>
+      <div><label>Destino / Tienda</label><input id="dStore" placeholder="MACSTORE BUENAVISTA"></div>
     </div>
-    <label>Destino / Tienda</label><input id="dStore" placeholder="MACSTORE BUENAVISTA">
-    <input id="dMasterExpected" type="hidden" value="">
-    <div id="dModeInfo" class="note" style="margin-top:8px"><b>Modo:</b> se define al seleccionar la OC/destino importado.</div>
-    <label>Esperado de esta OC / destino</label>
-    <textarea id="dExpected" rows="7" style="width:100%;background:#0A1E38;border:1.5px solid #1E4DBC55;border-radius:10px;color:white;padding:11px 12px;font-size:14px" placeholder="UPC,MODELO,CAJAS,DESCRIPCION&#10;4895241109027,EXTMAG005,77,EJEMPLO MACSTORE"></textarea>
+    <div id="dMasterPrepareWrap"><label>Etiqueta Master esperada</label><input id="dMasterExpected" placeholder="Master / código de etiqueta"></div>
+    <label>Esperado de esta OC / Master</label>
+    <textarea id="dExpected" rows="7" style="width:100%;background:#0A1E38;border:1.5px solid #1E4DBC55;border-radius:10px;color:white;padding:11px 12px;font-size:14px" placeholder="UPC,CANTIDAD,DESCRIPCION&#10;7500000000001,3,ARTICULO A&#10;7500000000002,2,ARTICULO B"></textarea>
     <button id="dStartBtn" class="btn primary">▶️ Iniciar validación</button>
   </div>
 
@@ -297,16 +275,18 @@ hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
       <div><strong id="dIncidents">0</strong><small>INCIDENCIAS</small></div>
     </div>
     <div id="dLastStatus" class="dist-banner">LISTO PARA ESCANEAR</div>
-    <label>Escaneo UPC / modelo</label><input id="dScanCode" placeholder="Escanea UPC o código de modelo">
-    <button id="dCameraBtn" class="btn secondary">📷 Abrir cámara continua</button>
+    <div id="dOfficeNext" class="note" style="display:none;margin:10px 0;padding:10px;border:1px solid #F5A62355;border-radius:10px;background:#0A1E38"></div>
+    <label id="dScanLabel">Escaneo UPC / SKU</label><input id="dScanCode" placeholder="Escanea o captura código">
     <button id="dScanBtn" class="btn secondary">✅ Confirmar artículo</button>
     <button id="dUndoBtn" class="btn ghost">↩️ Deshacer última lectura</button>
     <div id="dRows" style="margin-top:12px"></div>
-    <hr>
-    <h2>Cierre de destino</h2>
-    <div class="note">La etiqueta Master de MacStore no requiere código de barras para este flujo: <b>solo muestra el destino</b>. El cierre exige completar todas las cajas y confirmar visualmente que el destino de la etiqueta coincide con el seleccionado en Inventix.</div>
-    <input id="dMasterScan" type="hidden" value="">
-    <button id="dCloseBtn" class="btn primary">🔒 Confirmar destino y cerrar distribución</button>
+    <div id="dMasterCloseWrap">
+      <hr>
+      <h2>Cierre de Etiqueta Master</h2>
+      <div class="note">El cierre exige que todo lo solicitado esté completo. Si el Excel trae una Master, debe coincidir; si no, la lectura capturada queda asociada como Master de la distribución.</div>
+      <label>Escanear / capturar Etiqueta Master</label><input id="dMasterScan" placeholder="Etiqueta Master">
+    </div>
+    <button id="dCloseBtn" class="btn primary">🔒 Cerrar y validar Master</button>
   </div>
 
   <div class="card">
@@ -316,19 +296,6 @@ hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
 </section>
 
 </main>
-
-<div id="cameraOverlay" class="camera-overlay" aria-hidden="true">
-  <div class="camera-card">
-    <h2>Escáner por cámara</h2>
-    <div id="cameraStatus" class="note">Autoriza una sola vez y deja la cámara abierta. Cada código se procesa una sola vez; retíralo del cuadro antes de presentar el siguiente.</div>
-    <video id="cameraVideo" playsinline muted></video>
-    <div class="camera-actions">
-      <button id="cameraCancel" class="btn ghost">Cerrar cámara</button>
-      <button id="cameraTorch" class="btn secondary" style="display:none">🔦 Luz</button>
-    </div>
-    <div class="camera-hint">La cámara no se activa al abrir Inventix. Al tocar “Abrir cámara continua” se solicita permiso una sola vez para esa sesión; permanece abierta para escanear todo el lote hasta que pulses “Cerrar cámara”.</div>
-  </div>
-</div>
 
 <nav>
 <button data-page="home" class="on"><span>🏠</span>Inicio</button>
@@ -340,7 +307,7 @@ hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
 </nav>
 
 <script>
-const STORAGE_KEY = 'inventix_core_v1_7_6';
+const STORAGE_KEY = 'inventix_core_v1_8';
 let state = {
   inventory:{}, kardex:[], verify:[], verifyExpected:{}, verifyClosures:[], verifyTechUPC:{}, physicalCounts:[], importedFiles:[],
   distributions:[], distributionImport:{rows:[],sourceName:'',loadedAt:null}, activeDistribution:null
@@ -348,8 +315,6 @@ let state = {
 
 function nowISO(){ return new Date().toISOString(); }
 function fmtDate(iso){ return new Date(iso).toLocaleString('es-MX'); }
-function localDateOnly(iso){ try{return new Date(iso).toLocaleDateString('es-MX');}catch(_e){return '';} }
-function localTimeOnly(iso){ try{return new Date(iso).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit',second:'2-digit'});}catch(_e){return '';} }
 
 function blankState(){
   return {inventory:{},kardex:[],verify:[],verifyExpected:{},verifyClosures:[],verifyTechUPC:{},physicalCounts:[],importedFiles:[],distributions:[],distributionImport:{rows:[],sourceName:'',loadedAt:null},activeDistribution:null};
@@ -373,7 +338,6 @@ function normalizeState(parsed){
 function load(){
   try{
     const raw = localStorage.getItem(STORAGE_KEY)
-      || localStorage.getItem('inventix_core_v1_7_2')
       || localStorage.getItem('inventix_core_v1_7')
       || localStorage.getItem('inventix_core_v1_6_2')
       || localStorage.getItem('inventix_core_v1_6_1')
@@ -707,7 +671,7 @@ function refreshVerifySelectors(){
   if(ocEl) ocEl.innerHTML=verifyOCs().map(oc=>`<option value="${escapeHtml(oc)}"></option>`).join('');
   const current=idText(document.getElementById('vOC')?.value||'');
   const pendingEl=document.getElementById('verifyPendingList');
-  if(pendingEl) pendingEl.innerHTML=verifyRowsForOC(current).filter(x=>verifyPending(x)>0||Number(x.shortage||0)>0).map(x=>`<option value="${escapeHtml(x.code)}">${escapeHtml(x.desc||'')} · faltan ${verifyPending(x)}${Number(x.shortage||0)>0?' · desabasto '+Number(x.shortage||0):''}</option>`).join('');
+  if(pendingEl) pendingEl.innerHTML=verifyRowsForOC(current).filter(x=>verifyPending(x)>0).map(x=>`<option value="${escapeHtml(x.code)}">${escapeHtml(x.desc||'')} · faltan ${verifyPending(x)}</option>`).join('');
   const note=document.getElementById('verifyClosureNote'),cl=verifyClosureForOC(current);
   if(note) note.textContent=cl?`OC ${current} cerrada: ${cl.status}${cl.observation?' · '+cl.observation:''}`:'';
   refreshVerifyTechPanel();
@@ -802,7 +766,7 @@ function renderAll(){
       const tech=isSeriesRow(x);
       return `<div class="row ${pending===0&&excess===0?'ok':excess>0?'out':'verify'}">
         <b>${escapeHtml(x.code)}</b> · ${x.scanned||0}/${x.expected} · ${status}
-        <div class="meta">${tech?'TECH · SERIES':'CANTIDAD'}${x.desc?' · '+escapeHtml(x.desc):''}${x.shortage?'<br>Desabasto: '+x.shortage:''}${x.substituted?'<br>Sustituido: '+x.substituted:''}${x.reference?'<br>OC: '+escapeHtml(x.reference):''}${x.lastScannedBy?'<br>Última lectura: '+escapeHtml(x.lastScannedBy)+' · '+escapeHtml(fmtDate(x.lastScannedAt)):''}</div>
+        <div class="meta">${tech?'TECH · SERIES':'CANTIDAD'}${x.desc?' · '+escapeHtml(x.desc):''}${x.shortage?'<br>Desabasto: '+x.shortage:''}${x.substituted?'<br>Sustituido: '+x.substituted:''}${x.reference?'<br>OC: '+escapeHtml(x.reference):''}</div>
       </div>`;
     }).join(''):'<div class="note">Importa una orden para comparar esperado vs escaneado.</div>';
   }
@@ -843,15 +807,6 @@ document.getElementById('saveExit').addEventListener('click',()=>{
   if(ok){ sQty.value=''; }
   setTimeout(()=>btn.disabled=false,800);
 });
-function hulkVibrate(pattern){try{if(navigator.vibrate)navigator.vibrate(pattern);}catch(_e){}}
-function setVerifyBanner(result,message){
-  const el=document.getElementById('vLastStatus'); if(!el)return;
-  const good=['OK','COMPLETO'].includes(result);
-  const warn=['EXCEDENTE','DUPLICADA'].includes(result);
-  el.className='dist-banner '+(good?'green':warn?'yellow':result?'red':'');
-  el.textContent=message||result||'LISTO PARA ESCANEAR';
-}
-
 let lastVerifyRead={key:'',time:0};
 function registerVerifyRead(rawCode){
   const inputCode=idText(rawCode);
@@ -880,7 +835,6 @@ function registerVerifyRead(rawCode){
       if(target.scanned){result='DUPLICADA';detail='La serie ya fue validada';}
       else{
         target.scanned=true;target.scannedAt=nowISO();target.user=user;
-        exp.lastScannedBy=user;exp.lastScannedAt=target.scannedAt;
         exp.scanned=Object.values(exp.series||{}).filter(v=>v.scanned).length;
         result=verifyPending(exp)===0?'COMPLETO':'OK';
       }
@@ -904,7 +858,7 @@ function registerVerifyRead(rawCode){
       }else{
         expectedKey=verifyExpectedKey(oc,inputCode);
         if(verifyPending(exp)<=0){result='EXCEDENTE';detail='La cantidad esperada ya quedó cubierta';}
-        else{exp.scanned=Number(exp.scanned||0)+1;exp.lastScannedBy=user;exp.lastScannedAt=nowISO();result=verifyPending(exp)===0?'COMPLETO':'OK';}
+        else{exp.scanned=Number(exp.scanned||0)+1;result=verifyPending(exp)===0?'COMPLETO':'OK';}
       }
     }
   }
@@ -930,14 +884,6 @@ function registerVerifyRead(rawCode){
     const nextUPC=tech?idText(state.verifyTechUPC?.[oc]||''):'';
     msg=tech&&nextUPC&&nextUPC!==activeUPC?`UPC ${activeUPC} COMPLETO · siguiente ${nextUPC}`:(tech?'UPC COMPLETO':'Código COMPLETO');
   }else msg='OK';
-  setVerifyBanner(result,msg);
-  if(bad){
-    hulkVibrate([180,80,180]);
-  }else if(result==='COMPLETO'){
-    hulkVibrate([70,40,70]);
-  }else{
-    hulkVibrate(60);
-  }
   toast(msg,bad);
   return true;
 }
@@ -948,11 +894,8 @@ document.getElementById('vTechUPC').addEventListener('change',e=>{
 });
 
 document.getElementById('undoVerifyBtn').addEventListener('click',()=>{
-  const oc=idText(vOC.value);
-  const controlEvents=new Set(['DESABASTO','SUSTITUTO','DESABASTO REVERSADO','OC REABIERTA']);
-  const idx=state.verify.findIndex(x=>(!oc||idText(x.oc)===oc)&&!controlEvents.has(x.result));
-  if(idx<0) return toast('No hay lecturas de esta OC para deshacer',true);
-  const last=state.verify[idx];
+  const last=state.verify[0];
+  if(!last) return toast('No hay lecturas para deshacer',true);
   if(['OK','COMPLETO'].includes(last.result)){
     const exp=state.verifyExpected[last.expectedKey||verifyExpectedKey(last.oc,last.code)];
     if(exp){
@@ -961,11 +904,9 @@ document.getElementById('undoVerifyBtn').addEventListener('click',()=>{
         exp.scanned=Object.values(exp.series||{}).filter(v=>v.scanned).length;
         state.verifyTechUPC=state.verifyTechUPC||{};state.verifyTechUPC[idText(last.oc)]=idText(last.code);
       }else if(Number(exp.scanned||0)>0) exp.scanned=Number(exp.scanned||0)-1;
-      const prev=state.verify.find((ev,i)=>i!==idx && ['OK','COMPLETO'].includes(ev.result) && idText(ev.oc)===idText(last.oc) && idText(ev.code)===idText(last.code));
-      exp.lastScannedBy=prev?.user||'';exp.lastScannedAt=prev?.time||'';
     }
   }
-  state.verify.splice(idx,1);save();toast('Última lectura de la OC deshecha');setTimeout(()=>vCode.focus(),20);
+  state.verify.shift();save();toast('Última lectura deshecha');setTimeout(()=>vCode.focus(),20);
 });
 
 function verifyExceptionTarget(){
@@ -1003,56 +944,6 @@ function registerShortage(){
 }
 
 document.getElementById('closeVerifyShortageBtn').addEventListener('click',registerShortage);
-
-function reopenVerifyOC(oc,reason,user){
-  oc=idText(oc);
-  state.verifyClosures=state.verifyClosures||[];
-  state.verifyClosures=state.verifyClosures.filter(x=>idText(x.oc)!==oc);
-  state.verify.unshift({
-    id:crypto.randomUUID?crypto.randomUUID():String(Date.now()+Math.random()),
-    code:'OC '+oc,result:'OC REABIERTA',qty:0,oc,user:user||'',
-    observation:reason||'REAPERTURA POR REVERSA DE EXCEPCIÓN',time:nowISO(),mode:'CONTROL'
-  });
-}
-function reverseShortage(){
-  const oc=idText(vOC.value),user=String(vUser.value||'').trim();
-  if(!oc)return toast('Selecciona la OC',true);
-  if(!user)return toast('Ingresa el operador',true);
-  const origin=idText(vExceptionOriginal.value);
-  const reason='MERCANCÍA RECIBIDA POSTERIORMENTE · DESABASTO REVERSADO';
-  let total=0;
-  const reverseRow=(row,requested)=>{
-    const available=Number(row.shortage||0);
-    if(available<=0)return 0;
-    const q=Math.min(Math.max(1,Number(requested||1)),available);
-    row.shortage=available-q;
-    row.exceptions=row.exceptions||[];
-    row.exceptions.push({type:'REVERSA_DESABASTO',qty:q,observation:reason,time:nowISO(),user});
-    state.verify.unshift({
-      id:crypto.randomUUID?crypto.randomUUID():String(Date.now()+Math.random()),
-      code:row.code,result:'DESABASTO REVERSADO',qty:q,oc,user,observation:reason,time:nowISO(),
-      expectedKey:verifyExpectedKey(oc,row.code),mode:row.mode||'QUANTITY'
-    });
-    return q;
-  };
-  if(origin){
-    const row=getVerifyExpected(oc,origin);
-    if(!row)return toast('Ese UPC no pertenece a la OC activa',true);
-    if(Number(row.shortage||0)<=0)return toast('Ese UPC no tiene desabasto por revertir',true);
-    total=reverseRow(row,Math.max(1,qty(vExceptionQty.value)||1));
-  }else{
-    for(const row of verifyRowsForOC(oc)){
-      const available=Number(row.shortage||0);
-      if(available>0)total+=reverseRow(row,available);
-    }
-  }
-  if(total<=0)return toast('La OC no tiene desabasto por revertir',true);
-  reopenVerifyOC(oc,reason,user);
-  vExceptionOriginal.value='';vExceptionQty.value='1';vObservation.value='SIN SUSTITUTO';
-  save();toast(`Desabasto revertido: ${total} pza(s) · OC ${oc} reabierta`);
-  setTimeout(()=>vCode.focus(),30);
-}
-document.getElementById('undoShortageBtn').addEventListener('click',reverseShortage);
 
 function consumeInventoryForSubstitute(code,quantity){
   code=idText(code);quantity=Number(quantity||0);const prod=state.inventory[code];
@@ -1114,57 +1005,6 @@ document.getElementById('importFile').addEventListener('change',async(e)=>{
   catch(err){ toast('Archivo de respaldo inválido',true); }
 });
 
-function clearImportedKind(kind){
-  state.importedFiles=(state.importedFiles||[]).filter(x=>x.kind!==kind);
-}
-function resetVerifyPractice(){
-  if(!confirm('¿Reiniciar Verify en este dispositivo? Se borrarán orden esperada, lecturas, cierres, excepciones y selección Tech. Inventario y Distribution se conservan.')) return;
-  stopCameraScanner();
-  state.verify=[]; state.verifyExpected={}; state.verifyClosures=[]; state.verifyTechUPC={};
-  clearImportedKind('VERIFY');
-  if(typeof vOC!=='undefined') vOC.value='';
-  if(typeof vUser!=='undefined') vUser.value='';
-  if(typeof vCode!=='undefined') vCode.value='';
-  if(typeof vExceptionOriginal!=='undefined') vExceptionOriginal.value='';
-  if(typeof vSubstituteCode!=='undefined') vSubstituteCode.value='';
-  if(typeof vObservation!=='undefined') vObservation.value='SIN SUSTITUTO';
-  save(); toast('Verify reiniciado · listo para nueva práctica');
-}
-function resetDistributionPractice(){
-  if(!confirm('¿Reiniciar Verify Distribution en este dispositivo? Se borrarán base importada, distribución activa e historial. Verify e inventario se conservan.')) return;
-  stopCameraScanner();
-  state.distributionImport={rows:[],sourceName:'',loadedAt:null};
-  state.activeDistribution=null; state.distributions=[];
-  clearImportedKind('DISTRIBUTION');
-  ['dOC','dUser','dStore','dMasterExpected','dExpected','dScanCode','dMasterScan'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
-  save(); restoreDistributionUI(); toast('Distribution reiniciado · listo para nueva práctica');
-}
-function resetOperationPractice(){
-  if(!confirm('¿Reiniciar operación en este dispositivo? Se borrarán inventario, Kardex y toma física. Verify y Distribution se conservan.')) return;
-  stopCameraScanner();
-  state.inventory={}; state.kardex=[]; state.physicalCounts=[];
-  clearImportedKind('INVENTARIO');
-  save(); toast('Operación reiniciada');
-}
-function resetAllDevice(){
-  if(!confirm('ATENCIÓN: esto borrará TODAS las pruebas guardadas en este navegador de este teléfono. ¿Continuar?')) return;
-  if(!confirm('Última confirmación: ¿dejar Inventix como recién abierto?')) return;
-  stopCameraScanner();
-  state=blankState();
-  [
-    STORAGE_KEY,'inventix_core_v1_7_2','inventix_core_v1_7','inventix_core_v1_6_2','inventix_core_v1_6_1','inventix_core_v1_6',
-    'inventix_core_v1_4','inventix_core_v1_3','inventix_core_v1_1',
-    'inventix_core_v1_4_activeDistribution','inventix_core_v1_4_importedDistribution'
-  ].forEach(k=>localStorage.removeItem(k));
-  localStorage.setItem(STORAGE_KEY,JSON.stringify(state));
-  location.reload();
-}
-document.getElementById('resetVerifyBtn').addEventListener('click',resetVerifyPractice);
-document.getElementById('resetDistributionBtn').addEventListener('click',resetDistributionPractice);
-document.getElementById('resetOperationBtn').addEventListener('click',resetOperationPractice);
-document.getElementById('resetAllBtn').addEventListener('click',resetAllDevice);
-document.getElementById('resetVerifyInlineBtn').addEventListener('click',resetVerifyPractice);
-document.getElementById('resetDistributionInlineBtn').addEventListener('click',resetDistributionPractice);
 
 
 document.getElementById('importInvBtn').addEventListener('click',()=>importInvFile.click());
@@ -1281,14 +1121,12 @@ document.getElementById('exportVerifyBtn').addEventListener('click',async()=>{
     const obs=(x.exceptions||[]).map(e=>e.observation||e.type).filter(Boolean).join(' | ');
     detail.push([x.reference,operator,isSeriesRow(x)?'TECH SERIES':'CANTIDAD',x.code,x.desc||'',x.expected,x.scanned||0,x.shortage||0,x.substituted||0,pending,st,obs]);
   });
-  const scans=[['FECHA_HORA','FECHA','HORA','OC','OPERADOR','MODO','UPC/CODIGO','SERIE/IMEI','RESULTADO','CANTIDAD','UPC_SUSTITUTO','OBSERVACION']];
-  state.verify.slice().reverse().forEach(x=>scans.push([x.time,localDateOnly(x.time),localTimeOnly(x.time),x.oc||'',x.user||operator,x.mode||'QUANTITY',x.code,x.series||'',x.result,x.qty||1,x.substituteCode||'',x.observation||x.detail||'']));
+  const scans=[['FECHA_HORA','OC','OPERADOR','MODO','UPC/CODIGO','SERIE/IMEI','RESULTADO','CANTIDAD','UPC_SUSTITUTO','OBSERVACION']];
+  state.verify.slice().reverse().forEach(x=>scans.push([x.time,x.oc||'',x.user||operator,x.mode||'QUANTITY',x.code,x.series||'',x.result,x.qty||1,x.substituteCode||'',x.observation||x.detail||'']));
   const summary=[['OC','TOTAL ESPERADO','OK ESCANEADO','DESABASTO','SUSTITUIDO','PENDIENTE','INCIDENCIAS','CIERRE','OBSERVACION']];
   verifyOCs().forEach(oc=>{const sm=expectedSummary(oc),cl=verifyClosureForOC(oc);summary.push([oc,sm.total,sm.scanned,sm.shortage,sm.substituted,sm.missing,sm.bad,cl?.status||'ABIERTA',cl?.observation||'']);});
   const substitutions=[['FECHA_HORA','OC','OPERADOR','UPC_ORIGEN','UPC_SUSTITUTO','CANTIDAD','MOVIMIENTO','OBSERVACION']];
   state.verify.filter(x=>x.result==='SUSTITUTO').slice().reverse().forEach(x=>substitutions.push([x.time,x.oc,x.user,x.code,x.substituteCode,x.qty||1,'SALIDA SUSTITUTO',x.observation||'']));
-  const exceptions=[['FECHA_HORA','OC','OPERADOR','UPC','EVENTO','CANTIDAD','OBSERVACION']];
-  state.verify.filter(x=>['DESABASTO','DESABASTO REVERSADO','OC REABIERTA'].includes(x.result)).slice().reverse().forEach(x=>exceptions.push([x.time,x.oc,x.user,x.code,x.result,x.qty||0,x.observation||'']));
   const tech=[['OC','UPC','MODELO/DESCRIPCION','SERIE/IMEI','STATUS','OPERADOR','FECHA_HORA']];
   expectedRows.filter(isSeriesRow).forEach(x=>{
     Object.values(x.series||{}).forEach(sr=>tech.push([x.reference,x.code,x.desc||'',sr.serie,sr.scanned?'VALIDADA':'PENDIENTE',sr.user||'',sr.scannedAt||'']));
@@ -1296,29 +1134,124 @@ document.getElementById('exportVerifyBtn').addEventListener('click',async()=>{
   const defs=[
     {name:'RESUMEN_OC',rows:summary,textColumns:['OC'],widths:[18,14,14,12,12,12,12,28,42]},
     {name:'DETALLE',rows:detail,textColumns:['OC','UPC/CODIGO'],widths:[18,20,16,22,34,12,12,12,12,12,22,52]},
-    {name:'LECTURAS',rows:scans,textColumns:['OC','UPC/CODIGO','SERIE/IMEI','UPC_SUSTITUTO'],widths:[22,14,14,18,20,14,22,24,20,10,22,56]},
-    {name:'SUSTITUTOS',rows:substitutions,textColumns:['OC','UPC_ORIGEN','UPC_SUSTITUTO'],widths:[22,18,20,22,22,10,20,60]},
-    {name:'EXCEPCIONES',rows:exceptions,textColumns:['OC','UPC'],widths:[22,18,20,22,24,10,60]}
+    {name:'LECTURAS',rows:scans,textColumns:['OC','UPC/CODIGO','SERIE/IMEI','UPC_SUSTITUTO'],widths:[22,18,20,14,22,24,20,10,22,56]},
+    {name:'SUSTITUTOS',rows:substitutions,textColumns:['OC','UPC_ORIGEN','UPC_SUSTITUTO'],widths:[22,18,20,22,22,10,20,60]}
   ];
   if(tech.length>1)defs.push({name:'SERIES_TECH',rows:tech,textColumns:['OC','UPC','SERIE/IMEI'],widths:[18,22,34,26,14,20,22]});
   await downloadWorkbook('inventix_verify_resultado_'+dateTag()+'.xlsx',defs);
 });
 
 
-// ---------------- VERIFY DISTRIBUTION ----------------
-// v1.7.8: MacStore detecta automáticamente filas con UPC + MODELO.
-// En ese modo cada caja exige exactamente: UPC -> UPC -> MODELO.
-function distRows(){return state.distributionImport?.rows||[];}
-function isBoxModeRow(r){return (r?.mode||'')==='BOX_2UPC_1MODEL';}
-function distGroups(){
-  const map=new Map();
-  for(const r of distRows()){
-    const key=[r.oc||'',r.store||''].join('§');
-    if(!map.has(key)) map.set(key,{key,oc:r.oc||'',store:r.store||'',rows:[],records:0,boxes:0,genericPieces:0,boxRows:0});
-    const g=map.get(key),q=Number(r.qty||0);g.rows.push(r);
-    if(isBoxModeRow(r)){g.boxRows++;g.boxes+=q;g.records+=q*3;}else{g.genericPieces+=q;g.records+=q;}
+
+// ---------- Distribution reader: multihoja + perfiles ----------
+function distributionHeaderIndex(headers, aliases){
+  for(const alias of aliases){
+    const wanted=normHeader(alias);
+    const idx=headers.findIndex(h=>normHeader(h)===wanted);
+    if(idx>=0)return idx;
   }
-  return [...map.values()].map(g=>({...g,mode:g.boxRows===g.rows.length?'BOX_2UPC_1MODEL':'GENERIC'}));
+  return -1;
+}
+function inferOfficeDepotBlock(store){
+  const n=parseInt(idText(store),10);
+  if(!Number.isFinite(n))return '';
+  if(n>=500)return 5;
+  if(n>=400)return 4;
+  if(n>=300)return 3;
+  if(n>=200)return 2;
+  return 1;
+}
+function parseOfficeDepotAOA(aoa,sheetName){
+  if(!aoa||aoa.length<2)return null;
+  const headers=(aoa[0]||[]).map(normHeader);
+  const iOC=distributionHeaderIndex(headers,['ORDER_NO']);
+  const iStore=distributionHeaderIndex(headers,['LOC_ID']);
+  const iSku=distributionHeaderIndex(headers,['SKU']);
+  const iUpc=distributionHeaderIndex(headers,['UPC','EAN','CODIGO_BARRAS','CODIGO BARRAS','BARCODE']);
+  const iQty=distributionHeaderIndex(headers,['CANT']);
+  const iMax=distributionHeaderIndex(headers,['MAX_CANT']);
+  if(iOC<0||iStore<0||iSku<0||(iQty<0&&iMax<0))return null;
+  const rows=[];let block='';
+  for(let r=1;r<aoa.length;r++){
+    const line=aoa[r]||[];
+    const loc=idText(line[iStore]);
+    const blockMatch=loc.match(/^BLOQUE\s*(\d+)/i);
+    if(blockMatch){block=Number(blockMatch[1]);continue;}
+    const oc=idText(line[iOC]),store=idText(line[iStore]),skuSeq=idText(line[iSku]);
+    const upc=iUpc>=0?idText(line[iUpc]):'';
+    const q=qty(iQty>=0?line[iQty]:line[iMax]);
+    const maxQty=qty(iMax>=0?line[iMax]:q);
+    if(!oc||!store||!skuSeq||q<=0)continue;
+    if(!block)block=inferOfficeDepotBlock(store);
+    rows.push({profile:'OFFICE_DEPOT',oc,store,code:upc,upc,sku:skuSeq,skuSeq,desc:'',qty:q,maxQty,master:'',block,sourceRow:r+1,sequence:rows.length+1,sheetName});
+  }
+  return rows.length?{profile:'OFFICE_DEPOT',rows,sheetName}:null;
+}
+function genericDistributionScore(headers){
+  const groups=[
+    ['OC','OV','PEDIDO','ORDEN','ORDEN COMPRA','ORDEN_COMPRA','NUM ORD','NUM_ORD','PO'],
+    ['DESTINO/TIENDA','DESTINO','TIENDA','STORE','SUCURSAL','CLIENTE DESTINO','CLIENTE_DESTINO'],
+    ['UPC/SKU','UPC','SKU','CODIGO','CÓDIGO','MATERIAL','EAN','SERIE','IMEI'],
+    ['CANTIDAD','QTY','PIEZAS','PIEZAS ORD','PIEZAS_ORD','PIEZAS AGENDADAS','PIEZAS_AGENDADAS','TOTAL']
+  ];
+  return groups.reduce((score,aliases)=>score+(distributionHeaderIndex(headers,aliases)>=0?1:0),0);
+}
+async function readDistributionDataFile(file){
+  const ext=(file.name.split('.').pop()||'').toLowerCase();
+  if(ext==='csv'||ext==='txt'){
+    const data=await readDataFile(file);return {...data,profile:'GENERIC',sheetName:'CSV'};
+  }
+  const buffer=await file.arrayBuffer();
+  const hash=await sha256Buffer(buffer);
+  if(!window.XLSX)throw new Error('No se cargó el motor Excel. Conecta el teléfono a internet y vuelve a abrir Inventix.');
+  const wb=XLSX.read(buffer,{type:'array',cellDates:false});
+  let bestGeneric=null;
+  for(const sheetName of wb.SheetNames){
+    const ws=wb.Sheets[sheetName];
+    const aoa=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:false});
+    if(!aoa.length)continue;
+    const office=parseOfficeDepotAOA(aoa,sheetName);
+    if(office)return {rows:office.rows,hash,kind:'EXCEL',profile:'OFFICE_DEPOT',sheetName};
+    const headers=(aoa[0]||[]).map(normHeader);
+    const score=genericDistributionScore(headers);
+    if(score>=(bestGeneric?.score||0)){
+      const hdr=(aoa[0]||[]).map(normHeader);
+      const rows=aoa.slice(1).filter(row=>row.some(x=>String(x??'').trim()!=='')).map(row=>{
+        const o={};hdr.forEach((hh,i)=>o[hh]=row[i]??'');return o;
+      });
+      bestGeneric={score,rows,sheetName};
+    }
+  }
+  if(bestGeneric&&bestGeneric.score>=3)return {rows:bestGeneric.rows,hash,kind:'EXCEL',profile:'GENERIC',sheetName:bestGeneric.sheetName};
+  return {rows:[],hash,kind:'EXCEL',profile:'GENERIC',sheetName:wb.SheetNames[0]||''};
+}
+
+// ---------------- VERIFY DISTRIBUTION ----------------
+function distRows(){return state.distributionImport?.rows||[];}
+function distributionProfile(){
+  const manual=(document.getElementById('dProfile')?.value||'AUTO');
+  if(manual!=='AUTO')return manual;
+  return state.distributionImport?.profile||'GENERIC';
+}
+function isOfficeDepotProfile(v){return String(v||'').toUpperCase()==='OFFICE_DEPOT';}
+function distGroups(){
+  const rows=distRows();
+  if(isOfficeDepotProfile(state.distributionImport?.profile)){
+    const map=new Map();
+    for(const r of rows){
+      const key='OFFICE_DEPOT§'+(r.oc||'');
+      if(!map.has(key))map.set(key,{key,profile:'OFFICE_DEPOT',oc:r.oc||'',store:'POR BLOQUES',master:'',rows:[],pieces:0,stores:new Set(),blocks:new Set()});
+      const g=map.get(key);g.rows.push(r);g.pieces+=Number(r.qty||0);g.stores.add(r.store);g.blocks.add(Number(r.block||0));
+    }
+    return [...map.values()].map(g=>({...g,storeCount:g.stores.size,blockList:[...g.blocks].filter(Boolean).sort((a,b)=>b-a)}));
+  }
+  const map=new Map();
+  for(const r of rows){
+    const key=[r.oc||'',r.store||'',r.master||''].join('§');
+    if(!map.has(key)) map.set(key,{key,profile:'GENERIC',oc:r.oc||'',store:r.store||'',master:r.master||'',rows:[],pieces:0});
+    const g=map.get(key);g.rows.push(r);g.pieces+=Number(r.qty||0);
+  }
+  return [...map.values()];
 }
 function aggregateDistExpected(rows){
   const map=new Map();
@@ -1329,357 +1262,265 @@ function aggregateDistExpected(rows){
   }
   return [...map.values()];
 }
-function aggregateBoxExpected(rows){
-  const map=new Map();
-  for(const r of rows){
-    const upc=idText(r.upc||r.code),model=idText(r.model);if(!upc||!model)continue;
-    const key=upc+'§'+model;
-    if(!map.has(key))map.set(key,{key,upc,model,desc:r.desc||'',expectedBoxes:0,doneBoxes:0,excess:0,lastScannedBy:'',lastScannedAt:''});
-    const x=map.get(key);x.expectedBoxes+=Number(r.qty||r.boxes||0);if(r.desc)x.desc=r.desc;
-  }
-  return [...map.values()];
-}
 function parseDistExpected(text){
   const out=[];
   for(const line of String(text||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean)){
     const p=line.split(/[,;\t|]/).map(x=>x.trim());
-    if(['UPC','CODIGO','UPC/SKU'].includes(normHeader(p[0])))continue;
+    if(normHeader(p[0])==='UPC'||normHeader(p[0])==='CODIGO')continue;
     const code=idText(p[0]),q=qty(p[1]); if(code&&q>0)out.push({code,desc:p.slice(2).join(' '),expected:q,done:0,excess:0});
   }
   return aggregateDistExpected(out.map(x=>({code:x.code,desc:x.desc,qty:x.expected})));
 }
-function parseDistBoxExpected(text){
-  const out=[];
-  for(const line of String(text||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean)){
-    const p=line.split(/[,;\t|]/).map(x=>x.trim());
-    if(['UPC','UPC/SKU'].includes(normHeader(p[0])))continue;
-    const upc=idText(p[0]),model=idText(p[1]),q=qty(p[2]);
-    if(upc&&model&&q>0)out.push({upc,model,qty:q,desc:p.slice(3).join(' ')});
-  }
-  return aggregateBoxExpected(out);
-}
 function distTotals(d){
-  const incidents=(d.scans||[]).filter(x=>x.result!=='CORRECTO').length;
-  if(d.mode==='BOX_2UPC_1MODEL'){
-    const boxesExpected=(d.rows||[]).reduce((a,r)=>a+Number(r.expectedBoxes||0),0);
-    const boxesDone=(d.rows||[]).reduce((a,r)=>a+Number(r.doneBoxes||0),0);
-    const expected=boxesExpected*3;
-    const done=(d.scans||[]).filter(x=>x.result==='CORRECTO').length;
-    return {expected,done,pending:Math.max(expected-done,0),incidents,boxesExpected,boxesDone,boxesPending:Math.max(boxesExpected-boxesDone,0)};
-  }
   const expected=(d.rows||[]).reduce((a,r)=>a+Number(r.expected||0),0);
   const done=(d.rows||[]).reduce((a,r)=>a+Number(r.done||0),0);
-  return {expected,done,pending:Math.max(expected-done,0),incidents,boxesExpected:0,boxesDone:0,boxesPending:0};
+  const incidents=(d.scans||[]).filter(x=>x.result!=='CORRECTO').length;
+  return {expected,done,pending:Math.max(expected-done,0),incidents};
+}
+function nextOfficeDepotRow(d){
+  if(!d||!isOfficeDepotProfile(d.profile))return null;
+  const idx=(d.rows||[]).findIndex(r=>Number(r.done||0)<Number(r.expected||0));
+  if(idx<0)return null;
+  return {row:d.rows[idx],index:idx};
+}
+function officeDepotStoreComplete(d,store){
+  const rows=(d.rows||[]).filter(r=>idText(r.store)===idText(store));
+  return rows.length>0&&rows.every(r=>Number(r.done||0)>=Number(r.expected||0));
 }
 function fillDistributionGroup(key){
   const g=distGroups().find(x=>x.key===key); if(!g)return;
-  dOC.value=g.oc;dStore.value=g.store;dMasterExpected.value='';
-  dExpected.dataset.mode=g.mode;
-  if(g.mode==='BOX_2UPC_1MODEL'){
-    const agg=aggregateBoxExpected(g.rows);
-    dExpected.value=agg.map(r=>`${r.upc},${r.model},${r.expectedBoxes},${r.desc||''}`).join('\n');
-    if(window.dModeInfo)dModeInfo.innerHTML=`<b>Modo MacStore:</b> ${g.boxes} cajas · ${g.records} registros esperados · secuencia obligatoria <b>UPC → UPC → MODELO</b>.`;
-    dImportStatus.textContent=`${state.distributionImport.sourceName||'Archivo'} · ${g.oc||'SIN OC'} · ${g.store||'SIN DESTINO'} · ${g.boxes} cajas · ${g.records} lecturas`;
+  dOC.value=g.oc;
+  if(isOfficeDepotProfile(g.profile)){
+    dProfile.value='OFFICE_DEPOT';dStore.value='POR BLOQUES';dMasterExpected.value='';
+    dExpected.value=g.rows.map(r=>`B${r.block} · TIENDA ${r.store} · SKU SEQ ${r.skuSeq||r.sku||''} · UPC ${r.upc||r.code||'FALTA UPC'} · ${r.qty}`).join('\n');
+    dImportStatus.textContent=`${state.distributionImport.sourceName||'Archivo'} · hoja ${state.distributionImport.sheetName||''} · OC ${g.oc} · ${g.storeCount} tiendas · ${g.pieces} piezas · bloques ${g.blockList.join(' → ')}`;
   }else{
+    dProfile.value=state.distributionImport?.profile||'GENERIC';dStore.value=g.store;dMasterExpected.value=g.master;
     const agg=aggregateDistExpected(g.rows);dExpected.value=agg.map(r=>`${r.code},${r.expected},${r.desc||''}`).join('\n');
-    if(window.dModeInfo)dModeInfo.innerHTML='<b>Modo genérico:</b> validación por cantidad de código.';
-    dImportStatus.textContent=`${state.distributionImport.sourceName||'Archivo'} · ${g.oc||'SIN OC'} · ${g.records} piezas`;
+    dImportStatus.textContent=`${state.distributionImport.sourceName||'Archivo'} · ${g.oc||'SIN OC'} · ${g.store||'SIN DESTINO'} · ${g.pieces} piezas${g.master?' · Master '+g.master:''}`;
   }
+  updateDistributionProfileUI();
+}
+function updateDistributionProfileUI(){
+  const profile=distributionProfile();
+  const office=isOfficeDepotProfile(profile);
+  if(dProfileNote)dProfileNote.textContent=office
+    ? 'Office Depot: secuencia estricta por bloque y por orden del archivo. SKU es una secuencia (1-5), no el identificador del producto. La tienda se revisa visualmente en la etiqueta y el producto se valida escaneando UPC. CTN/Master no son candado porque no vienen en la base.'
+    : 'Genérico: valida UPC/SKU contra OC/destino y cierra con Etiqueta Master cuando aplica.';
+  if(dMasterPrepareWrap)dMasterPrepareWrap.style.display=office?'none':'';
+  if(dMasterCloseWrap)dMasterCloseWrap.style.display=office?'none':'';
+  if(dScanLabel)dScanLabel.textContent=office?'Escaneo UPC del producto (revisa visualmente la tienda mostrada)':'Escaneo UPC / SKU';
+  if(dScanCode)dScanCode.placeholder=office?'Escanea UPC del producto':'Escanea o captura código';
+  if(dScanBtn)dScanBtn.textContent=office?'✅ Validar UPC':'✅ Confirmar artículo';
+  if(dCloseBtn)dCloseBtn.textContent=office?'🔒 Cerrar distribución Office Depot':'🔒 Cerrar y validar Master';
+  if(dOfficeNext)dOfficeNext.style.display=office?'block':'none';
 }
 function restoreDistributionUI(){
   const groups=distGroups();
-  dImportedGroup.innerHTML=groups.length?'<option value="">Selecciona OC / destino</option>'+groups.map(g=>`<option value="${escapeHtml(g.key)}">${escapeHtml(g.oc||'SIN OC')} · ${escapeHtml(g.store||'SIN DESTINO')} · ${g.mode==='BOX_2UPC_1MODEL'?g.boxes+' cajas / '+g.records+' lecturas':g.records+' pzas'}</option>`).join(''):'<option value="">Sin archivo cargado</option>';
+  dImportedGroup.innerHTML=groups.length?'<option value="">Selecciona OC / destino</option>'+groups.map(g=>{
+    if(isOfficeDepotProfile(g.profile))return `<option value="${escapeHtml(g.key)}">${escapeHtml(g.oc||'SIN OC')} · OFFICE DEPOT · ${g.storeCount} tiendas · ${g.pieces} pzas</option>`;
+    return `<option value="${escapeHtml(g.key)}">${escapeHtml(g.oc||'SIN OC')} · ${escapeHtml(g.store||'SIN DESTINO')} · ${g.pieces} pzas${g.master?' · '+escapeHtml(g.master):''}</option>`;
+  }).join(''):'<option value="">Sin archivo cargado</option>';
   if(groups.length){
-    const boxCount=groups.filter(g=>g.mode==='BOX_2UPC_1MODEL').length;
-    dImportStatus.textContent=`${state.distributionImport.sourceName||'Archivo'}: ${distRows().length} renglones · ${groups.length} OC/destino${boxCount?' · '+boxCount+' con secuencia por caja':''}`;
+    if(isOfficeDepotProfile(state.distributionImport?.profile)){
+      const blocks=[...new Set(distRows().map(r=>Number(r.block||0)).filter(Boolean))].sort((a,b)=>b-a);
+      const stores=new Set(distRows().map(r=>r.store));
+      dImportStatus.textContent=`${state.distributionImport.sourceName||'Archivo'} · OFFICE DEPOT · hoja ${state.distributionImport.sheetName||''} · ${distRows().length} renglones · ${stores.size} tiendas · ${distRows().reduce((a,r)=>a+Number(r.qty||0),0)} piezas · bloques ${blocks.join(' → ')}`;
+    }else dImportStatus.textContent=`${state.distributionImport.sourceName||'Archivo'}: ${distRows().length} renglones · ${groups.length} OC/Master · ${distRows().reduce((a,r)=>a+Number(r.qty||0),0)} piezas`;
   }
-  renderDistribution();renderDistributionHistory();
+  if(dProfile){dProfile.value=state.distributionImport?.profile||'AUTO';}
+  updateDistributionProfileUI();renderDistribution();renderDistributionHistory();
 }
 async function importDistributionFile(file){
-  const data=await readDataFile(file);
-  if(importedFileMatch(data.hash,'DISTRIBUTION') && !confirm('Este archivo ya fue cargado. ¿Deseas reimportarlo y reiniciar la distribución activa con este archivo?')) return;
-  const rows=[];
-  for(let i=0;i<data.rows.length;i++){
-    const r=data.rows[i];
-    const oc=idText(pick(r,['OC','OV','PEDIDO','ORDEN','ORDEN COMPRA','ORDEN_COMPRA','NUM ORD','NUM_ORD','PO']));
-    const store=String(pick(r,['DESTINO/TIENDA','DESTINO','TIENDA','STORE','SUCURSAL','CLIENTE DESTINO','CLIENTE_DESTINO'])||'').trim().toUpperCase();
-    const upc=idText(pick(r,['UPC','CVE_ART_P','CVE ART P','CVEARTP','EAN','CODIGO BARRAS','CÓDIGO BARRAS','UPC/SKU']));
-    const model=idText(pick(r,['MODELO','CVE_ART','CVE ART','CVEART','SKU MODELO','SKU_MODELO','MODEL','NO.PARTE','NO PARTE']));
-    const genericCode=idText(pick(r,['UPC/SKU','UPC','SKU','CODIGO','CÓDIGO','MATERIAL','EAN','SERIE','IMEI']));
-    const code=upc||genericCode;
-    const desc=String(pick(r,['DESCRIPCION','DESCRIPCIÓN','DESC','PRODUCTO','MODELO/DESCRIPCION'])||'').trim();
-    const q=qty(pick(r,['CANTIDAD/CAJAS','CAJAS','CANTIDAD','CATIDAD','CANT','CANT.','CANT ED','CANT. ED.','QTY','PIEZAS','PIEZAS ORD','PIEZAS_ORD','PIEZAS AGENDADAS','PIEZAS_AGENDADAS','CANTIDAD OC','TOTAL']));
-    if(!oc||!store||!code||q<=0) continue;
-    const mode=(upc&&model)?'BOX_2UPC_1MODEL':'GENERIC';
-    rows.push({oc,store,code,upc:upc||code,model,sku:idText(pick(r,['SKU'])),desc,qty:q,boxes:mode==='BOX_2UPC_1MODEL'?q:0,master:'',mode,sourceRow:i+2});
+  const data=await readDistributionDataFile(file);
+  if(importedFileMatch(data.hash,'DISTRIBUTION')) throw new Error('Archivo de Distribution duplicado: ya fue cargado');
+  let rows=[];
+  if(isOfficeDepotProfile(data.profile)){
+    rows=data.rows;
+  }else{
+    for(let i=0;i<data.rows.length;i++){
+      const r=data.rows[i];
+      const oc=idText(pick(r,['OC','OV','PEDIDO','ORDEN','ORDEN COMPRA','ORDEN_COMPRA','NUM ORD','NUM_ORD','PO']));
+      const store=String(pick(r,['DESTINO/TIENDA','DESTINO','TIENDA','STORE','SUCURSAL','CLIENTE DESTINO','CLIENTE_DESTINO'])||'').trim().toUpperCase();
+      const code=idText(pick(r,['UPC/SKU','UPC','SKU','CODIGO','CÓDIGO','MATERIAL','EAN','SERIE','IMEI']));
+      const desc=String(pick(r,['DESCRIPCION','DESCRIPCIÓN','DESC','PRODUCTO'])||'').trim();
+      const q=qty(pick(r,['CANTIDAD','QTY','PIEZAS','PIEZAS ORD','PIEZAS_ORD','PIEZAS AGENDADAS','PIEZAS_AGENDADAS','TOTAL']));
+      const master=idText(pick(r,['ETIQUETA MASTER','ETIQUETA_MASTER','MASTER','MASTER CODE','MASTER_CODE','CODIGO MASTER','CODIGO_MASTER','HU']));
+      if(!oc||!store||!code||q<=0) continue;
+      rows.push({profile:'GENERIC',oc,store,code,sku:idText(pick(r,['SKU'])),desc,qty:q,master,sourceRow:i+2});
+    }
   }
-  if(!rows.length) throw new Error('No encontré filas válidas. Para MacStore se requieren OC, DESTINO/TIENDA, UPC, MODELO y CANTIDAD/CAJAS.');
-  state.distributionImport={rows,sourceName:file.name,loadedAt:nowISO()};state.activeDistribution=null;
-  state.importedFiles=(state.importedFiles||[]).filter(x=>!(x.hash===data.hash&&x.kind==='DISTRIBUTION'));
-  registerImportedFile(data.hash,'DISTRIBUTION',file.name,rows.length);save();restoreDistributionUI();
-  const groups=distGroups(),boxes=groups.reduce((a,g)=>a+(g.mode==='BOX_2UPC_1MODEL'?g.boxes:0),0);
-  toast(`Distribution cargado: ${groups.length} OC/destino${boxes?' · '+boxes+' cajas':''}`);
+  if(!rows.length) throw new Error(isOfficeDepotProfile(data.profile)?'No encontré filas Office Depot válidas. Se requieren ORDER_NO, LOC_ID, SKU y CANT/MAX_CANT; agrega UPC a la derecha de SKU para poder validar por escaneo.':'No encontré filas válidas. Se requieren OC, DESTINO/TIENDA, UPC/SKU y CANTIDAD.');
+  state.distributionImport={rows,sourceName:file.name,loadedAt:nowISO(),profile:data.profile||'GENERIC',sheetName:data.sheetName||''};
+  registerImportedFile(data.hash,'DISTRIBUTION',file.name,rows.length);
+  save();restoreDistributionUI();
+  if(isOfficeDepotProfile(data.profile)){
+    const blocks=[...new Set(rows.map(r=>Number(r.block||0)).filter(Boolean))].sort((a,b)=>b-a);
+    toast(`Office Depot cargado · ${new Set(rows.map(r=>r.store)).size} tiendas · ${rows.reduce((a,r)=>a+r.qty,0)} piezas · bloques ${blocks.join('→')}`);
+  }else toast(`Distribution cargado: ${distGroups().length} OC/Master · ${rows.reduce((a,r)=>a+r.qty,0)} piezas`);
 }
 function startDistribution(){
-  const mode=dExpected.dataset.mode==='BOX_2UPC_1MODEL'?'BOX_2UPC_1MODEL':'GENERIC';
-  const rows=mode==='BOX_2UPC_1MODEL'?parseDistBoxExpected(dExpected.value):parseDistExpected(dExpected.value);
-  const oc=idText(dOC.value),store=String(dStore.value||'').trim().toUpperCase(),user=String(dUser.value||'').trim();
-  if(!oc)return toast('Ingresa o selecciona la OC',true);if(!user)return toast('Ingresa el operador',true);if(!store)return toast('Ingresa o selecciona la tienda / destino',true);
-  if(!rows.length)return toast(mode==='BOX_2UPC_1MODEL'?'No hay cajas UPC + MODELO esperadas para esta distribución':'No hay UPC/SKU esperados para esta distribución',true);
-  state.activeDistribution={id:crypto.randomUUID?crypto.randomUUID():String(Date.now()+Math.random()),oc,store,user,masterExpected:'',mode,rows,scans:[],currentBox:null,startedAt:nowISO(),closedAt:null,status:'ABIERTA'};
-  save();renderDistribution();toast(mode==='BOX_2UPC_1MODEL'?'MacStore iniciado · secuencia 2 UPC + 1 MODELO':'Verify Distribution iniciado');
+  const profile=distributionProfile();
+  if(isOfficeDepotProfile(profile)){
+    const selected=distGroups().find(g=>g.key===dImportedGroup.value) || distGroups().find(g=>isOfficeDepotProfile(g.profile)&&idText(g.oc)===idText(dOC.value));
+    if(!selected)return toast('Office Depot requiere seleccionar la OC importada',true);
+    const missingUpc=selected.rows.filter(r=>!idText(r.upc||r.code));
+    if(missingUpc.length)return toast(`Office Depot: faltan UPC en ${missingUpc.length} renglones. Agrega la columna UPC inmediatamente después de SKU y vuelve a importar.`,true);
+    const rows=selected.rows.map((r,index)=>({block:Number(r.block||inferOfficeDepotBlock(r.store)),store:idText(r.store),code:idText(r.upc||r.code),upc:idText(r.upc||r.code),skuSeq:idText(r.skuSeq||r.sku),desc:r.desc||'',expected:Number(r.qty||0),done:0,excess:0,sourceRow:r.sourceRow||'',sequence:index+1,maxQty:Number(r.maxQty||r.qty||0)}));
+    state.activeDistribution={id:crypto.randomUUID?crypto.randomUUID():String(Date.now()+Math.random()),profile:'OFFICE_DEPOT',oc:idText(selected.oc),store:'POR BLOQUES',masterExpected:'',rows,scans:[],startedAt:nowISO(),closedAt:null,status:'ABIERTA',sequenceMode:'FILE_ORDER_STRICT',validationMode:'VISUAL_STORE_PLUS_UPC_SCAN'};
+    save();renderDistribution();toast('Office Depot iniciado · revisa Tienda y valida UPC en secuencia');return;
+  }
+  const rows=parseDistExpected(dExpected.value);
+  const oc=idText(dOC.value),store=String(dStore.value||'').trim().toUpperCase();
+  if(!oc)return toast('Ingresa o selecciona la OC',true);
+  if(!store)return toast('Ingresa o selecciona la tienda / destino',true);
+  if(!rows.length)return toast('No hay UPC/SKU esperados para esta distribución',true);
+  state.activeDistribution={id:crypto.randomUUID?crypto.randomUUID():String(Date.now()+Math.random()),profile:'GENERIC',oc,store,masterExpected:idText(dMasterExpected.value),rows,scans:[],startedAt:nowISO(),closedAt:null,status:'ABIERTA'};
+  save();renderDistribution();toast('Verify Distribution iniciado');
 }
 function findOtherDestination(code){
-  return distRows().find(r=>[idText(r.code),idText(r.upc),idText(r.model)].includes(code) && !(idText(r.oc)===idText(state.activeDistribution?.oc)&&String(r.store).toUpperCase()===String(state.activeDistribution?.store).toUpperCase()));
+  return distRows().find(r=>idText(r.code)===code && !(idText(r.oc)===idText(state.activeDistribution?.oc)&&String(r.store).toUpperCase()===String(state.activeDistribution?.store).toUpperCase()));
 }
 function setDistBanner(result,message){
-  if(!dLastStatus)return;dLastStatus.className='dist-banner '+(result==='CORRECTO'?'green':result==='EXCESO'?'yellow':result?'red':'');dLastStatus.textContent=message||result||'LISTO PARA ESCANEAR';
+  if(!dLastStatus)return;
+  const yellow=['EXCESO','REVISA','DUPLICADA'].includes(result);
+  dLastStatus.className='dist-banner '+(result==='CORRECTO'?'green':yellow?'yellow':result?'red':'');
+  dLastStatus.textContent=message||result||'LISTO PARA VALIDAR';
 }
-function distAlert(message){try{if(navigator.vibrate)navigator.vibrate([180,80,180]);}catch(_e){}toast(message,true);}
-function scanDistributionBox(d,code){
-  const eventTime=nowISO(),user=d.user||String(dUser.value||'').trim();let result='CORRECTO',message='',row=null,step=1,expectedCode='UPC DE CAJA',boxNumber='';
-  if(!d.currentBox){
-    row=(d.rows||[]).find(r=>r.upc===code&&Number(r.doneBoxes||0)<Number(r.expectedBoxes||0));
-    if(row){
-      boxNumber=(d.rows||[]).reduce((a,r)=>a+Number(r.doneBoxes||0),0)+1;step=1;expectedCode=row.upc;
-      d.currentBox={batchKey:row.key,upc:row.upc,model:row.model,step:2,boxNumber};
-      message=`CAJA ${boxNumber} · 1/3 UPC OK · falta segundo UPC ${row.upc}`;
-    }else{
-      const exhausted=(d.rows||[]).find(r=>r.upc===code&&Number(r.doneBoxes||0)>=Number(r.expectedBoxes||0));
-      const modelHere=(d.rows||[]).find(r=>r.model===code&&Number(r.doneBoxes||0)<Number(r.expectedBoxes||0));
-      const other=findOtherDestination(code);
-      if(exhausted){result='EXCESO';message=`EXCESO · ${code} ya completó todas sus cajas`;}
-      else if(modelHere){result='SECUENCIA INCORRECTA';message=`SECUENCIA INCORRECTA · no puedes iniciar con MODELO ${code}; primero escanea UPC ${modelHere.upc}`;}
-      else if(other){result='DESTINO INCORRECTO';message=`DESTINO INCORRECTO · ${code} pertenece a ${other.oc} · ${other.store}`;}
-      else{result='NO SOLICITADO';message=`NO SOLICITADO · ${code} no pertenece a este destino`;}
-    }
+function confirmOfficeDepotUPC(input){
+  const d=state.activeDistribution;if(!d)return toast('Primero inicia Office Depot',true);
+  const upc=idText(input);if(!upc)return toast('Escanea el UPC del producto después de revisar visualmente la tienda',true);
+  const next=nextOfficeDepotRow(d);
+  if(!next)return toast('La distribución ya está completa',true);
+  const expected=next.row;
+  let result='CORRECTO',message='';
+  if(upc===idText(expected.code)){
+    expected.done=Number(expected.done||0)+1;
+    message=`CORRECTO · BLOQUE ${expected.block} · TIENDA ${expected.store} · SKU SEQ ${expected.skuSeq||''} · UPC ${expected.code} · ${expected.done}/${expected.expected}`;
   }else{
-    row=(d.rows||[]).find(r=>r.key===d.currentBox.batchKey);boxNumber=d.currentBox.boxNumber;step=Number(d.currentBox.step||2);
-    if(!row){result='SECUENCIA INCORRECTA';message='No se pudo recuperar la caja activa; reinicia esta distribución.';}
-    else if(step===2){
-      expectedCode=row.upc;
-      if(code===row.upc){d.currentBox.step=3;message=`CAJA ${boxNumber} · 2/3 UPC OK · ahora MODELO ${row.model}`;}
-      else{
-        result='SECUENCIA INCORRECTA';
-        if(code===row.model)message=`ALERTA · CAJA ${boxNumber}: solo llevas 1 UPC. Falta segundo UPC ${row.upc} antes del MODELO ${row.model}`;
-        else if((d.rows||[]).some(r=>r.model===code))message=`ALERTA · CAJA ${boxNumber}: MODELO antes de tiempo. Esperado segundo UPC ${row.upc}`;
-        else message=`ALERTA · CAJA ${boxNumber}: esperado segundo UPC ${row.upc}, recibido ${code}`;
-      }
+    const completed=(d.rows||[]).find(r=>idText(r.code)===upc&&Number(r.done||0)>=Number(r.expected||0));
+    const other=(d.rows||[]).find(r=>idText(r.code)===upc);
+    if(completed){
+      result='REVISA';message=`REVISA · posible 2° escaneo · UPC ${upc} ya completado en BLOQUE ${completed.block} · TIENDA ${completed.store} · SKU SEQ ${completed.skuSeq||''}. Esperado: BLOQUE ${expected.block} · TIENDA ${expected.store} · SKU SEQ ${expected.skuSeq||''} · UPC ${expected.code}`;
+    }else if(other){
+      result='FUERA DE SECUENCIA';message=`FUERA DE SECUENCIA · UPC ${upc} corresponde a BLOQUE ${other.block} · TIENDA ${other.store} · SKU SEQ ${other.skuSeq||''}. Esperado: BLOQUE ${expected.block} · TIENDA ${expected.store} · SKU SEQ ${expected.skuSeq||''} · UPC ${expected.code}`;
     }else{
-      step=3;expectedCode=row.model;
-      if(code===row.model){
-        row.doneBoxes=Number(row.doneBoxes||0)+1;d.currentBox=null;
-        message=`CAJA ${boxNumber} COMPLETA · 3/3 · 2 UPC + 1 MODELO · ${row.doneBoxes}/${row.expectedBoxes} cajas`;
-      }else{
-        result='SECUENCIA INCORRECTA';
-        if(code===row.upc)message=`ALERTA · CAJA ${boxNumber}: detecté 3 UPC. Después de 2 UPC debe ir MODELO ${row.model}`;
-        else if((d.rows||[]).some(r=>r.model===code))message=`ALERTA · CAJA ${boxNumber}: MODELO incorrecto. Esperado ${row.model}, recibido ${code}`;
-        else message=`ALERTA · CAJA ${boxNumber}: esperado MODELO ${row.model}, recibido ${code}`;
-      }
+      result='UPC NO SOLICITADO';message=`UPC NO SOLICITADO · ${upc} no pertenece a la OC ${d.oc}. Esperado: BLOQUE ${expected.block} · TIENDA ${expected.store} · SKU SEQ ${expected.skuSeq||''} · UPC ${expected.code}`;
     }
   }
-  if(row&&result==='CORRECTO'){row.lastScannedBy=user;row.lastScannedAt=eventTime;}
-  if(row&&result==='EXCESO'){row.excess=Number(row.excess||0)+1;row.lastAttemptBy=user;row.lastAttemptAt=eventTime;}
-  d.scans=d.scans||[];d.scans.push({id:crypto.randomUUID?crypto.randomUUID():String(Date.now()+Math.random()),time:eventTime,oc:d.oc,store:d.store,user,code,result,message,boxNumber,step,expectedCode,batchKey:row?.key||''});
-  dScanCode.value='';save();renderDistribution();setDistBanner(result,message);if(result==='CORRECTO')toast(message);else distAlert(message);
-}
-function scanDistributionGeneric(d,code){
-  const last=(d.scans||[])[d.scans.length-1];if(last&&last.code===code&&(Date.now()-new Date(last.time).getTime())<1200)return toast('Lectura duplicada evitada',true);
-  let result='CORRECTO',message='',row=d.rows.find(r=>r.code===code);
-  if(row){if(Number(row.done||0)>=Number(row.expected||0)){row.excess=Number(row.excess||0)+1;result='EXCESO';message=`EXCESO · ${code} ya completó ${row.expected}/${row.expected}`;}else{row.done=Number(row.done||0)+1;message=`CORRECTO · ${code} · ${row.done}/${row.expected}`;}}
-  else{const other=findOtherDestination(code);if(other){result='DESTINO INCORRECTO';message=`DESTINO INCORRECTO · pertenece a ${other.oc} · ${other.store}`;}else{result='NO SOLICITADO';message=`NO SOLICITADO · ${code} no pertenece a la distribución cargada`;}}
-  const eventTime=nowISO();if(row&&result==='CORRECTO'){row.lastScannedBy=d.user||String(dUser.value||'').trim();row.lastScannedAt=eventTime;}if(row&&result==='EXCESO'){row.lastAttemptBy=d.user||String(dUser.value||'').trim();row.lastAttemptAt=eventTime;}
-  d.scans=d.scans||[];d.scans.push({id:crypto.randomUUID?crypto.randomUUID():String(Date.now()+Math.random()),time:eventTime,oc:d.oc,store:d.store,user:d.user||String(dUser.value||'').trim(),code,result,message});
-  dScanCode.value='';save();renderDistribution();setDistBanner(result,message);if(result==='CORRECTO')toast(message);else distAlert(message);
+  d.scans=d.scans||[];d.scans.push({id:crypto.randomUUID?crypto.randomUUID():String(Date.now()+Math.random()),time:nowISO(),profile:'OFFICE_DEPOT',oc:d.oc,block:expected.block,store:expected.store,expectedStore:expected.store,skuSeq:expected.skuSeq||'',upc,expectedUpc:expected.code,rowIndex:next.index,result,message});
+  dScanCode.value='';save();renderDistribution();setDistBanner(result,message);toast(message,result!=='CORRECTO');
 }
 function scanDistribution(input){
-  const d=state.activeDistribution;if(!d)return toast('Primero inicia una distribución',true);const code=idText(input);if(!code)return toast('Escanea o captura UPC / modelo',true);
-  if(d.mode==='BOX_2UPC_1MODEL')return scanDistributionBox(d,code);return scanDistributionGeneric(d,code);
+  const d=state.activeDistribution;if(!d)return toast('Primero inicia una distribución',true);
+  if(isOfficeDepotProfile(d.profile))return confirmOfficeDepotUPC(input);
+  const code=idText(input);if(!code)return toast('Escanea o captura UPC/SKU',true);
+  const last=(d.scans||[])[d.scans.length-1];if(last&&last.code===code&&(Date.now()-new Date(last.time).getTime())<1200)return toast('Lectura duplicada evitada',true);
+  let result='CORRECTO',message='',row=d.rows.find(r=>r.code===code);
+  if(row){
+    if(Number(row.done||0)>=Number(row.expected||0)){row.excess=Number(row.excess||0)+1;result='EXCESO';message=`EXCESO · ${code} ya completó ${row.expected}/${row.expected}`;}
+    else{row.done=Number(row.done||0)+1;message=`CORRECTO · ${code} · ${row.done}/${row.expected}`;}
+  }else{
+    const other=findOtherDestination(code);
+    if(other){result='DESTINO INCORRECTO';message=`DESTINO INCORRECTO · pertenece a ${other.oc} · ${other.store}`;}
+    else{result='NO SOLICITADO';message=`NO SOLICITADO · ${code} no pertenece a la distribución cargada`;}
+  }
+  d.scans=d.scans||[];d.scans.push({id:crypto.randomUUID?crypto.randomUUID():String(Date.now()+Math.random()),time:nowISO(),oc:d.oc,store:d.store,masterExpected:d.masterExpected,code,result,message});
+  dScanCode.value='';save();renderDistribution();setDistBanner(result,message);toast(message,result!=='CORRECTO');
 }
 function undoDistribution(){
   const d=state.activeDistribution;if(!d||(d.scans||[]).length===0)return toast('No hay lectura para deshacer',true);
   const last=d.scans.pop();
-  if(d.mode==='BOX_2UPC_1MODEL'){
-    if(last.result==='CORRECTO'){
-      const row=(d.rows||[]).find(r=>r.key===last.batchKey);
-      if(row){
-        if(Number(last.step)===3){if(row.doneBoxes>0)row.doneBoxes--;d.currentBox={batchKey:row.key,upc:row.upc,model:row.model,step:3,boxNumber:last.boxNumber};}
-        else if(Number(last.step)===2)d.currentBox={batchKey:row.key,upc:row.upc,model:row.model,step:2,boxNumber:last.boxNumber};
-        else d.currentBox=null;
-        const prev=[...(d.scans||[])].reverse().find(x=>x.batchKey===row.key&&x.result==='CORRECTO');row.lastScannedBy=prev?.user||'';row.lastScannedAt=prev?.time||'';
-      }
-    }else if(last.result==='EXCESO'){const row=(d.rows||[]).find(r=>r.key===last.batchKey);if(row&&row.excess>0)row.excess--;}
-  }else{
-    if(last.result==='CORRECTO'){const row=d.rows.find(r=>r.code===last.code);if(row&&row.done>0)row.done--;if(row){const prev=[...(d.scans||[])].reverse().find(x=>x.code===last.code&&x.result==='CORRECTO');row.lastScannedBy=prev?.user||'';row.lastScannedAt=prev?.time||'';}}
-    else if(last.result==='EXCESO'){const row=d.rows.find(r=>r.code===last.code);if(row&&row.excess>0)row.excess--;}
-  }
-  save();renderDistribution();setDistBanner('',`DESHECHO · ${last.code}`);toast('Última lectura deshecha');
+  if(isOfficeDepotProfile(d.profile)){
+    if(last.result==='CORRECTO'&&Number.isInteger(last.rowIndex)){const row=d.rows[last.rowIndex];if(row&&row.done>0)row.done--;}
+  }else if(last.result==='CORRECTO'){const row=d.rows.find(r=>r.code===last.code);if(row&&row.done>0)row.done--;}
+  else if(last.result==='EXCESO'){const row=d.rows.find(r=>r.code===last.code);if(row&&row.excess>0)row.excess--;}
+  save();renderDistribution();setDistBanner('',`DESHECHO · ${last.store||last.code||''}`);toast('Última validación deshecha');
 }
 function closeDistribution(){
-  const d=state.activeDistribution;if(!d)return toast('No hay distribución activa',true);const t=distTotals(d);
-  if(t.pending>0)return toast(d.mode==='BOX_2UPC_1MODEL'?`No se puede cerrar: faltan ${t.boxesPending} cajas / ${t.pending} registros`:`No se puede cerrar: faltan ${t.pending} piezas`,true);
-  if(d.mode==='BOX_2UPC_1MODEL'&&d.currentBox)return toast('No se puede cerrar: hay una caja con secuencia incompleta',true);
-  if(!confirm(`Confirma visualmente que la etiqueta Master muestra el destino:\n\n${d.store}\n\nLa etiqueta no necesita código de barras para este flujo.`))return;
-  d.masterScanned='SIN CODIGO';d.masterValidation=`DESTINO CONFIRMADO VISUALMENTE · ${d.store}`;
-  d.closedAt=nowISO();d.status='CERRADA';d.totalPieces=t.expected;d.totalBoxes=t.boxesExpected||0;d.incidents=t.incidents;
+  const d=state.activeDistribution;if(!d)return toast('No hay distribución activa',true);
+  const t=distTotals(d);if(t.pending>0)return toast(`No se puede cerrar: faltan ${t.pending} piezas`,true);
+  if(isOfficeDepotProfile(d.profile)){
+    d.masterScanned='';d.masterValidation='NO APLICA';d.closedAt=nowISO();d.status='CERRADA';d.totalPieces=t.expected;d.incidents=t.incidents;
+    state.distributions=state.distributions||[];state.distributions.unshift(JSON.parse(JSON.stringify(d)));state.activeDistribution=null;
+    dScanCode.value='';save();renderDistribution();renderDistributionHistory();setDistBanner('CORRECTO','OFFICE DEPOT · DISTRIBUCIÓN COMPLETA');toast('Office Depot cerrada · secuencia completa');return;
+  }
+  const master=idText(dMasterScan.value);if(!master)return toast('Escanea o captura la Etiqueta Master',true);
+  if(d.masterExpected&&master!==d.masterExpected)return toast(`MASTER INCORRECTA. Esperada: ${d.masterExpected}`,true);
+  d.masterScanned=master;d.closedAt=nowISO();d.status='CERRADA';d.totalPieces=t.expected;d.incidents=t.incidents;
   state.distributions=state.distributions||[];state.distributions.unshift(JSON.parse(JSON.stringify(d)));state.activeDistribution=null;
-  dMasterScan.value='';dScanCode.value='';save();renderDistribution();renderDistributionHistory();setDistBanner('CORRECTO','DESTINO CONFIRMADO · DISTRIBUCIÓN COMPLETA');toast('Destino confirmado y distribución cerrada');
+  dMasterScan.value='';dScanCode.value='';save();renderDistribution();renderDistributionHistory();setDistBanner('CORRECTO','MASTER VALIDADA · DISTRIBUCIÓN COMPLETA');toast('Etiqueta Master cerrada y validada');
 }
 function renderDistribution(){
-  const d=state.activeDistribution;if(!d){dWork.style.display='none';return;}dWork.style.display='block';const t=distTotals(d);if(dUser&&!dUser.value&&d.user)dUser.value=d.user;
-  if(d.mode==='BOX_2UPC_1MODEL'){
-    const active=d.currentBox?`<br><b>Caja ${d.currentBox.boxNumber} en curso:</b> ${d.currentBox.step===2?'falta segundo UPC '+escapeHtml(d.currentBox.upc):'falta MODELO '+escapeHtml(d.currentBox.model)}`:'';
-    dSummary.innerHTML=`<b>${escapeHtml(d.oc)}</b> · ${escapeHtml(d.store)}${d.user?'<br>Operador: '+escapeHtml(d.user):''}<br><b>MacStore:</b> ${t.boxesDone}/${t.boxesExpected} cajas · ${t.done}/${t.expected} registros${active}`;
-  }else dSummary.innerHTML=`<b>${escapeHtml(d.oc)}</b> · ${escapeHtml(d.store)}${d.user?'<br>Operador: '+escapeHtml(d.user):''}<br>Modo genérico por cantidad`;
+  const d=state.activeDistribution;updateDistributionProfileUI();if(!d){dWork.style.display='none';return;}
+  dWork.style.display='block';const t=distTotals(d);
+  if(isOfficeDepotProfile(d.profile)){
+    const next=nextOfficeDepotRow(d);
+    dSummary.innerHTML=`<b>${escapeHtml(d.oc)}</b> · OFFICE DEPOT<br>Secuencia estricta por bloque/tienda · SKU como secuencia · tienda visual + validación por UPC`;
+    if(dOfficeNext){
+      dOfficeNext.style.display='block';
+      dOfficeNext.innerHTML=next?`<b style="color:#F5A623">SIGUIENTE</b><br><span style="font-size:18px;font-weight:900">BLOQUE ${next.row.block} · TIENDA ${escapeHtml(next.row.store)}</span><br>SKU SEQ ${escapeHtml(next.row.skuSeq||'')} · UPC esperado ${escapeHtml(next.row.code)} · pieza ${Number(next.row.done||0)+1} de ${next.row.expected}<br><span class="note">Revisa el número grande de tienda de la etiqueta y escanea el UPC del producto.</span>`:'<b style="color:#1A9A54">DISTRIBUCIÓN COMPLETA</b>';
+    }
+    dOk.textContent=t.done;dPending.textContent=t.pending;dIncidents.textContent=t.incidents;
+    const pending=(d.rows||[]).map((r,i)=>({...r,_i:i})).filter(r=>r.done<r.expected).slice(0,12);
+    const completed=(d.rows||[]).filter(r=>r.done>=r.expected).length;
+    dRows.innerHTML=`<div class="note">Renglones completos: ${completed}/${d.rows.length}. Próximos 12:</div>`+pending.map((r,i)=>`<div class="row ${i===0?'verify':''}"><b>B${r.block} · TIENDA ${escapeHtml(r.store)}</b> <span class="badge">${r.done}/${r.expected}</span><div class="meta">SKU SEQ ${escapeHtml(r.skuSeq||'')} · UPC ${escapeHtml(r.code)} · secuencia ${r.sequence||r._i+1}</div></div>`).join('');
+    const last=(d.scans||[])[d.scans.length-1];if(last)setDistBanner(last.result,last.message);else setDistBanner('','LISTO · CONFIRMA LA TIENDA MOSTRADA');
+    return;
+  }
+  if(dOfficeNext)dOfficeNext.style.display='none';
+  dSummary.innerHTML=`<b>${escapeHtml(d.oc)}</b> · ${escapeHtml(d.store)}${d.masterExpected?'<br>Master esperada: '+escapeHtml(d.masterExpected):'<br>Master se asignará al cierre'}`;
   dOk.textContent=t.done;dPending.textContent=t.pending;dIncidents.textContent=t.incidents;
-  if(d.mode==='BOX_2UPC_1MODEL')dRows.innerHTML=d.rows.map(r=>`<div class="row ${r.doneBoxes>=r.expectedBoxes?'ok':'verify'}"><b>UPC ${escapeHtml(r.upc)}</b> <span class="badge">CAJAS ${r.doneBoxes}/${r.expectedBoxes}</span><div class="meta">MODELO: <b>${escapeHtml(r.model)}</b>${r.desc?'<br>'+escapeHtml(r.desc):''}${r.excess?'<br>Excesos detectados: '+r.excess:''}${r.lastScannedBy?'<br>Última lectura: '+escapeHtml(r.lastScannedBy)+' · '+escapeHtml(fmtDate(r.lastScannedAt)):''}</div></div>`).join('');
-  else dRows.innerHTML=d.rows.map(r=>`<div class="row ${r.done>=r.expected?'ok':'verify'}"><b>${escapeHtml(r.code)}</b> <span class="badge">${r.done}/${r.expected}</span><div class="meta">${escapeHtml(r.desc||'')}${r.excess?'<br>Excesos detectados: '+r.excess:''}${r.lastScannedBy?'<br>Última lectura: '+escapeHtml(r.lastScannedBy)+' · '+escapeHtml(fmtDate(r.lastScannedAt)):''}</div></div>`).join('');
+  dRows.innerHTML=d.rows.map(r=>`<div class="row ${r.done>=r.expected?'ok':'verify'}"><b>${escapeHtml(r.code)}</b> <span class="badge">${r.done}/${r.expected}</span><div class="meta">${escapeHtml(r.desc||'')}${r.excess?'<br>Excesos detectados: '+r.excess:''}</div></div>`).join('');
   if((d.scans||[]).length){const last=d.scans[d.scans.length-1];setDistBanner(last.result,last.message);}else setDistBanner('','LISTO PARA ESCANEAR');
 }
 function renderDistributionHistory(){
   if(!dHistory)return;const arr=state.distributions||[];
-  dHistory.innerHTML=arr.length?arr.slice(0,40).map(d=>{const t=distTotals(d);return `<div class="row ok"><b>${escapeHtml(d.oc)} · ${escapeHtml(d.store)}</b> <span class="badge">${d.mode==='BOX_2UPC_1MODEL'?(d.totalBoxes||t.boxesExpected)+' cajas':(d.totalPieces||0)+' pzas'}</span><div class="meta">Operador: ${escapeHtml(d.user||'SIN OPERADOR')}<br>${escapeHtml(d.masterValidation||'DESTINO SIN CONFIRMAR')} · Incidencias: ${d.incidents||0}<br>${fmtDate(d.closedAt)}</div></div>`;}).join(''):'<div class="note">Sin distribuciones cerradas.</div>';
+  dHistory.innerHTML=arr.length?arr.slice(0,40).map(d=>`<div class="row ok"><b>${escapeHtml(d.oc)} · ${isOfficeDepotProfile(d.profile)?'OFFICE DEPOT':escapeHtml(d.store)}</b> <span class="badge">${d.totalPieces||0} pzas</span><div class="meta">${isOfficeDepotProfile(d.profile)?'Bloques / tienda visual + UPC · sin Master':'Master: '+escapeHtml(d.masterScanned||d.masterExpected||'SIN MASTER')} · Incidencias: ${d.incidents||0}<br>${fmtDate(d.closedAt)}</div></div>`).join(''):'<div class="note">Sin distribuciones cerradas.</div>';
 }
 async function exportDistributionExcel(){
-  const base=[['OC','DESTINO/TIENDA','UPC','MODELO','CANTIDAD/CAJAS','DESCRIPCION','MODO']];
-  distRows().forEach(r=>base.push([r.oc,r.store,r.upc||r.code,r.model||'',r.qty,r.desc||'',isBoxModeRow(r)?'2 UPC + 1 MODELO':'GENERIC']));
-  const summary=[['OC','OPERADOR','DESTINO/TIENDA','MODO','CAJAS_ESPERADAS','CAJAS_COMPLETAS','REGISTROS_ESPERADOS','VALIDADOS','PENDIENTES','INCIDENCIAS','ESTATUS','INICIO','CIERRE','VALIDACION_DESTINO']];
-  const detail=[['OC','OPERADOR','DESTINO/TIENDA','MODO','UPC','MODELO','DESCRIPCION','CAJAS/ESPERADO','CAJAS/VALIDADO','PENDIENTE','EXCESOS','ULTIMO_OPERADOR','ULTIMA_FECHA_HORA']];
-  const scans=[['FECHA_HORA','FECHA','HORA','OC','OPERADOR','DESTINO/TIENDA','CAJA','PASO','ESPERADO','LEIDO','RESULTADO','DETALLE']];
+  const base=[['PERFIL','OC','BLOQUE','DESTINO/TIENDA','SKU_SECUENCIA','UPC','DESCRIPCION','CANTIDAD','ETIQUETA MASTER','SECUENCIA']];
+  distRows().forEach(r=>base.push([r.profile||state.distributionImport?.profile||'GENERIC',r.oc,r.block||'',r.store,r.skuSeq||r.sku||'',r.upc||r.code||'',r.desc||'',r.qty,r.master||'',r.sequence||'']));
+  const summary=[['PERFIL','OC','DESTINO/TIENDA','ETIQUETA MASTER','ESPERADO','VALIDADO','PENDIENTE','INCIDENCIAS','ESTATUS','INICIO','CIERRE']];
+  const detail=[['PERFIL','OC','BLOQUE','DESTINO/TIENDA','ETIQUETA MASTER','SKU_SECUENCIA','UPC','DESCRIPCION','ESPERADO','VALIDADO','EXCESOS','ESTATUS','SECUENCIA']];
+  const scans=[['FECHA_HORA','PERFIL','OC','BLOQUE','DESTINO/TIENDA','TIENDA_ESPERADA','ETIQUETA MASTER','SKU_SECUENCIA','UPC','UPC_ESPERADO','RESULTADO','DETALLE']];
   const all=[...(state.distributions||[])];if(state.activeDistribution)all.unshift(state.activeDistribution);
   all.forEach(d=>{
-    const t=distTotals(d);summary.push([d.oc,d.user||'',d.store,d.mode==='BOX_2UPC_1MODEL'?'2 UPC + 1 MODELO':'GENERIC',t.boxesExpected||'',t.boxesDone||'',t.expected,t.done,t.pending,t.incidents,d.status||'ABIERTA',d.startedAt||'',d.closedAt||'',d.masterValidation||'']);
-    if(d.mode==='BOX_2UPC_1MODEL')(d.rows||[]).forEach(r=>detail.push([d.oc,d.user||'',d.store,'2 UPC + 1 MODELO',r.upc,r.model,r.desc||'',r.expectedBoxes,r.doneBoxes||0,Math.max(r.expectedBoxes-(r.doneBoxes||0),0),r.excess||0,r.lastScannedBy||'',r.lastScannedAt||'']));
-    else (d.rows||[]).forEach(r=>detail.push([d.oc,d.user||'',d.store,'GENERIC',r.code,'',r.desc||'',r.expected,r.done||0,Math.max(r.expected-(r.done||0),0),r.excess||0,r.lastScannedBy||'',r.lastScannedAt||'']));
-    (d.scans||[]).forEach(x=>scans.push([x.time,localDateOnly(x.time),localTimeOnly(x.time),d.oc,x.user||d.user||'',d.store,x.boxNumber||'',x.step||'',x.expectedCode||'',x.code,x.result,x.message||'']));
+    const t=distTotals(d);summary.push([d.profile||'GENERIC',d.oc,d.store,d.masterScanned||d.masterExpected||'',t.expected,t.done,t.pending,t.incidents,d.status||'ABIERTA',d.startedAt||'',d.closedAt||'']);
+    (d.rows||[]).forEach(r=>detail.push([d.profile||'GENERIC',d.oc,r.block||'',r.store||d.store,d.masterScanned||d.masterExpected||'',r.skuSeq||'',r.code,r.desc||'',r.expected,r.done||0,r.excess||0,(r.done||0)>=r.expected?'COMPLETO':'PENDIENTE',r.sequence||'']));
+    (d.scans||[]).forEach(x=>scans.push([x.time,d.profile||'GENERIC',d.oc,x.block||'',x.store||d.store,x.expectedStore||'',d.masterScanned||d.masterExpected||'',x.skuSeq||'',x.upc||x.code||'',x.expectedUpc||'',x.result,x.message||'']));
   });
   if(base.length===1&&all.length===0)return toast('No hay datos de Distribution para exportar',true);
-  await downloadWorkbook('inventix_verify_distribution_resultado_'+dateTag()+'.xlsx',[
-    {name:'BASE_IMPORTADA',rows:base,textColumns:['OC','UPC','MODELO'],widths:[18,30,22,20,16,38,22]},
-    {name:'RESUMEN_OC',rows:summary,textColumns:['OC'],widths:[18,20,30,22,16,16,18,14,14,14,16,22,22,42]},
-    {name:'DETALLE',rows:detail,textColumns:['OC','UPC','MODELO'],widths:[18,20,30,22,22,20,38,16,16,14,12,20,22]},
-    {name:'LECTURAS',rows:scans,textColumns:['OC','ESPERADO','LEIDO'],widths:[22,14,14,18,20,30,10,10,22,22,24,60]}
+  await downloadWorkbook('inventix_verify_distribution_'+dateTag()+'.xlsx',[
+    {name:'BASE_IMPORTADA',rows:base,textColumns:['OC','DESTINO/TIENDA','SKU_SECUENCIA','UPC','ETIQUETA MASTER'],widths:[18,18,10,22,14,24,36,12,24,12]},
+    {name:'RESUMEN',rows:summary,textColumns:['OC','ETIQUETA MASTER'],widths:[18,18,24,24,12,12,12,12,16,22,22]},
+    {name:'DETALLE',rows:detail,textColumns:['OC','DESTINO/TIENDA','ETIQUETA MASTER','SKU_SECUENCIA','UPC'],widths:[18,18,10,22,24,14,24,36,12,12,12,16,12]},
+    {name:'LECTURAS',rows:scans,textColumns:['OC','DESTINO/TIENDA','TIENDA_ESPERADA','ETIQUETA MASTER','SKU_SECUENCIA','UPC','UPC_ESPERADO'],widths:[22,18,18,10,22,22,24,14,24,24,22,58]}
   ]);
 }
 
+dProfile.addEventListener('change',()=>{updateDistributionProfileUI();renderDistribution();});
 dImportBtn.addEventListener('click',()=>dImportFile.click());
 dImportFile.addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{await importDistributionFile(f);}catch(err){console.error(err);toast(err.message||'No se pudo importar Distribution',true);}e.target.value='';});
 dImportedGroup.addEventListener('change',()=>fillDistributionGroup(dImportedGroup.value));
 dStartBtn.addEventListener('click',startDistribution);
 dScanBtn.addEventListener('click',()=>scanDistribution(dScanCode.value));
-dScanCode.addEventListener('keydown',e=>{if(e.key==='Enter')scanDistribution(e.target.value)});
+dScanCode.addEventListener('keydown',e=>{if(e.key==='Enter')scanDistribution(dScanCode.value)});
 dUndoBtn.addEventListener('click',undoDistribution);
 dCloseBtn.addEventListener('click',closeDistribution);
 dExportBtn.addEventListener('click',exportDistributionExcel);
 dTemplateBtn.addEventListener('click',async()=>{
-  await downloadWorkbook('plantilla_verify_distribution_macstore.xlsx',[{name:'DISTRIBUTION',rows:[['OC','DESTINO/TIENDA','UPC','MODELO','CANTIDAD/CAJAS','DESCRIPCION'],['673442','MACSTORE MAZATLAN','4895241109027','EXTMAG005',77,'EJEMPLO MACSTORE']],textColumns:['OC','UPC','MODELO'],widths:[18,30,22,20,18,38]}]);
+  await downloadWorkbook('plantilla_verify_distribution.xlsx',[
+    {name:'GENERICA',rows:[['OC','DESTINO/TIENDA','UPC/SKU','DESCRIPCION','CANTIDAD','ETIQUETA MASTER'],['OC 673505','MACSTORE BUENAVISTA','7500000000001','ARTICULO EJEMPLO',3,'MASTER-673505'],['OC 673505','MACSTORE BUENAVISTA','7500000000002','SEGUNDO ARTICULO',2,'MASTER-673505']],textColumns:['OC','UPC/SKU','ETIQUETA MASTER'],widths:[18,28,22,36,12,24]},
+    {name:'OFFICE_DEPOT',rows:[['ORDER_NO','LOC_ID','SKU','UPC','CANT','MAX_CANT'],[3349011,538,3,'7500000000003',2,2],['','BLOQUE 4','','','',''],[3349011,433,3,'7500000000004',2,2],['','BLOQUE 3','','','',''],[3349011,325,5,'7500000000005',1,1]],textColumns:['ORDER_NO','LOC_ID','SKU','UPC'],widths:[18,18,14,24,12,12]}
+  ]);
 });
-
-// Cámara continua: el permiso se solicita una sola vez por sesión de escaneo.
-// La cámara permanece abierta hasta que el operador la cierre.
-// Un mismo código no puede contarse dos veces mientras siga visible en el cuadro.
-let cameraStream=null, cameraDetector=null, cameraTimer=null, cameraTarget=null, cameraOnRead=null, torchOn=false;
-let cameraLockedValue='', cameraClearFrames=0, cameraBusy=false;
-const cameraOverlay=document.getElementById('cameraOverlay');
-const cameraVideo=document.getElementById('cameraVideo');
-const cameraStatus=document.getElementById('cameraStatus');
-const cameraCancel=document.getElementById('cameraCancel');
-const cameraTorch=document.getElementById('cameraTorch');
-
-async function stopCameraScanner(){
-  if(cameraTimer){cancelAnimationFrame(cameraTimer);cameraTimer=null;}
-  if(cameraStream){cameraStream.getTracks().forEach(t=>t.stop());cameraStream=null;}
-  if(cameraVideo){cameraVideo.srcObject=null;}
-  if(cameraOverlay){cameraOverlay.classList.remove('on');cameraOverlay.setAttribute('aria-hidden','true');}
-  cameraTarget=null;cameraOnRead=null;cameraDetector=null;torchOn=false;
-  cameraLockedValue='';cameraClearFrames=0;cameraBusy=false;
-  if(cameraTorch){cameraTorch.style.display='none';cameraTorch.textContent='🔦 Luz';}
-}
-
-async function openCameraScanner(targetInput,onRead){
-  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
-    return toast('Cámara bloqueada en este entorno. Abre Inventix desde GitHub Pages (HTTPS) o usa lector físico.',true);
-  }
-  if(!('BarcodeDetector' in window)){
-    return toast('Este navegador no soporta lectura directa por cámara. Usa lector físico o Chrome actualizado.',true);
-  }
-  // Si la cámara ya está abierta, reutilizamos el mismo permiso y solo cambiamos el destino.
-  if(cameraStream){
-    cameraTarget=targetInput;cameraOnRead=onRead;
-    cameraOverlay.classList.add('on');cameraOverlay.setAttribute('aria-hidden','false');
-    cameraStatus.textContent='LISTO · cámara activa · apunta al código';
-    return;
-  }
-  try{
-    cameraTarget=targetInput;cameraOnRead=onRead;cameraStatus.textContent='Solicitando permiso una sola vez…';
-    cameraOverlay.classList.add('on');cameraOverlay.setAttribute('aria-hidden','false');
-    cameraStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}},audio:false});
-    cameraVideo.srcObject=cameraStream;await cameraVideo.play();
-    let formats=['ean_13','ean_8','code_128','code_39','upc_a','upc_e','itf','qr_code','data_matrix'];
-    try{
-      const supported=await BarcodeDetector.getSupportedFormats();
-      formats=formats.filter(x=>supported.includes(x));
-    }catch(_e){}
-    cameraDetector=new BarcodeDetector(formats.length?{formats}:undefined);
-    cameraStatus.textContent='LISTO · escanea en continuo · retira cada código antes del siguiente';
-    const track=cameraStream.getVideoTracks()[0];
-    try{
-      const caps=track.getCapabilities?track.getCapabilities():{};
-      if(caps.torch)cameraTorch.style.display='block';
-    }catch(_e){}
-
-    const tick=async()=>{
-      if(!cameraStream||!cameraDetector)return;
-      if(!cameraBusy&&cameraVideo.readyState>=2){
-        cameraBusy=true;
-        try{
-          const found=await cameraDetector.detect(cameraVideo);
-          let value='';
-          if(found&&found.length)value=idText(found[0].rawValue||'');
-
-          if(value){
-            cameraClearFrames=0;
-            if(!cameraLockedValue){
-              cameraLockedValue=value;
-              if(cameraTarget)cameraTarget.value=value;
-              const cb=cameraOnRead;
-              if(cb)await Promise.resolve(cb(value));
-              cameraStatus.textContent='LEÍDO '+value+' · retira el código para habilitar el siguiente';
-            }
-          }else if(cameraLockedValue){
-            // Exigimos varios cuadros limpios para evitar dobles lecturas del mismo UPC.
-            cameraClearFrames++;
-            if(cameraClearFrames>=4){
-              cameraLockedValue='';cameraClearFrames=0;
-              cameraStatus.textContent='LISTO · presenta el siguiente código';
-            }
-          }
-        }catch(_e){}
-        cameraBusy=false;
-      }
-      cameraTimer=requestAnimationFrame(tick);
-    };
-    cameraTimer=requestAnimationFrame(tick);
-  }catch(err){
-    console.error(err);await stopCameraScanner();
-    toast(err&&err.name==='NotAllowedError'?'Permiso de cámara no concedido':'No se pudo abrir la cámara',true);
-  }
-}
-
-cameraCancel.addEventListener('click',stopCameraScanner);
-cameraOverlay.addEventListener('click',e=>{if(e.target===cameraOverlay)stopCameraScanner();});
-cameraTorch.addEventListener('click',async()=>{
-  if(!cameraStream)return;const track=cameraStream.getVideoTracks()[0];
-  try{torchOn=!torchOn;await track.applyConstraints({advanced:[{torch:torchOn}]});cameraTorch.textContent=torchOn?'🔦 Apagar luz':'🔦 Luz';}catch(_e){toast('La luz no está disponible',true);}
-});
-document.getElementById('vCameraBtn').addEventListener('click',()=>openCameraScanner(vCode,value=>registerVerifyRead(value)));
-document.getElementById('dCameraBtn').addEventListener('click',()=>openCameraScanner(dScanCode,value=>scanDistribution(value)));
 
 function renderEnvironment(){
   const secure=window.isSecureContext || location.hostname==='localhost';
   const sb=document.getElementById('secureBadge'), sn=document.getElementById('secureNote');
   if(sb){ sb.textContent=secure?'HTTPS / datos locales':'Archivo local / datos locales'; sb.className='pill ok'; }
-  if(sn){ sn.textContent='Modo ágil: lector físico/Bluetooth/USB o captura manual. Cámara continua opcional: autoriza una vez y escanea todo el lote sin volver a pedir permiso hasta cerrarla.'; }
+  if(sn){ sn.textContent='Modo ágil sin cámara: usa lector físico/Bluetooth/USB o captura manual. En Verify y Distribution, Enter valida de inmediato sin abrir permisos ni una segunda pantalla.'; }
 }
 if('serviceWorker' in navigator && window.isSecureContext){
   window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(()=>{}));
