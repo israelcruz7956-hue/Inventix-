@@ -4,8 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#0F2747">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <link rel="manifest" href="manifest.json">
-<title>INVENTIX Core v1.8.3 Office Depot Piso</title>
+<title>INVENTIX Core v1.8.4 Office Depot Piso</title>
 <style>
 :root{
   --navy:#0F2747;--navy2:#08192f;--blue:#1E4DBC;--orange:#F5A623;
@@ -84,7 +87,7 @@ hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
 
 <header>
   <div class="brand">INVENTI<span>X</span> CORE</div>
-  <div class="sub">v1.8.3 · Office Depot: abajo→arriba + misma tienda agrupada + cierre caja/bloque + UPC dinámico</div>
+  <div class="sub">v1.8.4 · Office Depot: flujo piso + limpieza de caché/PWA + sin Service Worker durante pruebas</div>
 </header>
 
 <main>
@@ -1875,9 +1878,35 @@ function renderEnvironment(){
   if(sb){ sb.textContent=secure?'HTTPS / datos locales':'Archivo local / datos locales'; sb.className='pill ok'; }
   if(sn){ sn.textContent='Modo ágil sin cámara: usa lector físico/Bluetooth/USB o captura manual. En Verify y Distribution, Enter valida de inmediato sin abrir permisos ni una segunda pantalla.'; }
 }
-if('serviceWorker' in navigator && window.isSecureContext){
-  window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(()=>{}));
+async function cleanupLegacyPWA(){
+  let removedSW=0, removedCaches=0;
+  try{
+    if('serviceWorker' in navigator){
+      const regs=await navigator.serviceWorker.getRegistrations();
+      for(const reg of regs){
+        try{ if(await reg.unregister()) removedSW++; }catch(_){}
+      }
+    }
+    if('caches' in window){
+      const names=await caches.keys();
+      for(const name of names){
+        try{ if(await caches.delete(name)) removedCaches++; }catch(_){}
+      }
+    }
+    localStorage.setItem('inventix_cache_guard_v1_8_4', JSON.stringify({
+      cleanedAt:new Date().toISOString(),
+      removedSW,
+      removedCaches
+    }));
+    const note=document.getElementById('secureNote');
+    if(note){
+      note.textContent=`v1.8.4 activo · caché/PWA limpiado (${removedSW} Service Worker, ${removedCaches} caché). Tus datos operativos locales NO fueron borrados.`;
+    }
+  }catch(err){
+    console.warn('Inventix cache guard:',err);
+  }
 }
+window.addEventListener('load',cleanupLegacyPWA);
 renderEnvironment();
 
 
