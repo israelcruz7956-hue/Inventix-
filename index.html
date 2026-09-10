@@ -4,9 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#0F2747">
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta http-equiv="Pragma" content="no-cache">
-<meta http-equiv="Expires" content="0">
 <link rel="manifest" href="manifest.json">
 <title>INVENTIX Core v1.8.4 Office Depot Piso</title>
 <style>
@@ -87,7 +84,7 @@ hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
 
 <header>
   <div class="brand">INVENTI<span>X</span> CORE</div>
-  <div class="sub">v1.8.4 · Office Depot: flujo piso + limpieza de caché/PWA + sin Service Worker durante pruebas</div>
+  <div class="sub">v1.8.4 · Office Depot: SKU SEQ prioritario + avance de piezas claro + cierre caja/bloque</div>
 </header>
 
 <main>
@@ -1790,10 +1787,22 @@ function renderDistribution(){
         const st=officeDepotStoreTotals(d,next.row.block,next.row.store);
         const prev=(d.scans||[]).slice().reverse().find(x=>x.result==='CORRECTO');
         const same=prev&&Number(prev.block)===Number(next.row.block)&&idText(prev.store)===idText(next.row.store);
+        const partLabel=pi.parts>1
+          ? `<span style="font-size:11px;color:#7894bd">PARTIDA ${pi.part} DE ${pi.parts}</span>`
+          : `<span style="font-size:11px;color:#7894bd">ÚNICA PARTIDA</span>`;
         dOfficeNext.innerHTML=`<b style="color:${same?'#8fe0ad':'#F5A623'}">${same?'MISMA TIENDA · SIGUIENTE PARTIDA':'SIGUIENTE TIENDA / CAJA'}</b><br>
-          <span style="font-size:21px;font-weight:900">BLOQUE ${next.row.block} · TIENDA ${escapeHtml(next.row.store)}</span><br>
-          SKU SEQ <b>${escapeHtml(next.row.skuSeq||'')}</b> · ${Number(next.row.expected||0)} pieza${Number(next.row.expected||0)===1?'':'s'} · partida ${pi.part}/${pi.parts}<br>
-          UPC esperado ${escapeHtml(next.row.code)} · tienda acumulada ${st.done}/${st.expected}<br>
+          <span style="font-size:21px;font-weight:900">BLOQUE ${next.row.block} · TIENDA ${escapeHtml(next.row.store)}</span>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin:4px 0 2px">
+            <div style="font-size:14px;color:#8fb2e5">SKU SEQ
+              <b style="font-size:28px;line-height:1;color:#FFFFFF;margin-left:5px">${escapeHtml(next.row.skuSeq||'')}</b>
+            </div>
+            <div style="text-align:right">
+              <b style="font-size:18px;color:#FFFFFF">${Number(next.row.done||0)} / ${Number(next.row.expected||0)}</b>
+              <div style="font-size:10px;color:#7894bd">PIEZAS</div>
+            </div>
+          </div>
+          ${partLabel}<br>
+          UPC esperado ${escapeHtml(next.row.code)} · caja/tienda ${st.done}/${st.expected}<br>
           <span class="note">Revisa tienda en la etiqueta. Verify valida el artículo por UPC; al completar todas las partidas pedirá CERRAR CAJA.</span>`;
       }else{
         dOfficeNext.innerHTML='<b style="color:#1A9A54">PIEZAS COMPLETAS · REVISA CIERRES DE CAJA/BLOQUE</b>';
@@ -1878,35 +1887,9 @@ function renderEnvironment(){
   if(sb){ sb.textContent=secure?'HTTPS / datos locales':'Archivo local / datos locales'; sb.className='pill ok'; }
   if(sn){ sn.textContent='Modo ágil sin cámara: usa lector físico/Bluetooth/USB o captura manual. En Verify y Distribution, Enter valida de inmediato sin abrir permisos ni una segunda pantalla.'; }
 }
-async function cleanupLegacyPWA(){
-  let removedSW=0, removedCaches=0;
-  try{
-    if('serviceWorker' in navigator){
-      const regs=await navigator.serviceWorker.getRegistrations();
-      for(const reg of regs){
-        try{ if(await reg.unregister()) removedSW++; }catch(_){}
-      }
-    }
-    if('caches' in window){
-      const names=await caches.keys();
-      for(const name of names){
-        try{ if(await caches.delete(name)) removedCaches++; }catch(_){}
-      }
-    }
-    localStorage.setItem('inventix_cache_guard_v1_8_4', JSON.stringify({
-      cleanedAt:new Date().toISOString(),
-      removedSW,
-      removedCaches
-    }));
-    const note=document.getElementById('secureNote');
-    if(note){
-      note.textContent=`v1.8.4 activo · caché/PWA limpiado (${removedSW} Service Worker, ${removedCaches} caché). Tus datos operativos locales NO fueron borrados.`;
-    }
-  }catch(err){
-    console.warn('Inventix cache guard:',err);
-  }
+if('serviceWorker' in navigator && window.isSecureContext){
+  window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(()=>{}));
 }
-window.addEventListener('load',cleanupLegacyPWA);
 renderEnvironment();
 
 
