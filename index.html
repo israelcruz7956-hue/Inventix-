@@ -4,8 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#0F2747">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <link rel="manifest" href="manifest.json">
-<title>INVENTIX Core v1.8.4 Office Depot Piso</title>
+<title>INVENTIX Core v1.8.5 Office Depot Piso</title>
 <style>
 :root{
   --navy:#0F2747;--navy2:#08192f;--blue:#1E4DBC;--orange:#F5A623;
@@ -84,7 +87,7 @@ hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
 
 <header>
   <div class="brand">INVENTI<span>X</span> CORE</div>
-  <div class="sub">v1.8.4 · Office Depot: SKU SEQ prioritario + avance de piezas claro + cierre caja/bloque</div>
+  <div class="sub">v1.8.4 · Office Depot: flujo piso + limpieza de caché/PWA + sin Service Worker durante pruebas</div>
 </header>
 
 <main>
@@ -1610,7 +1613,18 @@ function restoreDistributionUI(){
 }
 async function importDistributionFile(file){
   const data=await readDistributionDataFile(file);
-  if(importedFileMatch(data.hash,'DISTRIBUTION')) throw new Error('Archivo de Distribution duplicado: ya fue cargado');
+  const duplicate=importedFileMatch(data.hash,'DISTRIBUTION');
+  const hasDistributionLoaded=(state.distributionImport?.rows||[]).length>0 || !!state.activeDistribution;
+  if(duplicate || hasDistributionLoaded){
+    const msg=duplicate
+      ? 'Este archivo ya fue cargado. ¿Deseas REEMPLAZARLO y reiniciar únicamente Distribution?\n\nSe conservarán Inventario, Entradas, Salidas, Kardex, Verify y el historial de distribuciones cerradas.'
+      : 'Ya existe una base de Distribution cargada. ¿Deseas REEMPLAZARLA con este archivo y reiniciar únicamente la distribución activa?\n\nSe conservarán Inventario, Entradas, Salidas, Kardex, Verify y el historial de distribuciones cerradas.';
+    if(!confirm(msg)) return;
+    state.activeDistribution=null;
+    if(duplicate){
+      state.importedFiles=(state.importedFiles||[]).filter(x=>!(x.hash===data.hash && x.kind==='DISTRIBUTION'));
+    }
+  }
   let rows=[];
   if(isOfficeDepotProfile(data.profile)){
     rows=data.rows;
@@ -1787,22 +1801,10 @@ function renderDistribution(){
         const st=officeDepotStoreTotals(d,next.row.block,next.row.store);
         const prev=(d.scans||[]).slice().reverse().find(x=>x.result==='CORRECTO');
         const same=prev&&Number(prev.block)===Number(next.row.block)&&idText(prev.store)===idText(next.row.store);
-        const partLabel=pi.parts>1
-          ? `<span style="font-size:11px;color:#7894bd">PARTIDA ${pi.part} DE ${pi.parts}</span>`
-          : `<span style="font-size:11px;color:#7894bd">ÚNICA PARTIDA</span>`;
         dOfficeNext.innerHTML=`<b style="color:${same?'#8fe0ad':'#F5A623'}">${same?'MISMA TIENDA · SIGUIENTE PARTIDA':'SIGUIENTE TIENDA / CAJA'}</b><br>
-          <span style="font-size:21px;font-weight:900">BLOQUE ${next.row.block} · TIENDA ${escapeHtml(next.row.store)}</span>
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin:4px 0 2px">
-            <div style="font-size:14px;color:#8fb2e5">SKU SEQ
-              <b style="font-size:28px;line-height:1;color:#FFFFFF;margin-left:5px">${escapeHtml(next.row.skuSeq||'')}</b>
-            </div>
-            <div style="text-align:right">
-              <b style="font-size:18px;color:#FFFFFF">${Number(next.row.done||0)} / ${Number(next.row.expected||0)}</b>
-              <div style="font-size:10px;color:#7894bd">PIEZAS</div>
-            </div>
-          </div>
-          ${partLabel}<br>
-          UPC esperado ${escapeHtml(next.row.code)} · caja/tienda ${st.done}/${st.expected}<br>
+          <span style="font-size:21px;font-weight:900">BLOQUE ${next.row.block} · TIENDA ${escapeHtml(next.row.store)}</span><br>
+          SKU SEQ <b>${escapeHtml(next.row.skuSeq||'')}</b> · ${Number(next.row.expected||0)} pieza${Number(next.row.expected||0)===1?'':'s'} · partida ${pi.part}/${pi.parts}<br>
+          UPC esperado ${escapeHtml(next.row.code)} · tienda acumulada ${st.done}/${st.expected}<br>
           <span class="note">Revisa tienda en la etiqueta. Verify valida el artículo por UPC; al completar todas las partidas pedirá CERRAR CAJA.</span>`;
       }else{
         dOfficeNext.innerHTML='<b style="color:#1A9A54">PIEZAS COMPLETAS · REVISA CIERRES DE CAJA/BLOQUE</b>';
@@ -1832,32 +1834,113 @@ function renderDistributionHistory(){
   dHistory.innerHTML=arr.length?arr.slice(0,40).map(d=>`<div class="row ok"><b>${escapeHtml(d.oc)} · ${isOfficeDepotProfile(d.profile)?'OFFICE DEPOT':escapeHtml(d.store)}</b> <span class="badge">${d.totalPieces||0} pzas</span><div class="meta">${isOfficeDepotProfile(d.profile)?'Bloques / tienda visual + UPC · sin Master':'Master: '+escapeHtml(d.masterScanned||d.masterExpected||'SIN MASTER')} · Incidencias: ${d.incidents||0}<br>${fmtDate(d.closedAt)}</div></div>`).join(''):'<div class="note">Sin distribuciones cerradas.</div>';
 }
 async function exportDistributionExcel(){
-  const base=[['PERFIL','OC','BLOQUE','DESTINO/TIENDA','SKU_SECUENCIA','UPC','DESCRIPCION','CANTIDAD','ETIQUETA MASTER','SECUENCIA']];
-  distRows().forEach(r=>base.push([r.profile||state.distributionImport?.profile||'GENERIC',r.oc,r.block||'',r.store,r.skuSeq||r.sku||'',r.upc||r.code||'',r.desc||'',r.qty,r.master||'',r.sequence||'']));
-  const summary=[['PERFIL','OC','DESTINO/TIENDA','ETIQUETA MASTER','ESPERADO','VALIDADO','PENDIENTE','INCIDENCIAS','ESTATUS','INICIO','CIERRE']];
-  const detail=[['PERFIL','OC','BLOQUE','DESTINO/TIENDA','ETIQUETA MASTER','SKU_SECUENCIA','UPC','DESCRIPCION','ESPERADO','VALIDADO','EXCESOS','ESTATUS','SECUENCIA']];
-  const scans=[['FECHA_HORA','PERFIL','OC','BLOQUE','DESTINO/TIENDA','TIENDA_ESPERADA','ETIQUETA MASTER','SKU_SECUENCIA','UPC','UPC_ESPERADO','RESULTADO','DETALLE']];
-  const boxClosures=[['FECHA_HORA','OC','BLOQUE','TIENDA','PIEZAS_ESPERADAS','PARTIDAS','ESTATUS','VALIDACION']];
-  const blockClosures=[['FECHA_HORA','OC','BLOQUE','TIENDAS','PIEZAS_ESPERADAS','ESTATUS','VALIDACION']];
-  const variants=[['FECHA_HORA','OC','TIPO','BLOQUE','TIENDA','OBSERVACION','ESTATUS']];
-  const all=[...(state.distributions||[])];if(state.activeDistribution)all.unshift(state.activeDistribution);
+  // INVENTIX v1.8.6 · Exportable Núñez / Kernel Hulk
+  // Diseño permanente: 3 hojas — BASE, ESCANEO_EJECUCION, RESUMEN_MC.
+  // Objetivo: conservar plan, evidencia de ejecución y comparación solicitado vs físico + mejora continua.
+
+  const base=[['PERFIL','FOLIO_PEDIDO','BLOQUE','TIENDA_DESTINO','SKU_SECUENCIA','UPC','DESCRIPCION','CANTIDAD_SOLICITADA','ORDEN_EJECUCION']];
+  distRows().forEach(r=>base.push([
+    r.profile||state.distributionImport?.profile||'GENERIC',
+    r.oc||'',r.block||'',r.store||'',r.skuSeq||r.sku||'',r.upc||r.code||'',r.desc||'',Number(r.qty||0),r.sequence||''
+  ]));
+
+  const execution=[['FECHA_HORA','TIPO_EVENTO','FOLIO_PEDIDO','BLOQUE','TIENDA','SKU_SECUENCIA','UPC_LEIDO','UPC_ESPERADO','SOLICITADO','VALIDADO','RESULTADO','DETALLE','USUARIO']];
+
+  // RESUMEN_MC abre con el comparativo que pidió Núñez: solicitado vs físico validado por tienda/SKU.
+  const resumenMc=[
+    ['COMPARATIVO SOLICITADO VS FISICO VALIDADO','','','','','','','','','',''],
+    ['FOLIO_PEDIDO','BLOQUE','TIENDA','SKU_SECUENCIA','UPC','SOLICITADO_OC','FISICO_VALIDADO','DIFERENCIA','ESTATUS','','']
+  ];
+
+  const summaryRows=[];
+  const mcRows=[];
+  const all=[...(state.distributions||[])];
+  if(state.activeDistribution)all.unshift(state.activeDistribution);
+
   all.forEach(d=>{
-    const t=distTotals(d);summary.push([d.profile||'GENERIC',d.oc,d.store,d.masterScanned||d.masterExpected||'',t.expected,t.done,t.pending,t.incidents,d.status||'ABIERTA',d.startedAt||'',d.closedAt||'']);
-    (d.rows||[]).forEach(r=>detail.push([d.profile||'GENERIC',d.oc,r.block||'',r.store||d.store,d.masterScanned||d.masterExpected||'',r.skuSeq||'',r.code,r.desc||'',r.expected,r.done||0,r.excess||0,(r.done||0)>=r.expected?'COMPLETO':'PENDIENTE',r.sequence||'']));
-    (d.scans||[]).forEach(x=>scans.push([x.time,d.profile||'GENERIC',d.oc,x.block||'',x.store||d.store,x.expectedStore||'',d.masterScanned||d.masterExpected||'',x.skuSeq||'',x.upc||x.code||'',x.expectedUpc||'',x.result,x.message||'']));
-    (d.boxClosures||[]).forEach(x=>boxClosures.push([x.time,d.oc,x.block,x.store,x.expectedQty,x.parts,x.status,x.validation||'']));
-    (d.blockClosures||[]).forEach(x=>blockClosures.push([x.time,d.oc,x.block,x.stores,x.expectedQty,x.status,x.validation||'']));
-    (d.variants||[]).forEach(x=>variants.push([x.time,d.oc,x.type,x.block,x.store||'',x.observation||'',x.status||'']));
+    const t=distTotals(d);
+    const boxes=(d.boxClosures||[]).length;
+    const blocks=(d.blockClosures||[]).length;
+
+    // Comparativo por tienda / SKU.
+    (d.rows||[]).forEach(r=>{
+      const solicitado=Number(r.expected||0), fisico=Number(r.done||0), diff=fisico-solicitado;
+      resumenMc.push([
+        d.oc,r.block||'',r.store||d.store||'',r.skuSeq||'',r.code||'',solicitado,fisico,diff,
+        diff===0?'CUADRA':diff<0?'FALTANTE':'EXCESO','',''
+      ]);
+    });
+
+    // Eventos de escaneo.
+    (d.scans||[]).forEach(x=>{
+      execution.push([
+        x.time||'','ESCANEO',d.oc,x.block||'',x.store||d.store||'',x.skuSeq||'',x.upc||x.code||'',x.expectedUpc||'',
+        '', '', x.result||'',x.message||'',x.user||''
+      ]);
+      if(String(x.result||'').toUpperCase()!=='CORRECTO'){
+        mcRows.push([
+          d.oc,x.store||d.store||'',`${x.result||'ALERTA'}: ${x.message||''}`,
+          'Verify detectó y registró la desviación antes del cierre final.',
+          'POR CONFIRMAR EN PISO',
+          'Se retomó la secuencia esperada; validar contra el cuadre final.',
+          'POR DEFINIR CON OPERACIÓN','',d.closedAt||'',
+          `${x.time||''} · ${x.upc||x.code||''}`,'CONTENIDA'
+        ]);
+      }
+    });
+
+    // Cierres de caja / tienda.
+    (d.boxClosures||[]).forEach(x=>execution.push([
+      x.time||'','CIERRE_CAJA',d.oc,x.block||'',x.store||'', '', '', '',
+      Number(x.expectedQty||0),Number(x.expectedQty||0),x.status||'OK',x.validation||'',x.user||''
+    ]));
+
+    // Cierres de bloque / tarima.
+    (d.blockClosures||[]).forEach(x=>execution.push([
+      x.time||'','CIERRE_BLOQUE',d.oc,x.block||'','', '', '', '',
+      Number(x.expectedQty||0),Number(x.expectedQty||0),x.status||'OK',x.validation||'',x.user||''
+    ]));
+
+    // Variantes / excepciones registradas.
+    (d.variants||[]).forEach(x=>{
+      execution.push([
+        x.time||'','VARIANTE',d.oc,x.block||'',x.store||'', '', '', '', '', '',
+        x.status||'VARIANTE',x.observation||x.type||'',x.user||''
+      ]);
+      mcRows.push([
+        d.oc,x.store||'',x.type||'VARIANTE',
+        'Evento registrado como excepción/variante para conservar trazabilidad.',
+        'POR CONFIRMAR EN PISO',x.observation||'',
+        'POR DEFINIR CON OPERACIÓN','',d.closedAt||'',x.time||'',x.status||'ABIERTA'
+      ]);
+    });
+
+    summaryRows.push([
+      d.oc,t.expected,t.done,t.done-t.expected,t.incidents,boxes,blocks,d.status||'ABIERTA',d.startedAt||'',d.closedAt||''
+    ]);
   });
+
   if(base.length===1&&all.length===0)return toast('No hay datos de Distribution para exportar',true);
+
+  // Orden cronológico de la evidencia.
+  execution.splice(1, execution.length-1, ...execution.slice(1).sort((a,b)=>String(a[0]).localeCompare(String(b[0]))));
+
+  // Secciones del RESUMEN_MC.
+  resumenMc.push(['','','','','','','','','','','']);
+  resumenMc.push(['RESUMEN DEL FOLIO','','','','','','','','','','']);
+  resumenMc.push(['FOLIO_PEDIDO','SOLICITADO_TOTAL','VALIDADO_TOTAL','DIFERENCIA_TOTAL','ALERTAS','CAJAS_TIENDAS_CERRADAS','BLOQUES_CERRADOS','ESTATUS','INICIO','CIERRE','']);
+  summaryRows.forEach(r=>resumenMc.push([...r,'']));
+  resumenMc.push(['','','','','','','','','','','']);
+  resumenMc.push(['MEJORA CONTINUA LIGADA AL MISMO FOLIO / EVENTO','','','','','','','','','','']);
+  resumenMc.push(['FOLIO_PEDIDO','TIENDA','DESVIACION','CONTENCION_INMEDIATA','CAUSA','CORRECCION','ACCION_PREVENTIVA','RESPONSABLE','FECHA_CIERRE','EVIDENCIA','ESTATUS']);
+  mcRows.forEach(r=>resumenMc.push(r));
+  // Fila vacía editable para documentar un evento no generado automáticamente.
+  resumenMc.push([all[0]?.oc||'','','','','','','','','','','ABIERTA']);
+
   await downloadWorkbook('inventix_verify_distribution_'+dateTag()+'.xlsx',[
-    {name:'BASE_IMPORTADA',rows:base,textColumns:['OC','DESTINO/TIENDA','SKU_SECUENCIA','UPC','ETIQUETA MASTER'],widths:[18,18,10,22,14,24,36,12,24,12]},
-    {name:'RESUMEN',rows:summary,textColumns:['OC','ETIQUETA MASTER'],widths:[18,18,24,24,12,12,12,12,16,22,22]},
-    {name:'DETALLE',rows:detail,textColumns:['OC','DESTINO/TIENDA','ETIQUETA MASTER','SKU_SECUENCIA','UPC'],widths:[18,18,10,22,24,14,24,36,12,12,12,16,12]},
-    {name:'LECTURAS',rows:scans,textColumns:['OC','DESTINO/TIENDA','TIENDA_ESPERADA','ETIQUETA MASTER','SKU_SECUENCIA','UPC','UPC_ESPERADO'],widths:[22,18,18,10,22,22,24,14,24,24,22,58]},
-    {name:'CIERRES_CAJA',rows:boxClosures,textColumns:['OC','TIENDA'],widths:[22,18,10,18,16,12,14,42]},
-    {name:'CIERRES_BLOQUE',rows:blockClosures,textColumns:['OC'],widths:[22,18,10,12,18,14,36]},
-    {name:'VARIANTES',rows:variants,textColumns:['OC','TIENDA'],widths:[22,18,14,10,18,58,14]}
+    {name:'BASE',rows:base,textColumns:['FOLIO_PEDIDO','TIENDA_DESTINO','SKU_SECUENCIA','UPC'],widths:[20,18,10,18,15,24,34,18,16]},
+    {name:'ESCANEO_EJECUCION',rows:execution,textColumns:['FOLIO_PEDIDO','TIENDA','SKU_SECUENCIA','UPC_LEIDO','UPC_ESPERADO'],widths:[22,18,18,10,16,15,24,24,12,12,20,58,18]},
+    {name:'RESUMEN_MC',rows:resumenMc,textColumns:['FOLIO_PEDIDO','TIENDA','SKU_SECUENCIA','UPC'],widths:[18,12,16,15,24,16,16,14,18,28,18]}
   ]);
 }
 
@@ -1887,9 +1970,35 @@ function renderEnvironment(){
   if(sb){ sb.textContent=secure?'HTTPS / datos locales':'Archivo local / datos locales'; sb.className='pill ok'; }
   if(sn){ sn.textContent='Modo ágil sin cámara: usa lector físico/Bluetooth/USB o captura manual. En Verify y Distribution, Enter valida de inmediato sin abrir permisos ni una segunda pantalla.'; }
 }
-if('serviceWorker' in navigator && window.isSecureContext){
-  window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(()=>{}));
+async function cleanupLegacyPWA(){
+  let removedSW=0, removedCaches=0;
+  try{
+    if('serviceWorker' in navigator){
+      const regs=await navigator.serviceWorker.getRegistrations();
+      for(const reg of regs){
+        try{ if(await reg.unregister()) removedSW++; }catch(_){}
+      }
+    }
+    if('caches' in window){
+      const names=await caches.keys();
+      for(const name of names){
+        try{ if(await caches.delete(name)) removedCaches++; }catch(_){}
+      }
+    }
+    localStorage.setItem('inventix_cache_guard_v1_8_4', JSON.stringify({
+      cleanedAt:new Date().toISOString(),
+      removedSW,
+      removedCaches
+    }));
+    const note=document.getElementById('secureNote');
+    if(note){
+      note.textContent=`v1.8.4 activo · caché/PWA limpiado (${removedSW} Service Worker, ${removedCaches} caché). Tus datos operativos locales NO fueron borrados.`;
+    }
+  }catch(err){
+    console.warn('Inventix cache guard:',err);
+  }
 }
+window.addEventListener('load',cleanupLegacyPWA);
 renderEnvironment();
 
 
