@@ -8,7 +8,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <link rel="manifest" href="manifest.json">
-<title>INVENTIX Core v1.8.8 Office Max + Office Depot</title>
+<title>INVENTIX Core v1.9.0 Office Max + Office Depot</title>
 <style>
 :root{
   --navy:#0F2747;--navy2:#08192f;--blue:#1E4DBC;--orange:#F5A623;
@@ -87,7 +87,12 @@ hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
 
 <header>
   <div class="brand">INVENTI<span>X</span> CORE</div>
-  <div class="sub">v1.8.7 · Distribution: Office Depot + Office Max · secuencia visible + salto automático de tienda</div>
+  <div class="sub">v1.9.0 · Distribution: Office Depot + Office Max · secuencia visible + salto automático de tienda</div>
+  <div id="environmentBanner" style="margin-top:10px;padding:10px;border:2px solid #059669;border-radius:12px;font-weight:900" aria-live="polite">🛡️ OPERACIÓN REAL</div>
+  <div style="display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap">
+    <button type="button" id="switchEnvironment" style="padding:11px 14px;border:2px solid #f59e0b;border-radius:10px;background:#122a4b;color:white;font-weight:800;cursor:pointer">🧪 Entrar a ambiente de prueba</button>
+    <small style="color:#b8cbe7">Los datos de prueba se guardan por separado en este navegador.</small>
+  </div>
 </header>
 
 <main>
@@ -317,6 +322,8 @@ hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
       <label>Escanear / capturar Etiqueta Master</label><input id="dMasterScan" placeholder="Etiqueta Master">
     </div>
     <button id="dCloseBtn" class="btn primary">🔒 Cerrar y validar Master</button>
+    <button id="dResetTestBtn" class="btn ghost" style="margin-top:10px;border:1px solid #f59e0b">🧹 Reiniciar prueba de esta distribución</button>
+    <div class="note">Disponible únicamente en PRUEBA. Reinicia el evento activo sin borrar el Excel importado ni afectar operación real.</div>
   </div>
 
   <div class="card">
@@ -337,7 +344,28 @@ hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
 </nav>
 
 <script>
-const STORAGE_KEY = 'inventix_core_v1_8';
+const REAL_STORAGE_KEY = 'inventix_core_v1_8';
+const TEST_STORAGE_KEY = 'inventix_core_sandbox_v1_9';
+const MODE_KEY = 'inventix_core_environment_v1_9';
+const TEST_MODE = localStorage.getItem(MODE_KEY)==='TEST';
+const STORAGE_KEY = TEST_MODE ? TEST_STORAGE_KEY : REAL_STORAGE_KEY;
+function renderEnvironmentMode(){
+  const banner=document.getElementById('environmentBanner');
+  const btn=document.getElementById('switchEnvironment');
+  banner.textContent=TEST_MODE?'🧪 AMBIENTE DE PRUEBA · NO AFECTA INVENTARIO REAL':'🛡️ OPERACIÓN REAL · MOVIMIENTOS OFICIALES';
+  banner.style.borderColor=TEST_MODE?'#f59e0b':'#059669';
+  banner.style.background=TEST_MODE?'#573c0b':'#103d30';
+  btn.textContent=TEST_MODE?'🛡️ Volver a operación real':'🧪 Entrar a ambiente de prueba';
+  const reset=document.getElementById('dResetTestBtn');
+  if(reset)reset.style.display=TEST_MODE?'':'none';
+}
+document.getElementById('switchEnvironment').addEventListener('click',()=>{
+  const next=TEST_MODE?'REAL':'TEST';
+  if(!confirm(next==='TEST'?'Entrar a PRUEBA: los cambios quedarán separados de la operación real. ¿Continuar?':'Volver a OPERACIÓN REAL: las pruebas permanecerán guardadas aparte. ¿Continuar?'))return;
+  localStorage.setItem(MODE_KEY,next);
+  location.reload();
+});
+renderEnvironmentMode();
 let state = {
   inventory:{}, kardex:[], verify:[], verifyExpected:{}, verifyClosures:[], verifyTechUPC:{}, physicalCounts:[], importedFiles:[],
   officeDepotUpcMap:{}, distributions:[], distributionImport:{rows:[],sourceName:'',loadedAt:null}, activeDistribution:null
@@ -369,18 +397,18 @@ function normalizeState(parsed){
 function load(){
   try{
     const raw = localStorage.getItem(STORAGE_KEY)
-      || localStorage.getItem('inventix_core_v1_7')
-      || localStorage.getItem('inventix_core_v1_6_2')
-      || localStorage.getItem('inventix_core_v1_6_1')
-      || localStorage.getItem('inventix_core_v1_6')
-      || localStorage.getItem('inventix_core_v1_4')
-      || localStorage.getItem('inventix_core_v1_3')
-      || localStorage.getItem('inventix_core_v1_1');
+      || (TEST_MODE ? null : localStorage.getItem('inventix_core_v1_7'))
+      || (TEST_MODE ? null : localStorage.getItem('inventix_core_v1_6_2'))
+      || (TEST_MODE ? null : localStorage.getItem('inventix_core_v1_6_1'))
+      || (TEST_MODE ? null : localStorage.getItem('inventix_core_v1_6'))
+      || (TEST_MODE ? null : localStorage.getItem('inventix_core_v1_4'))
+      || (TEST_MODE ? null : localStorage.getItem('inventix_core_v1_3'))
+      || (TEST_MODE ? null : localStorage.getItem('inventix_core_v1_1'));
     if(raw) state=normalizeState(JSON.parse(raw));
     state.verifyExpected=migrateVerifyExpectedObject(state.verifyExpected);
 
     // Migra la sesión de Distribution de v1.4 si existe.
-    if(!state.activeDistribution){
+    if(!TEST_MODE && !state.activeDistribution){
       const oldActive=localStorage.getItem('inventix_core_v1_4_activeDistribution');
       if(oldActive){
         const a=JSON.parse(oldActive);
@@ -391,7 +419,7 @@ function load(){
         };
       }
     }
-    if(!(state.distributionImport?.rows||[]).length){
+    if(!TEST_MODE && !(state.distributionImport?.rows||[]).length){
       const oldImport=localStorage.getItem('inventix_core_v1_4_importedDistribution');
       if(oldImport){
         const oi=JSON.parse(oldImport);
@@ -2099,6 +2127,27 @@ dScanBtn.addEventListener('click',()=>scanDistribution(dScanCode.value));
 dScanCode.addEventListener('keydown',e=>{if(e.key==='Enter')scanDistribution(dScanCode.value)});
 dUndoBtn.addEventListener('click',undoDistribution);
 dCloseBtn.addEventListener('click',closeDistribution);
+function resetDistributionTest(){
+  if(!TEST_MODE)return toast('El reinicio de prueba solo está disponible en ambiente de prueba',true);
+  const d=state.activeDistribution;
+  if(!d)return toast('No hay distribución activa para reiniciar',true);
+  const folio=idText(d.oc||'SIN FOLIO');
+  if(!confirm('REINICIAR PRUEBA · '+folio+'\n\nSe borrarán lecturas, avances, incidencias y cierres de caja/tienda de este evento activo. No se modificará el inventario ni Kardex.\n\n¿Continuar?'))return;
+  const confirmation=prompt('Para confirmar, escribe REINICIAR en mayúsculas:');
+  if(confirmation!=='REINICIAR')return toast('Reinicio cancelado',true);
+  (d.rows||[]).forEach(r=>{r.done=0;r.excess=0;});
+  d.scans=[];d.boxClosures=[];d.blockClosures=[];d.variants=[];
+  d.officeGate=null;d.masterScanned='';d.closedAt=null;d.status='ABIERTA';
+  d.resetCount=Number(d.resetCount||0)+1;
+  d.lastResetAt=nowISO();
+  if(typeof dScanCode!=='undefined')dScanCode.value='';
+  if(typeof dMasterScan!=='undefined')dMasterScan.value='';
+  save();renderDistribution();renderDistributionHistory();
+  setDistBanner('','PRUEBA REINICIADA · '+folio);
+  toast('Prueba reiniciada: lista para escanear desde la primera partida');
+}
+document.getElementById('dResetTestBtn').addEventListener('click',resetDistributionTest);
+
 dExportBtn.addEventListener('click',exportDistributionExcel);
 dTemplateBtn.addEventListener('click',async()=>{
   await downloadWorkbook('plantilla_verify_distribution.xlsx',[
