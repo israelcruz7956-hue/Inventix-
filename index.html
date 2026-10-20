@@ -87,7 +87,7 @@ hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
 
 <header>
   <div class="brand">INVENTI<span>X</span> CORE</div>
-  <div class="sub">v1.9.7 · CÁMARA UNIFICADA · LIVERPOOL + CAMBIO DE VALIDADOR + TRAZABILIDAD · secuencia visible + salto automático de tienda</div>
+  <div class="sub">v1.9.8 · CÁMARA UNIFICADA · LIVERPOOL + CAMBIO DE VALIDADOR + TRAZABILIDAD · secuencia visible + salto automático de tienda</div>
   <div id="environmentBanner" style="margin-top:10px;padding:10px;border:2px solid #059669;border-radius:12px;font-weight:900" aria-live="polite">🛡️ OPERACIÓN REAL</div>
   <div style="display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap">
     <button type="button" id="switchEnvironment" style="padding:11px 14px;border:2px solid #f59e0b;border-radius:10px;background:#122a4b;color:white;font-weight:800;cursor:pointer">🧪 Entrar a ambiente de prueba</button>
@@ -1330,14 +1330,14 @@ function parseLiverpoolWorkbook(wb){
   const sheets=wb.SheetNames.map(name=>({name,aoa:XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,defval:'',raw:false})}));
   const detail=sheets.find(x=>{
     const h=(x.aoa[0]||[]).map(normHeader);
-    return distributionHeaderIndex(h,['NUM TIENDA'])>=0 && distributionHeaderIndex(h,['CODIGO DE BARRAS'])>=0 && distributionHeaderIndex(h,['PIEZAS'])>=0 && distributionHeaderIndex(h,['SKU'])>=0;
+    return distributionHeaderIndex(h,['NUM TIENDA'])>=0 && distributionHeaderIndex(h,['CODIGO DE BARRAS','UPC','CODIGO BARRAS','UPC/SKU'])>=0 && distributionHeaderIndex(h,['PIEZAS'])>=0 && distributionHeaderIndex(h,['SKU'])>=0;
   });
   if(!detail)return null;
   const h=(detail.aoa[0]||[]).map(normHeader),idx=a=>distributionHeaderIndex(h,a);
   const iOC=idx(['OC']),iStore=idx(['NUM TIENDA']),iName=idx(['NOMBRE DE TIENDA']),iSku=idx(['SKU']);
-  const iSeq=idx(['SECUENCIA','SECUENCIA SKU','SECUENCIA_SKU']),iUpc=idx(['CODIGO DE BARRAS']),iQty=idx(['PIEZAS']);
+  const iSeq=idx(['SECUENCIA','SECUENCIA SKU','SECUENCIA_SKU']),iUpc=idx(['CODIGO DE BARRAS','UPC','CODIGO BARRAS','UPC/SKU']),iQty=idx(['PIEZAS']);
   const iHU=idx(['RFID / HU','RFID/HU','RFID HU','HU RFID','RFID']),iDesc=idx(['DESCRIPCION']);
-  if([iOC,iStore,iSku,iUpc,iQty,iHU,iSeq].some(x=>x<0))throw Error('Liverpool: DETALLE DISTRIBUCION requiere OC, tienda, SKU, SECUENCIA, CODIGO DE BARRAS, PIEZAS y RFID/HU');
+  if([iOC,iStore,iSku,iUpc,iQty,iHU,iSeq].some(x=>x<0))throw Error('Liverpool: DETALLE DISTRIBUCION requiere OC, tienda, SKU, SECUENCIA, UPC/CODIGO DE BARRAS, PIEZAS y RFID/HU');
   const catalog=sheets.find(x=>/CATALOGO/i.test(x.name));
   if(!catalog)throw Error('Liverpool: falta HOJA CATALOGO');
   const skuCatalog=new Map(),boxRules=[];
@@ -1427,6 +1427,7 @@ async function readDistributionDataFile(file){
   if(!window.XLSX)throw new Error('No se cargó el motor Excel. Conecta el teléfono a internet y vuelve a abrir Inventix.');
   const wb=XLSX.read(buffer,{type:'array',cellDates:false});
   const liverpool=parseLiverpoolWorkbook(wb);
+  if(!liverpool && document.getElementById('dProfile')?.value==='LIVERPOOL')throw Error('Liverpool: no se encontró DETALLE DISTRIBUCION con encabezados OC, NUM TIENDA, SKU, UPC, PIEZAS y RFID/HU. No se usó el importador genérico.');
   if(liverpool)return {...liverpool,hash,kind:'EXCEL'};
   let bestGeneric=null;
   for(const sheetName of wb.SheetNames){
