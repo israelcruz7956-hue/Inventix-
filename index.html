@@ -87,7 +87,7 @@ hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
 
 <header>
   <div class="brand">INVENTI<span>X</span> CORE</div>
-  <div class="sub">v1.9.4 · CÁMARA UNIFICADA · EMPLEADOS + LABEL Zebra + Distribution: Office Depot + Office Max · secuencia visible + salto automático de tienda</div>
+  <div class="sub">v1.9.7 · CÁMARA UNIFICADA · LIVERPOOL + CAMBIO DE VALIDADOR + TRAZABILIDAD · secuencia visible + salto automático de tienda</div>
   <div id="environmentBanner" style="margin-top:10px;padding:10px;border:2px solid #059669;border-radius:12px;font-weight:900" aria-live="polite">🛡️ OPERACIÓN REAL</div>
   <div style="display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap">
     <button type="button" id="switchEnvironment" style="padding:11px 14px;border:2px solid #f59e0b;border-radius:10px;background:#122a4b;color:white;font-weight:800;cursor:pointer">🧪 Entrar a ambiente de prueba</button>
@@ -260,7 +260,9 @@ hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
     <h2>Verify Distribution</h2>
     <div class="note">Asegura desde el primer conteo y empaquetado que cada artículo termine exactamente en la OC y destino correctos. El perfil activo define los candados: Master escaneable, secuencia de producto o validación visual por tienda.</div>
     <div class="grid2"><div><label>Número de empleado · obligatorio</label><input id="dEmployeeNo" inputmode="numeric" placeholder="Ej. 15" autocomplete="off"></div><div><label>Operador identificado</label><input id="dEmployeeName" readonly placeholder="Captura número de empleado"></div></div>
-    <div class="note">El empleado queda asociado a cada lectura, cierre y excepción. El Excel mostrará su nombre completo.</div>
+    <div class="note">Regla general: cada evento conserva número y nombre del validador. Un relevo no modifica las lecturas anteriores.</div>
+    <div class="grid2" style="margin-top:8px"><button type="button" id="dChangeValidatorBtn" class="btn secondary">🔄 Confirmar cambio de validador</button><button type="button" id="dPauseBtn" class="btn ghost">⏸️ Pausar / reanudar jornada</button></div>
+    <div id="dValidatorStatus" class="note" style="margin-top:6px">Sin sesión activa.</div>
     <details style="margin-top:10px"><summary>👥 Catálogo de empleados · administrar</summary>
       <div class="grid2"><div><label>Número</label><input id="dEmployeeEditNo" inputmode="numeric" placeholder="15"></div><div><label>Nombre completo</label><input id="dEmployeeEditName" placeholder="Nombre y apellidos"></div></div>
       <button id="dEmployeeSaveBtn" class="btn secondary" type="button">💾 Guardar empleado</button><div id="dEmployeeList" class="note" style="margin-top:8px"></div>
@@ -271,6 +273,7 @@ hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
       <option value="GENERIC">Genérico / Master</option>
       <option value="OFFICE_DEPOT">Office Depot · abajo→arriba + cierre caja/bloque</option>
       <option value="OFFICE_MAX">Office Max · SKU secuencia + salto automático de tienda</option>
+      <option value="LIVERPOOL">Liverpool · prevalidación UPC + HU + cierre de tienda</option>
     </select>
     <div id="dProfileNote" class="note" style="margin-top:6px">Auto detectar: Inventix reconoce el formato de la distribución.</div>
     <div class="toolbar" style="margin-top:10px">
@@ -329,6 +332,16 @@ hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
     </div>
     <div id="dLastStatus" class="dist-banner">LISTO PARA ESCANEAR</div>
     <div id="dOfficeNext" class="note" style="display:none;margin:10px 0;padding:10px;border:1px solid #F5A62355;border-radius:10px;background:#0A1E38"></div>
+    <div id="dLiverpoolPanel" class="card" style="display:none;background:#102746;border:1px solid #38bdf8">
+      <h3>🔐 Liverpool · prevalidación y etiqueta HU</h3>
+      <div id="dLiverpoolInfo" class="note"></div>
+      <label>Escanear UPC de muestra para prevalidación (5 diferentes)</label><input id="dLiverpoolPreScan" placeholder="UPC de muestra">
+      <button type="button" class="btn secondary ix-scan-launch" data-ix-target="dLiverpoolPreScan" data-ix-auto="false">📷 Cámara · prevalidar UPC</button>
+      <button type="button" id="dLiverpoolPreBtn" class="btn secondary">✔️ Validar UPC de muestra</button>
+      <label>HU / RFID física de la tienda actual (para cierre)</label><input id="dLiverpoolHU" placeholder="C56217834">
+      <button type="button" class="btn secondary ix-scan-launch" data-ix-target="dLiverpoolHU" data-ix-auto="false">📷 Cámara · etiqueta HU</button>
+      <button type="button" id="dLiverpoolCloseBtn" class="btn primary">🔒 Validar HU y cerrar tienda</button>
+    </div>
     <div id="dOfficeGate" class="office-gate">
       <h3 id="dOfficeGateTitle">Cierre</h3>
       <div id="dOfficeGateBody"></div>
@@ -1313,6 +1326,88 @@ function parseOfficeDepotAOA(aoa,sheetName){
   }
   return rows.length?{profile:'OFFICE_DEPOT',rows,sheetName}:null;
 }
+function parseLiverpoolWorkbook(wb){
+  const sheets=wb.SheetNames.map(name=>({name,aoa:XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,defval:'',raw:false})}));
+  const detail=sheets.find(x=>{
+    const h=(x.aoa[0]||[]).map(normHeader);
+    return distributionHeaderIndex(h,['NUM TIENDA'])>=0 && distributionHeaderIndex(h,['CODIGO DE BARRAS'])>=0 && distributionHeaderIndex(h,['PIEZAS'])>=0 && distributionHeaderIndex(h,['SKU'])>=0;
+  });
+  if(!detail)return null;
+  const h=(detail.aoa[0]||[]).map(normHeader),idx=a=>distributionHeaderIndex(h,a);
+  const iOC=idx(['OC']),iStore=idx(['NUM TIENDA']),iName=idx(['NOMBRE DE TIENDA']),iSku=idx(['SKU']);
+  const iSeq=idx(['SECUENCIA','SECUENCIA SKU','SECUENCIA_SKU']),iUpc=idx(['CODIGO DE BARRAS']),iQty=idx(['PIEZAS']);
+  const iHU=idx(['RFID / HU','RFID/HU','RFID HU','HU RFID','RFID']),iDesc=idx(['DESCRIPCION']);
+  if([iOC,iStore,iSku,iUpc,iQty,iHU,iSeq].some(x=>x<0))throw Error('Liverpool: DETALLE DISTRIBUCION requiere OC, tienda, SKU, SECUENCIA, CODIGO DE BARRAS, PIEZAS y RFID/HU');
+  const catalog=sheets.find(x=>/CATALOGO/i.test(x.name));
+  if(!catalog)throw Error('Liverpool: falta HOJA CATALOGO');
+  const skuCatalog=new Map(),boxRules=[];
+  for(let r=1;r<catalog.aoa.length;r++){
+    const line=catalog.aoa[r]||[],a=idText(line[0]),b=idText(line[1]),c=idText(line[2]);
+    if(/^\d{8,}$/.test(a)&&/^[1-5]$/.test(b)&&/^\d{8,}$/.test(c)){
+      if(skuCatalog.has(a))throw Error('Liverpool: SKU duplicado en catálogo '+a);
+      skuCatalog.set(a,{seq:b,upc:c});
+    }
+    const min=Number(a),max=Number(b),box=c.toUpperCase();
+    if(Number.isInteger(min)&&min>0&&Number.isInteger(max)&&max>=min&&/^L-\d+$/.test(box))boxRules.push({min,max,box});
+  }
+  if(skuCatalog.size!==5)throw Error('Liverpool: catálogo debe contener exactamente 5 SKU/UPC');
+  if(!boxRules.length)throw Error('Liverpool: faltan reglas CUBIX mínimo/máximo/caja');
+  boxRules.sort((a,b)=>a.min-b.min);
+  for(let i=1;i<boxRules.length;i++)if(boxRules[i].min<=boxRules[i-1].max)throw Error('Liverpool: rangos de caja superpuestos');
+  const matrix=sheets.find(x=>x!==detail&&x.aoa.length>=33&&x.aoa[31]?.some(v=>/^C\d{8}$/i.test(idText(v))));
+  const matrixHU=new Map(),matrixQty=new Map(),matrixSkuQty=new Map();
+  if(matrix){
+    const m=matrix.aoa;
+    for(let c=1;c<(m[31]||[]).length;c++){
+      const hu=idText(m[31][c]).toUpperCase();if(!/^C\d{8}$/.test(hu))continue;
+      const store=idText(m[3]?.[c]).match(/(\d{5})$/)?.[1];
+      if(!store)throw Error('Liverpool: matriz HU '+hu+' sin tienda');
+      if(matrixHU.has(store))throw Error('Liverpool: tienda duplicada en matriz '+store);
+      matrixHU.set(store,hu);
+      const q=Number(m[9]?.[c]);if(Number.isFinite(q))matrixQty.set(store,q);
+      for(let r=4;r<=8;r++){
+        const sku=idText(m[r]?.[0]),v=Number(m[r]?.[c]);
+        if(sku&&Number.isFinite(v))matrixSkuQty.set(store+'|'+sku,v);
+      }
+    }
+  }
+  const rows=[],byStore=new Map(),huOwner=new Map(),seqOwner=new Map(),ocSet=new Set();
+  for(let r=1;r<detail.aoa.length;r++){
+    const line=detail.aoa[r]||[],oc=idText(line[iOC]),rawStore=idText(line[iStore]),sku=idText(line[iSku]),upc=idText(line[iUpc]);
+    if(!oc&&!rawStore&&!sku&&!upc)continue;
+    const store=rawStore.match(/(\d{5})$/)?.[1]||'',seq=idText(line[iSeq]),hu=idText(line[iHU]).toUpperCase(),q=qty(line[iQty]);
+    if(!oc||!store||!sku||!upc||!Number.isInteger(q)||q<=0||!hu)throw Error('Liverpool: fila '+(r+1)+' incompleta');
+    if(!/^C\d{8}$/.test(hu))throw Error('Liverpool: HU inválida fila '+(r+1));
+    const ref=skuCatalog.get(sku);
+    if(!ref||ref.seq!==seq||ref.upc!==upc)throw Error('Liverpool: SKU, secuencia o UPC no coincide con catálogo fila '+(r+1));
+    if(matrixHU.has(store)&&matrixHU.get(store)!==hu)throw Error('Liverpool: RFID no coincide con hoja 1, tienda '+store);
+    if(matrixSkuQty.has(store+'|'+sku)&&matrixSkuQty.get(store+'|'+sku)!==q)throw Error('Liverpool: piezas no coinciden con hoja 1, tienda '+store+' SKU '+sku);
+    if(huOwner.has(hu)&&huOwner.get(hu)!==store)throw Error('Liverpool: HU repetida en distintas tiendas '+hu);
+    huOwner.set(hu,store);ocSet.add(oc);
+    const row={profile:'LIVERPOOL',oc,store,storeName:String(line[iName]||'').trim(),sku,skuSeq:seq,upc,code:upc,qty:q,master:hu,desc:String(line[iDesc]||''),sourceRow:r+1};
+    rows.push(row);
+    if(!byStore.has(store))byStore.set(store,[]);
+    byStore.get(store).push(row);
+  }
+  const total=rows.reduce((n,r)=>n+r.qty,0);
+  if(rows.length!==555||byStore.size!==111||huOwner.size!==111||total!==2000||ocSet.size!==1||!ocSet.has('33872728'))
+    throw Error(`Liverpool: diferencias (${rows.length} partidas, ${byStore.size} tiendas, ${huOwner.size} HU, ${total} piezas)`);
+  if(matrix&&matrixHU.size!==111)throw Error('Liverpool: matriz incompleta de HU');
+  const boxCount={};
+  for(const [store,items] of byStore){
+    if(items.length!==5||new Set(items.map(x=>x.skuSeq)).size!==5)throw Error('Liverpool: tienda '+store+' no tiene cinco posiciones únicas');
+    const count=items.reduce((n,x)=>n+x.qty,0);
+    if(matrixQty.has(store)&&matrixQty.get(store)!==count)throw Error('Liverpool: total no coincide con hoja 1, tienda '+store);
+    const rule=boxRules.find(x=>count>=x.min&&count<=x.max);
+    if(!rule)throw Error('Liverpool: no existe caja para '+store+' con '+count+' piezas');
+    items.forEach(x=>{x.boxType=rule.box;x.storePieces=count;});
+    boxCount[rule.box]=(boxCount[rule.box]||0)+1;
+  }
+  if(boxCount['L-28']!==61||boxCount['L-29']!==50)throw Error('Liverpool: cajas CUBIX no cuadran con 61 L-28 / 50 L-29');
+  rows.sort((a,b)=>a.master.localeCompare(b.master,undefined,{numeric:true})||Number(a.skuSeq)-Number(b.skuSeq));
+  rows.forEach((r,i)=>r.sequence=i+1);
+  return {profile:'LIVERPOOL',rows,sheetName:detail.name,boxCount};
+}
 function genericDistributionScore(headers){
   const groups=[
     ['OC','OV','PEDIDO','ORDEN','ORDEN COMPRA','ORDEN_COMPRA','NUM ORD','NUM_ORD','PO'],
@@ -1331,6 +1426,8 @@ async function readDistributionDataFile(file){
   const hash=await sha256Buffer(buffer);
   if(!window.XLSX)throw new Error('No se cargó el motor Excel. Conecta el teléfono a internet y vuelve a abrir Inventix.');
   const wb=XLSX.read(buffer,{type:'array',cellDates:false});
+  const liverpool=parseLiverpoolWorkbook(wb);
+  if(liverpool)return {...liverpool,hash,kind:'EXCEL'};
   let bestGeneric=null;
   for(const sheetName of wb.SheetNames){
     const ws=wb.Sheets[sheetName];
@@ -1358,11 +1455,13 @@ async function readDistributionDataFile(file){
 function distRows(){return state.distributionImport?.rows||[];}
 function distributionProfile(){
   const manual=(document.getElementById('dProfile')?.value||'AUTO');
+  if(state.activeDistribution?.profile)return state.activeDistribution.profile;
   if(manual!=='AUTO')return manual;
   return state.distributionImport?.profile||'GENERIC';
 }
 function isOfficeDepotProfile(v){return String(v||'').toUpperCase()==='OFFICE_DEPOT';}
 function isOfficeMaxProfile(v){return String(v||'').toUpperCase()==='OFFICE_MAX';}
+function isLiverpoolProfile(v){return String(v||'').toUpperCase()==='LIVERPOOL';}
 function distGroups(){
   const rows=distRows();
   if(isOfficeDepotProfile(state.distributionImport?.profile)){
@@ -1374,11 +1473,11 @@ function distGroups(){
     }
     return [...map.values()].map(g=>({...g,storeCount:g.stores.size,blockList:[...g.blocks].filter(Boolean).sort((a,b)=>b-a)}));
   }
-  if(isOfficeMaxProfile(state.distributionImport?.profile)){
+  if(isOfficeMaxProfile(state.distributionImport?.profile)||isLiverpoolProfile(state.distributionImport?.profile)){
     const map=new Map();
     for(const r of rows){
-      const key='OFFICE_MAX§'+(r.oc||'');
-      if(!map.has(key))map.set(key,{key,profile:'OFFICE_MAX',oc:r.oc||'',store:'POR TIENDAS',master:'',rows:[],pieces:0,stores:new Set(),pallets:new Set()});
+      const key=r.profile+'§'+(r.oc||'');
+      if(!map.has(key))map.set(key,{key,profile:r.profile,oc:r.oc||'',store:'POR TIENDAS',master:'',rows:[],pieces:0,stores:new Set(),pallets:new Set()});
       const g=map.get(key);g.rows.push(r);g.pieces+=Number(r.qty||0);g.stores.add(r.store);g.pallets.add(idText(r.pallet));
     }
     return [...map.values()].map(g=>({...g,storeCount:g.stores.size,palletCount:g.pallets.size}));
@@ -1637,7 +1736,7 @@ function finalizeOfficeDepotDistribution(d){
   toast('Office Depot cerrada · cajas y bloques confirmados');
 }
 function confirmOfficeDepotGate(){
-  const employee=requireDistEmployee();if(!employee)return;
+  const employee=ensureDistValidator();if(!employee)return;
   const d=state.activeDistribution,g=officeDepotGate(d);
   if(!d||!g)return toast('No hay cierre pendiente',true);
   if(g.type==='BOX'){
@@ -1668,7 +1767,7 @@ function confirmOfficeDepotGate(){
   }
 }
 function registerOfficeDepotVariant(){
-  const employee=requireDistEmployee();if(!employee)return;
+  const employee=ensureDistValidator();if(!employee)return;
   const d=state.activeDistribution,g=officeDepotGate(d);
   if(!d||!g)return toast('No hay cierre pendiente',true);
   const obs=prompt(g.type==='BOX'
@@ -1719,6 +1818,10 @@ function fillDistributionGroup(key){
     dExpected.value=preview.map(r=>`B${r.block} · TIENDA ${r.store} · SKU SEQ ${r.skuSeq||''} · UPC ${r.code||'PENDIENTE DE MAPEAR'} · ${r.expected}`).join('\n');
     const execBlocks=[...new Set(preview.map(r=>r.block))];
     dImportStatus.textContent=`${state.distributionImport.sourceName||'Archivo'} · hoja ${state.distributionImport.sheetName||''} · OC ${g.oc} · ${g.storeCount} tiendas · ${g.pieces} piezas · EJECUCIÓN abajo→arriba: bloques ${execBlocks.join(' → ')}`;
+  }else if(isLiverpoolProfile(g.profile)){
+    dProfile.value='LIVERPOOL';dStore.value='POR TIENDAS';dMasterExpected.value='';
+    dExpected.value=g.rows.map(r=>`HU ${r.master} · TIENDA ${r.store} · POS ${r.skuSeq} · UPC ${r.upc} · ${r.qty}`).join('\n');
+    dImportStatus.textContent=`Liverpool · ${g.storeCount} tiendas · ${g.pieces} piezas · 111 HU · 5 UPC · CUBIX 61 L-28 / 50 L-29`;
   }else if(isOfficeMaxProfile(g.profile)){
     dProfile.value='OFFICE_MAX';dStore.value='POR TIENDAS';dMasterExpected.value='';
     const preview=officeMaxExecutionRows(g.rows);
@@ -1733,12 +1836,13 @@ function fillDistributionGroup(key){
 }
 function updateDistributionProfileUI(){
   const profile=distributionProfile();
-  const office=isOfficeDepotProfile(profile),officeMax=isOfficeMaxProfile(profile),guided=office||officeMax;
+  const office=isOfficeDepotProfile(profile),officeMax=isOfficeMaxProfile(profile),liverpool=isLiverpoolProfile(profile),guided=office||officeMax||liverpool;
   if(dProfileNote)dProfileNote.textContent=office
     ? 'Office Depot: ejecución obligatoria de abajo hacia arriba. Las partidas de la misma tienda se agrupan en una sola sesión; SKU es secuencia dinámica (1,2,3…); el producto se valida por UPC. Al completar la tienda, Verify obliga a CERRAR CAJA y validar visualmente Máster = Tienda + Cantidad. Al terminar el bloque, obliga a CERRAR TARIMA antes de liberar el siguiente.'
     : officeMax
       ? 'Office Max: el archivo ya contiene PALLET, tienda, SKU secuencia, UPC y cantidad. Verify muestra el SKU SEQ grande, valida UPC/cantidad y al completar una tienda brinca automáticamente a la siguiente del archivo.'
       : 'Genérico: valida UPC/SKU contra OC/destino y cierra con Etiqueta Master cuando aplica.';
+  if(liverpool&&dProfileNote)dProfileNote.textContent='Liverpool: 5 UPC prevalidables, HU por determinante, 5 posiciones en orden oficial y cierre obligatorio de tienda.';
   if(dMasterPrepareWrap)dMasterPrepareWrap.style.display=guided?'none':'';
   if(dMasterCloseWrap)dMasterCloseWrap.style.display=guided?'none':'';
   if(dScanLabel)dScanLabel.textContent=guided?'Escaneo UPC del producto (sigue tienda y SKU SEQ mostrados)':'Escaneo UPC / SKU';
@@ -1751,12 +1855,15 @@ function updateDistributionProfileUI(){
 function restoreDistributionUI(){
   const groups=distGroups();
   dImportedGroup.innerHTML=groups.length?'<option value="">Selecciona OC / destino</option>'+groups.map(g=>{
+    if(isLiverpoolProfile(g.profile))return `<option value="${escapeHtml(g.key)}">${escapeHtml(g.oc)} · LIVERPOOL · ${g.storeCount} tiendas · ${g.pieces} pzas</option>`;
     if(isOfficeDepotProfile(g.profile))return `<option value="${escapeHtml(g.key)}">${escapeHtml(g.oc||'SIN OC')} · OFFICE DEPOT · ${g.storeCount} tiendas · ${g.pieces} pzas</option>`;
     if(isOfficeMaxProfile(g.profile))return `<option value="${escapeHtml(g.key)}">${escapeHtml(g.oc||'SIN OC')} · OFFICE MAX · ${g.storeCount} tiendas · ${g.pieces} pzas</option>`;
     return `<option value="${escapeHtml(g.key)}">${escapeHtml(g.oc||'SIN OC')} · ${escapeHtml(g.store||'SIN DESTINO')} · ${g.pieces} pzas${g.master?' · '+escapeHtml(g.master):''}</option>`;
   }).join(''):'<option value="">Sin archivo cargado</option>';
   if(groups.length){
-    if(isOfficeDepotProfile(state.distributionImport?.profile)){
+    if(isLiverpoolProfile(state.distributionImport?.profile)){
+      dImportStatus.textContent=`Liverpool · ${distRows().length} partidas · 111 determinantes · 2,000 piezas · HU importadas`;
+    }else if(isOfficeDepotProfile(state.distributionImport?.profile)){
       const blocks=[...new Set(distRows().map(r=>Number(r.block||0)).filter(Boolean))].sort((a,b)=>b-a),stores=new Set(distRows().map(r=>r.store));
       dImportStatus.textContent=`${state.distributionImport.sourceName||'Archivo'} · OFFICE DEPOT · hoja ${state.distributionImport.sheetName||''} · ${distRows().length} renglones · ${stores.size} tiendas · ${distRows().reduce((a,r)=>a+Number(r.qty||0),0)} piezas · bloques ${blocks.join(' → ')}`;
     }else if(isOfficeMaxProfile(state.distributionImport?.profile)){
@@ -1771,6 +1878,7 @@ async function importDistributionFile(file){
   const data=await readDistributionDataFile(file);
   const duplicate=importedFileMatch(data.hash,'DISTRIBUTION');
   const hasDistributionLoaded=(state.distributionImport?.rows||[]).length>0 || !!state.activeDistribution;
+  if(state.activeDistribution)throw Error('Hay una distribución activa. No se puede reemplazar el archivo: cierra o respalda y continúa la sesión.');
   if(duplicate || hasDistributionLoaded){
     const msg=duplicate
       ? 'Este archivo ya fue cargado. ¿Deseas REEMPLAZARLO y reiniciar únicamente Distribution?\n\nSe conservarán Inventario, Entradas, Salidas, Kardex, Verify y el historial de distribuciones cerradas.'
@@ -1780,7 +1888,7 @@ async function importDistributionFile(file){
     if(duplicate)state.importedFiles=(state.importedFiles||[]).filter(x=>!(x.hash===data.hash && x.kind==='DISTRIBUTION'));
   }
   let rows=[];
-  if(isOfficeDepotProfile(data.profile)||isOfficeMaxProfile(data.profile)) rows=data.rows;
+  if(isOfficeDepotProfile(data.profile)||isOfficeMaxProfile(data.profile)||isLiverpoolProfile(data.profile)) rows=data.rows;
   else{
     for(let i=0;i<data.rows.length;i++){
       const r=data.rows[i];
@@ -1797,7 +1905,9 @@ async function importDistributionFile(file){
   if(!rows.length) throw new Error(isOfficeDepotProfile(data.profile)?'No encontré filas Office Depot válidas. Se requieren ORDER_NO, LOC_ID, SKU y CANT/MAX_CANT.':isOfficeMaxProfile(data.profile)?'No encontré filas Office Max válidas. Se requieren PALLET, NUM_ORD, TIENDA, UPC, SKU y PIEZAS_ORDENADAS/PIEZAS_AGENDADAS.':'No encontré filas válidas. Se requieren OC, DESTINO/TIENDA, UPC/SKU y CANTIDAD.');
   state.distributionImport={rows,sourceName:file.name,loadedAt:nowISO(),profile:data.profile||'GENERIC',sheetName:data.sheetName||''};
   registerImportedFile(data.hash,'DISTRIBUTION',file.name,rows.length);save();restoreDistributionUI();
-  if(isOfficeDepotProfile(data.profile)){
+  if(isLiverpoolProfile(data.profile)){
+    toast(`Liverpool cargado · 111 tiendas · 2,000 piezas · HU y UPC vinculados`);
+  }else if(isOfficeDepotProfile(data.profile)){
     for(const oc of [...new Set(rows.map(r=>idText(r.oc)).filter(Boolean))])populateOfficeDepotMapFromImport(oc,rows.filter(r=>idText(r.oc)===oc));
     localStorage.setItem(STORAGE_KEY,JSON.stringify(state));
     const missingRows=rows.filter(r=>!idText(r.upc||r.code)&&!officeDepotMappedUPC(r.oc,r.skuSeq||r.sku)).length;
@@ -1829,9 +1939,47 @@ function saveDistEmployee(){
   if(!/^\d+$/.test(no)||!name)return toast('Captura número numérico y nombre completo',true);
   state.employees=state.employees||{};state.employees[no]=name;save();refreshDistEmployee();renderEmployeeList();toast('Empleado guardado');
 }
+function sessionValidator(d){return d?.currentValidator||{employeeNo:d?.employeeNo||'',user:d?.user||''};}
+function ensureDistValidator(){
+ const d=state.activeDistribution,emp=requireDistEmployee();if(!emp)return null;
+ if(!d)return emp;
+ const assigned=sessionValidator(d);
+ if(assigned.employeeNo!==emp.employeeNo){toast('CAMBIO BLOQUEADO: confirma relevo de validador para conservar trazabilidad',true);return null;}
+ if(d.pausedAt){toast('Jornada pausada. Reanuda antes de escanear o cerrar',true);return null;}
+ return assigned;
+}
+function changeDistValidator(){
+ const d=state.activeDistribution;if(!d)return toast('Primero inicia una distribución',true);
+ const incoming=requireDistEmployee();if(!incoming)return;
+ const outgoing=sessionValidator(d);
+ if(incoming.employeeNo===outgoing.employeeNo)return toast('El validador ya está asignado',true);
+ const reason=prompt('Motivo del relevo (obligatorio):');if(!reason?.trim())return toast('Relevo cancelado: motivo obligatorio',true);
+ if(!confirm(`Relevo de ${outgoing.user} (#${outgoing.employeeNo}) a ${incoming.user} (#${incoming.employeeNo}). ¿Confirmar?`))return;
+ d.events=d.events||[];d.events.push({time:nowISO(),type:'CAMBIO_VALIDADOR',fromNo:outgoing.employeeNo,fromUser:outgoing.user,toNo:incoming.employeeNo,toUser:incoming.user,reason:reason.trim(),...incoming});
+ d.currentValidator={...incoming};d.employeeNo=incoming.employeeNo;d.user=incoming.user;
+ save();renderDistribution();toast('Relevo registrado · avances y evidencias conservados');
+}
+function pauseDist(){
+ const d=state.activeDistribution;if(!d)return toast('No hay distribución activa',true);
+ const emp=requireDistEmployee();if(!emp)return;
+ if(emp.employeeNo!==sessionValidator(d).employeeNo)return toast('Solo el validador asignado puede pausar/reanudar',true);
+ const type=d.pausedAt?'REANUDACION':'PAUSA';
+ const reason=prompt(type==='PAUSA'?'Motivo de pausa / entrega de jornada:':'Motivo de reanudación:');if(!reason?.trim())return;
+ d.events=d.events||[];d.events.push({time:nowISO(),type,reason:reason.trim(),...emp});
+ d.pausedAt=type==='PAUSA'?nowISO():null;
+ save();renderDistribution();toast(type==='PAUSA'?'Distribución pausada y guardada':'Distribución reanudada');
+}
 function startDistribution(){
   const employee=requireDistEmployee();if(!employee)return;
+  if(state.activeDistribution)return toast('Ya existe una distribución activa. Reanúdala o ciérrala; no se puede reemplazar.',true);
   const profile=distributionProfile();
+  if(isLiverpoolProfile(profile)){
+    const selected=distGroups().find(g=>g.key===dImportedGroup.value&&isLiverpoolProfile(g.profile));
+    if(!selected)return toast('Selecciona la OC Liverpool importada',true);
+    const rows=selected.rows.map(r=>({...r,expected:Number(r.qty),done:0,excess:0}));
+    state.activeDistribution={...employee,currentValidator:{...employee},id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),profile:'LIVERPOOL',oc:selected.oc,store:'POR TIENDAS',rows,scans:[],events:[{time:nowISO(),type:'INICIO',...employee}],boxClosures:[],prevalidated:[],startedAt:nowISO(),status:'ABIERTA'};
+    save();renderDistribution();toast('Liverpool iniciado · primero prevalidar 5 UPC');return;
+  }
   if(isOfficeDepotProfile(profile)){
     const selected=distGroups().find(g=>g.key===dImportedGroup.value) || distGroups().find(g=>isOfficeDepotProfile(g.profile)&&idText(g.oc)===idText(dOC.value));
     if(!selected)return toast('Office Depot requiere seleccionar la OC importada',true);
@@ -1864,7 +2012,7 @@ function setDistBanner(result,message){
   dLastStatus.textContent=message||result||'LISTO PARA VALIDAR';
 }
 function confirmOfficeDepotUPC(input){
-  const employee=requireDistEmployee();if(!employee)return;
+  const employee=ensureDistValidator();if(!employee)return;
   const d=state.activeDistribution;if(!d)return toast('Primero inicia Office Depot',true);
   if(officeDepotGate(d))return toast('Primero confirma el cierre pendiente de caja o bloque',true);
   const upc=idText(input);if(!upc)return toast('Escanea el UPC del producto después de revisar visualmente la tienda',true);
@@ -1915,7 +2063,7 @@ function confirmOfficeDepotUPC(input){
   if(!officeDepotGate(d))setTimeout(()=>{try{dScanCode.focus()}catch(e){}},70);
 }
 function confirmOfficeMaxUPC(input){
-  const employee=requireDistEmployee();if(!employee)return;
+  const employee=ensureDistValidator();if(!employee)return;
   const d=state.activeDistribution;if(!d)return toast('Primero inicia Office Max',true);
   const upc=idText(input);if(!upc)return toast('Escanea el UPC del producto',true);
   const next=nextOfficeMaxRow(d);if(!next)return toast('La distribución ya no tiene piezas pendientes',true);
@@ -1935,9 +2083,56 @@ function confirmOfficeMaxUPC(input){
   d.scans=d.scans||[];d.scans.push({id:crypto.randomUUID?crypto.randomUUID():String(Date.now()+Math.random()),time:nowISO(),profile:'OFFICE_MAX',oc:d.oc,pallet:expected.pallet||'',store:expected.store,expectedStore:expected.store,skuSeq:expected.skuSeq||'',upc,expectedUpc:expected.code,rowIndex:next.index,result,message,...employee});
   dScanCode.value='';save();renderDistribution();setDistBanner(result,message);toast(message,result!=='CORRECTO');setTimeout(()=>{try{dScanCode.focus()}catch(e){}},70);
 }
+function liverpoolNext(d){return (d.rows||[]).find(r=>r.done<r.expected);}
+function liverpoolCurrentStore(d){const next=liverpoolNext(d);return next?.store||null;}
+function prevalidateLiverpool(){
+ const employee=ensureDistValidator();if(!employee)return;
+ const d=state.activeDistribution;if(!isLiverpoolProfile(d?.profile))return toast('Inicia Liverpool primero',true);
+ const code=idText(document.getElementById('dLiverpoolPreScan').value);
+ const expected=[...new Set(d.rows.map(r=>r.upc))];
+ const result=expected.includes(code)?'CORRECTO':'UPC NO SOLICITADO';
+ if(result==='CORRECTO'&&!d.prevalidated.includes(code))d.prevalidated.push(code);
+ d.events=d.events||[];d.events.push({time:nowISO(),type:'PREVALIDACION_UPC',code,result,...employee});
+ document.getElementById('dLiverpoolPreScan').value='';save();renderDistribution();toast(`${result} · prevalidación ${d.prevalidated.length}/5`,result!=='CORRECTO');
+}
+function scanLiverpool(input){
+ const employee=ensureDistValidator();if(!employee)return;
+ const d=state.activeDistribution,code=idText(input);
+ if((d.prevalidated||[]).length!==5)return toast('Primero prevalida los cinco UPC diferentes',true);
+ if(!code)return toast('Escanea UPC de producto',true);
+ const next=liverpoolNext(d);
+ if(!next)return toast('Todas las piezas están completas; falta verificar cierres',true);
+ const previous=d.rows.find(r=>r.store!==next.store&&r.done===r.expected&&!d.boxClosures.some(c=>c.store===r.store));
+ if(previous)return toast('CIERRE PENDIENTE: tienda '+previous.store,true);
+ const storePending=d.rows.filter(r=>r.store===next.store).every(r=>r.done>=r.expected);
+ if(storePending)return toast('Confirma HU y cierra tienda antes de continuar',true);
+ let result='CORRECTO',message='';
+ if(code===next.upc){next.done++;message=`CORRECTO · TIENDA ${next.store} · POS ${next.skuSeq} · ${next.done}/${next.expected}`;}
+ else if(d.rows.some(r=>r.upc===code)) {result='FUERA DE SECUENCIA';message=`UPC ${code} pertenece a otra posición. Esperado POS ${next.skuSeq}: ${next.upc}`;}
+ else {result='UPC NO SOLICITADO';message=`UPC ${code} no está en OC ${d.oc}`;}
+ d.scans.push({id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),time:nowISO(),profile:'LIVERPOOL',oc:d.oc,store:next.store,skuSeq:next.skuSeq,upc:code,expectedUpc:next.upc,rowIndex:d.rows.indexOf(next),result,message,...employee});
+ dScanCode.value='';save();renderDistribution();toast(message,result!=='CORRECTO');
+}
+function closeLiverpoolStore(){
+ const employee=ensureDistValidator();if(!employee)return;
+ const d=state.activeDistribution;if(!isLiverpoolProfile(d?.profile))return;
+ if((d.prevalidated||[]).length!==5)return toast('Prevalidación incompleta',true);
+ const pending=d.rows.find(r=>r.done<r.expected);
+ const store=pending?d.rows.find(r=>r.store!==pending.store&&r.done===r.expected&&!d.boxClosures.some(c=>c.store===r.store))?.store:null;
+ const target=store||(!pending?d.rows.find(r=>!d.boxClosures.some(c=>c.store===r.store))?.store:null);
+ if(!target)return toast('Primero completa todas las piezas de la tienda actual',true);
+ const rows=d.rows.filter(r=>r.store===target),hu=rows[0]?.master;
+ if(rows.some(r=>r.done!==r.expected))return toast('Tienda incompleta',true);
+ const scanned=idText(document.getElementById('dLiverpoolHU').value);
+ if(scanned!==hu){d.events=d.events||[];d.events.push({time:nowISO(),type:'HU_INCORRECTA',store:target,code:scanned,expected:hu,...employee});save();return toast('HU INCORRECTA · esperada '+hu,true);}
+ d.boxClosures.push({time:nowISO(),store:target,master:hu,expectedQty:rows.reduce((n,r)=>n+r.expected,0),status:'OK',boxType:rows[0]?.boxType||'',validation:'HU + CINCO POSICIONES + UPC + CUBIX',...employee});
+ d.events=d.events||[];d.events.push({time:nowISO(),type:'CIERRE_TIENDA',store:target,code:hu,boxType:rows[0]?.boxType||'',...employee});
+ document.getElementById('dLiverpoolHU').value='';save();renderDistribution();toast('TIENDA '+target+' cerrada · HU '+hu);
+}
 function scanDistribution(input){
-  const employee=requireDistEmployee();if(!employee)return;
+  const employee=ensureDistValidator();if(!employee)return;
   const d=state.activeDistribution;if(!d)return toast('Primero inicia una distribución',true);
+  if(isLiverpoolProfile(d.profile))return scanLiverpool(input);
   if(isOfficeDepotProfile(d.profile))return confirmOfficeDepotUPC(input);
   if(isOfficeMaxProfile(d.profile))return confirmOfficeMaxUPC(input);
   const code=idText(input);if(!code)return toast('Escanea o captura UPC/SKU',true);
@@ -1955,8 +2150,12 @@ function scanDistribution(input){
   dScanCode.value='';save();renderDistribution();setDistBanner(result,message);toast(message,result!=='CORRECTO');
 }
 function undoDistribution(){
+  const employee=ensureDistValidator();if(!employee)return;
   const d=state.activeDistribution;if(!d||(d.scans||[]).length===0)return toast('No hay lectura para deshacer',true);
   const last=d.scans[d.scans.length-1];
+  if(isLiverpoolProfile(d.profile)){
+    if(last.result==='CORRECTO'&&d.boxClosures.some(c=>c.store===last.store))return toast('Tienda cerrada: no se puede deshacer',true);
+  }
   if(isOfficeDepotProfile(d.profile)){
     const row=Number.isInteger(last.rowIndex)?d.rows[last.rowIndex]:null;
     if(row&&officeDepotStoreClosed(d,row.block,row.store))return toast(`No se puede deshacer: TIENDA ${row.store} ya fue cerrada/liberada. Registra una variante.`,true);
@@ -1965,17 +2164,23 @@ function undoDistribution(){
   if(isOfficeMaxProfile(d.profile)&&last.result==='CORRECTO'&&Number.isInteger(last.rowIndex)){
     const row=d.rows[last.rowIndex];if(row) d.boxClosures=(d.boxClosures||[]).filter(x=>String(x.store).toUpperCase()!==String(row.store).toUpperCase());
   }
-  d.scans.pop();
-  if(isOfficeDepotProfile(d.profile)||isOfficeMaxProfile(d.profile)){
+  d.scans.pop();d.events=d.events||[];d.events.push({time:nowISO(),type:'DESHACER',detail:last.message||'',...employee});
+  if(isOfficeDepotProfile(d.profile)||isOfficeMaxProfile(d.profile)||isLiverpoolProfile(d.profile)){
     if(last.result==='CORRECTO'&&Number.isInteger(last.rowIndex)){const row=d.rows[last.rowIndex];if(row&&row.done>0)row.done--;}
   }else if(last.result==='CORRECTO'){const row=d.rows.find(r=>r.code===last.code);if(row&&row.done>0)row.done--;}
   else if(last.result==='EXCESO'){const row=d.rows.find(r=>r.code===last.code);if(row&&row.excess>0)row.excess--;}
   save();renderDistribution();setDistBanner('',`DESHECHO · ${last.store||last.code||''}`);toast('Última validación deshecha');
 }
 function closeDistribution(){
-  const employee=requireDistEmployee();if(!employee)return;
+  const employee=ensureDistValidator();if(!employee)return;
   const d=state.activeDistribution;if(!d)return toast('No hay distribución activa',true);
   const t=distTotals(d);if(t.pending>0)return toast(`No se puede cerrar: faltan ${t.pending} piezas`,true);
+  if(isLiverpoolProfile(d.profile)){
+    if((d.prevalidated||[]).length!==5)return toast('Falta prevalidación UPC',true);
+    if((d.boxClosures||[]).length!==111)return toast('Faltan cierres de tiendas: '+(111-(d.boxClosures||[]).length),true);
+    d.closedAt=nowISO();d.status='CERRADA';d.totalPieces=t.expected;d.incidents=t.incidents;
+    state.distributions.unshift(JSON.parse(JSON.stringify(d)));state.activeDistribution=null;save();renderDistribution();renderDistributionHistory();toast('Liverpool cerrado · 111 HU verificadas');return;
+  }
   if(isOfficeDepotProfile(d.profile)){
     if(officeDepotGate(d))return toast('Hay un cierre de caja/bloque pendiente',true);
     if(!officeDepotAllBlocksClosed(d))return toast('No se puede cerrar: falta confirmar al menos una TARIMA/BLOQUE',true);
@@ -1989,8 +2194,19 @@ function closeDistribution(){
   dMasterScan.value='';dScanCode.value='';save();renderDistribution();renderDistributionHistory();setDistBanner('CORRECTO','MASTER VALIDADA · DISTRIBUCIÓN COMPLETA');toast('Etiqueta Master cerrada y validada');
 }
 function renderDistribution(){
-  const d=state.activeDistribution;updateDistributionProfileUI();if(!d){dWork.style.display='none';return;}
+  const d=state.activeDistribution;updateDistributionProfileUI();if(!d){dWork.style.display='none';document.getElementById('dLiverpoolPanel').style.display='none';return;}
   dWork.style.display='block';const t=distTotals(d);
+  const vs=document.getElementById('dValidatorStatus');if(vs)vs.textContent=`Asignado: ${sessionValidator(d).user} (#${sessionValidator(d).employeeNo}) · ${d.pausedAt?'PAUSADA':'ACTIVA'} · relevos ${(d.events||[]).filter(x=>x.type==='CAMBIO_VALIDADOR').length}`;
+  if(isLiverpoolProfile(d.profile)){
+    const panel=document.getElementById('dLiverpoolPanel');panel.style.display='block';
+    const next=liverpoolNext(d),firstUnclosed=d.rows.find(r=>!d.boxClosures.some(c=>c.store===r.store));
+    const closeNeeded=firstUnclosed&&d.rows.filter(r=>r.store===firstUnclosed.store).every(r=>r.done===r.expected);
+    document.getElementById('dLiverpoolInfo').textContent=`Prevalidación ${(d.prevalidated||[]).length}/5 UPC · ${d.boxClosures.length}/111 tiendas cerradas · ${t.done}/${t.expected} piezas · CAJA ${firstUnclosed?.boxType||next?.boxType||'—'} · ${closeNeeded?'CIERRE PENDIENTE '+firstUnclosed.store:next?'SIGUIENTE '+next.store+' · POS '+next.skuSeq+' · UPC '+next.upc:'PIEZAS COMPLETAS'}`;
+    dSummary.textContent=`OC ${d.oc} · LIVERPOOL · ${d.boxClosures.length}/111 tiendas cerradas`;
+    dOk.textContent=t.done;dPending.textContent=t.pending;dIncidents.textContent=t.incidents;
+    dRows.innerHTML=(d.rows||[]).filter(r=>r.done<r.expected).slice(0,10).map(r=>`<div class="row verify"><b>HU ${escapeHtml(r.master)} · TIENDA ${escapeHtml(r.store)}</b><span class="badge">${r.done}/${r.expected}</span><div class="meta">POS ${r.skuSeq} · UPC ${r.upc}</div></div>`).join('')||'<div class="note">Piezas completas. Verifica cierres HU.</div>';
+    if(dOfficeNext)dOfficeNext.style.display='none';renderOfficeDepotGate();return;
+  }else document.getElementById('dLiverpoolPanel').style.display='none';
   if(isOfficeDepotProfile(d.profile)){
     const next=nextOfficeDepotRow(d);
     const gate=officeDepotGate(d);
@@ -2100,6 +2316,8 @@ async function exportDistributionExcel(){
       ]);
     });
 
+    // Relevos, pausas, reanudaciones y prevalidaciones auditables.
+    (d.events||[]).forEach(x=>execution.push([x.time||'',x.type||'EVENTO',d.oc,'',x.store||'', '',x.code||'',x.expected||'', '', '',x.result||'OK',x.reason||x.detail||((x.fromUser||'')+' → '+(x.toUser||'')),x.user||'',x.employeeNo||'']));
     // Eventos de escaneo.
     (d.scans||[]).forEach(x=>{
       execution.push([
@@ -2120,7 +2338,7 @@ async function exportDistributionExcel(){
 
     // Cierres de caja / tienda.
     (d.boxClosures||[]).forEach(x=>execution.push([
-      x.time||'','CIERRE_CAJA',d.oc,x.block||x.pallet||'',x.store||'', '', '', '',
+      x.time||'','CIERRE_CAJA',d.oc,x.block||x.pallet||'',x.store||'',x.boxType||'', '', '',
       Number(x.expectedQty||0),Number(x.expectedQty||0),x.status||'OK',x.validation||'',x.user||'',x.employeeNo||''
     ]));
 
@@ -2173,6 +2391,11 @@ async function exportDistributionExcel(){
   ]);
 }
 
+document.getElementById('dChangeValidatorBtn').addEventListener('click',changeDistValidator);
+document.getElementById('dPauseBtn').addEventListener('click',pauseDist);
+document.getElementById('dLiverpoolPreBtn').addEventListener('click',prevalidateLiverpool);
+document.getElementById('dLiverpoolPreScan').addEventListener('keydown',e=>{if(e.key==='Enter')prevalidateLiverpool()});
+document.getElementById('dLiverpoolCloseBtn').addEventListener('click',closeLiverpoolStore);
 dProfile.addEventListener('change',()=>{updateDistributionProfileUI();renderDistribution();});
 if(document.getElementById('odSaveMapBtn'))document.getElementById('odSaveMapBtn').addEventListener('click',saveOfficeDepotMap);
 if(document.getElementById('dOfficeGateConfirm'))document.getElementById('dOfficeGateConfirm').addEventListener('click',confirmOfficeDepotGate);
