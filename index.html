@@ -8,7 +8,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <link rel="manifest" href="manifest.json">
-<title>INVENTIX Core v1.9.0 Office Max + Office Depot</title>
+<title>INVENTIX Core v1.10.0 · Liverpool guiado</title>
 <style>
 :root{
   --navy:#0F2747;--navy2:#08192f;--blue:#1E4DBC;--orange:#F5A623;
@@ -79,6 +79,31 @@ hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
 .office-gate .gate-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .office-gate .gate-actions .btn{margin-top:8px}
 
+
+/* Inventix 1.10 · estación de dictado Liverpool, visible sin reducir zoom */
+body.ix-liverpool-active header{position:relative}
+body.ix-liverpool-active main{padding-bottom:220px}
+body.ix-liverpool-active #dScanDock{position:fixed;bottom:66px;left:50%;transform:translateX(-50%);width:min(520px,100%);z-index:35;background:#071a32;border:2px solid #38bdf8;border-radius:14px 14px 0 0;padding:9px 12px;box-shadow:0 -7px 30px #0009}
+body.ix-liverpool-active #dScanDock label{margin:0 0 4px;font-size:12px;color:white}
+body.ix-liverpool-active #dScanCode{font-size:19px;padding:11px}
+.ix-dock-buttons{display:flex;gap:8px}.ix-dock-buttons .btn{flex:1;min-width:0;margin-top:6px;padding:10px 6px;font-size:13px}
+#dLiverpoolHero{padding:10px!important;margin:7px 0!important}
+#dLiverpoolHero .ix-hero-number{font-size:clamp(42px,12vw,76px);font-weight:900;line-height:1.1}
+body.ix-liverpool-active #dLiverpoolHUWrap{border:2px solid #f59e0b;border-radius:12px;padding:10px;margin-top:10px}
+@media(max-width:380px){.ix-dock-buttons .btn{font-size:11px}}
+
+/* 1.10.1: pantalla de dictado limpia, herramientas opcionales */
+#distribution details.ix-tool{border:1px solid #365476;border-radius:12px;margin:9px 0;background:#10243d;padding:9px}
+#distribution details.ix-tool>summary{font-weight:850;cursor:pointer;padding:6px;list-style-position:inside}
+#distribution details.ix-tool>.card{margin-top:8px;margin-bottom:0}
+body.ix-liverpool-active #dWork{padding:10px}
+body.ix-liverpool-active #dWork>h2,body.ix-liverpool-active #dWork>.dist-kpis{display:none}
+body.ix-liverpool-active #dLiverpoolPanel{margin:5px 0;padding:8px}
+body.ix-liverpool-active #dLiverpoolPanel>h3{display:none}
+body.ix-liverpool-active #dLiverpoolInfo{font-size:12px}
+body.ix-liverpool-active #dLiverpoolHero{margin:4px 0!important;padding:8px!important}
+body.ix-liverpool-active #dScanDock{bottom:63px}
+body.ix-liverpool-active #dWork #dRows{margin-top:0!important}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
@@ -87,7 +112,7 @@ hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
 
 <header>
   <div class="brand">INVENTI<span>X</span> CORE</div>
-  <div class="sub">v1.9.9 · CÁMARA UNIFICADA · LIVERPOOL + CAMBIO DE VALIDADOR + TRAZABILIDAD · secuencia visible + salto automático de tienda</div>
+  <div class="sub">v1.10.1 · CÁMARA UNIFICADA · LIVERPOOL + CAMBIO DE VALIDADOR + TRAZABILIDAD · secuencia visible + salto automático de tienda</div>
   <div id="environmentBanner" style="margin-top:10px;padding:10px;border:2px solid #059669;border-radius:12px;font-weight:900" aria-live="polite">🛡️ OPERACIÓN REAL</div>
   <div style="display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap">
     <button type="button" id="switchEnvironment" style="padding:11px 14px;border:2px solid #f59e0b;border-radius:10px;background:#122a4b;color:white;font-weight:800;cursor:pointer">🧪 Entrar a ambiente de prueba</button>
@@ -297,8 +322,7 @@ hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
     </div>
   </div>
 
-  <div class="card" id="labelZebraPanel">
-    <h2>🏷️ Inventix LABEL · Office Max → Zebra</h2>
+  <details class="card" id="labelZebraPanel"><summary style="font-weight:900;cursor:pointer">🏷️ Inventix LABEL / Conversor · desplegar cuando se necesite</summary><div style="padding-top:12px">
     <div class="note">Convierte el PDF original de 14 etiquetas por hoja (Janel J-5262: 2 columnas × 7 filas) a una etiqueta por página de <b>102 × 34 mm</b>. Orden: izquierda 1, derecha 2, siguiente fila 3 y 4. No altera la distribución ni el inventario.</div>
     <label>PDF original de etiquetas</label>
     <input id="labelPdfInput" type="file" accept=".pdf,application/pdf">
@@ -309,7 +333,7 @@ hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
     <div id="labelCustomWrap" style="display:none"><label>Orden personalizado (ejemplo: 2,1,4,3; debe incluir todas las etiquetas una vez)</label><textarea id="labelCustom" rows="2" style="width:100%" placeholder="2,1,4,3,..."></textarea></div>
     <div class="toolbar" style="margin-top:10px"><button class="btn primary" id="labelConvertBtn">🖨️ Preparar PDF Zebra 102 × 34 mm</button></div>
     <div id="labelStatus" class="note" role="status" style="margin-top:8px">La conversión se ejecuta en este navegador. Imprime una prueba al 100 % y valida la lectura del código de barras.</div>
-  </div>
+  </div></details>
   <div class="card">
     <h2>Preparar distribución</h2>
     <div class="grid2">
@@ -337,12 +361,13 @@ hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
       <div id="dLiverpoolInfo" class="note"></div>
       <div id="dLiverpoolHero" style="border:2px solid #38bdf8;border-radius:14px;padding:14px;margin:10px 0;background:#071a32" aria-live="polite"></div>
       <div id="dLiverpoolFeedback" role="status" aria-live="assertive" style="display:none;border-radius:10px;padding:12px;font-weight:900;margin:8px 0"></div>
+      <details id="dLiverpoolPreDetails" style="margin-top:10px;border:1px solid #31557b;border-radius:10px;padding:10px"><summary style="cursor:pointer;font-weight:900">🔎 Prevalidar cinco UPC · desplegar / ocultar</summary>
       <label>Escanear UPC de muestra para prevalidación (5 diferentes)</label><input id="dLiverpoolPreScan" placeholder="UPC de muestra">
       <button type="button" class="btn secondary ix-scan-launch" data-ix-target="dLiverpoolPreScan" data-ix-auto="false">📷 Cámara · prevalidar UPC</button>
-      <button type="button" id="dLiverpoolPreBtn" class="btn secondary">✔️ Validar UPC de muestra</button>
-      <label>HU / RFID física de la tienda actual (para cierre)</label><input id="dLiverpoolHU" placeholder="C56217834">
+      <button type="button" id="dLiverpoolPreBtn" class="btn secondary">✔️ Validar UPC de muestra</button></details>
+      <div id="dLiverpoolHUWrap"><label>HU / RFID física de la tienda actual (para cierre)</label><input id="dLiverpoolHU" placeholder="C56217834">
       <button type="button" class="btn secondary ix-scan-launch" data-ix-target="dLiverpoolHU" data-ix-auto="false">📷 Cámara · etiqueta HU</button>
-      <button type="button" id="dLiverpoolCloseBtn" class="btn primary">🔒 Validar HU y cerrar tienda</button>
+      <button type="button" id="dLiverpoolCloseBtn" class="btn primary">🔒 Validar HU y cerrar tienda</button></div>
     </div>
     <div id="dOfficeGate" class="office-gate">
       <h3 id="dOfficeGateTitle">Cierre</h3>
@@ -352,9 +377,9 @@ hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
         <button id="dOfficeGateVariant" class="btn ghost">⚠️ Registrar variante</button>
       </div>
     </div>
-    <label id="dScanLabel">Escaneo UPC / SKU</label><input id="dScanCode" placeholder="Escanea o captura código">
-<button type="button" class="btn secondary ix-scan-launch" data-ix-target="dScanCode" data-ix-auto="true" style="margin-top:6px">📷 Cámara · Distribution UPC / SKU</button>
-    <button id="dScanBtn" class="btn secondary">✅ Confirmar artículo</button>
+    <div id="dScanDock"><label id="dScanLabel">Escaneo UPC / SKU</label><input id="dScanCode" placeholder="Escanea o captura código" autocomplete="off">
+<div class="ix-dock-buttons"><button type="button" class="btn secondary ix-scan-launch" data-ix-target="dScanCode" data-ix-auto="true">📷 Cámara · UPC</button>
+    <button id="dScanBtn" class="btn secondary">✅ Confirmar artículo</button></div></div>
     <button id="dUndoBtn" class="btn ghost">↩️ Deshacer última lectura</button>
     <div id="dRows" style="margin-top:12px"></div>
     <div id="dMasterCloseWrap">
@@ -2100,6 +2125,7 @@ function prevalidateLiverpool(){
  const f=document.getElementById('dLiverpoolFeedback');
  if(f){f.style.display='block';f.style.background=result==='CORRECTO'?'#065f46':'#7f1d1d';f.textContent=result==='CORRECTO'?`✓ UPC CORRECTO · ${d.prevalidated.length}/5 REFERENCIAS VALIDADAS`:`✕ ${result}`;}
  toast(`${result} · prevalidación ${d.prevalidated.length}/5`,result!=='CORRECTO');
+ if(d.prevalidated.length===5){document.getElementById('dLiverpoolPreDetails').open=false;setTimeout(()=>document.getElementById('dScanCode')?.focus(),100);}
 }
 function scanLiverpool(input){
  const employee=ensureDistValidator();if(!employee)return;
@@ -2121,6 +2147,12 @@ function scanLiverpool(input){
  const f=document.getElementById('dLiverpoolFeedback');
  if(f){f.style.display='block';f.style.background=result==='CORRECTO'?'#065f46':'#7f1d1d';f.textContent=(result==='CORRECTO'?'✓ ':'✕ ')+message;}
  toast(message,result!=='CORRECTO');
+ if(result==='CORRECTO'){
+   const rows=d.rows.filter(r=>r.store===next.store);
+   if(rows.every(r=>r.done===r.expected)){
+     setTimeout(()=>{const hu=document.getElementById('dLiverpoolHU');hu?.focus();document.getElementById('dLiverpoolHUWrap')?.scrollIntoView({block:'center',behavior:'smooth'});},100);
+   }else setTimeout(()=>document.getElementById('dScanCode')?.focus(),80);
+ }
 }
 function closeLiverpoolStore(){
  const employee=ensureDistValidator();if(!employee)return;
@@ -2133,7 +2165,7 @@ function closeLiverpoolStore(){
  const rows=d.rows.filter(r=>r.store===target),hu=rows[0]?.master;
  if(rows.some(r=>r.done!==r.expected))return toast('Tienda incompleta',true);
  const scanned=idText(document.getElementById('dLiverpoolHU').value);
- if(scanned!==hu){d.events=d.events||[];d.events.push({time:nowISO(),type:'HU_INCORRECTA',store:target,code:scanned,expected:hu,...employee});save();return toast('HU INCORRECTA · esperada '+hu,true);}
+ if(scanned!==hu){d.events=d.events||[];d.events.push({time:nowISO(),type:'HU_INCORRECTA',store:target,code:scanned,expected:hu,...employee});save();const f=document.getElementById('dLiverpoolFeedback');if(f){f.style.display='block';f.style.background='#7f1d1d';f.textContent='✕ HU INCORRECTA · NO SE CIERRA LA CAJA';}document.getElementById('dLiverpoolHU')?.focus();return toast('HU INCORRECTA · esperada '+hu,true);}
  d.boxClosures.push({time:nowISO(),store:target,master:hu,expectedQty:rows.reduce((n,r)=>n+r.expected,0),status:'OK',boxType:rows[0]?.boxType||'',validation:'HU + CINCO POSICIONES + UPC + CUBIX',...employee});
  d.events=d.events||[];d.events.push({time:nowISO(),type:'CIERRE_TIENDA',store:target,code:hu,boxType:rows[0]?.boxType||'',...employee});
  document.getElementById('dLiverpoolHU').value='';save();renderDistribution();
@@ -2207,7 +2239,7 @@ function closeDistribution(){
   dMasterScan.value='';dScanCode.value='';save();renderDistribution();renderDistributionHistory();setDistBanner('CORRECTO','MASTER VALIDADA · DISTRIBUCIÓN COMPLETA');toast('Etiqueta Master cerrada y validada');
 }
 function renderDistribution(){
-  const d=state.activeDistribution;updateDistributionProfileUI();if(!d){dWork.style.display='none';document.getElementById('dLiverpoolPanel').style.display='none';return;}
+  const d=state.activeDistribution;updateDistributionProfileUI();if(!d){document.body.classList.remove('ix-liverpool-active');dWork.style.display='none';document.getElementById('dLiverpoolPanel').style.display='none';return;}
   dWork.style.display='block';const t=distTotals(d);
   const vs=document.getElementById('dValidatorStatus');if(vs)vs.textContent=`Asignado: ${sessionValidator(d).user} (#${sessionValidator(d).employeeNo}) · ${d.pausedAt?'PAUSADA':'ACTIVA'} · relevos ${(d.events||[]).filter(x=>x.type==='CAMBIO_VALIDADOR').length}`;
   if(isLiverpoolProfile(d.profile)){
@@ -2228,12 +2260,19 @@ function renderDistribution(){
             ?`<div style="font-size:28px;font-weight:900;color:#fbbf24">✓ PIEZAS COMPLETAS · ${completed}/${expected}</div><div style="font-size:20px;margin-top:8px">CAJA ${escapeHtml(focus.boxType||'—')} · TIENDA ${escapeHtml(focus.store)}</div><div style="margin-top:8px">ESCANEA LA HU FÍSICA PARA CERRAR Y AVANZAR: <b>${escapeHtml(focus.master)}</b></div>`
             :'<div style="font-size:24px;font-weight:900">TODAS LAS TIENDAS CERRADAS</div>';
     }
-    document.getElementById('dLiverpoolInfo').textContent=`Prevalidación ${(d.prevalidated||[]).length}/5 UPC · ${d.boxClosures.length}/111 tiendas cerradas · ${t.done}/${t.expected} piezas · CAJA ${firstUnclosed?.boxType||next?.boxType||'—'} · ${closeNeeded?'CIERRE PENDIENTE '+firstUnclosed.store:next?'SIGUIENTE '+next.store+' · POS '+next.skuSeq+' · UPC '+next.upc:'PIEZAS COMPLETAS'}`;
+    document.body.classList.add('ix-liverpool-active');
+    const huWrap=document.getElementById('dLiverpoolHUWrap');
+    if(huWrap)huWrap.style.display=closeNeeded?'block':'none';
+    const preDetails=document.getElementById('dLiverpoolPreDetails');
+    if(preDetails && (d.prevalidated||[]).length<5)preDetails.open=true;
+    const dock=document.getElementById('dScanDock');
+    if(dock)dock.style.display=closeNeeded?'none':'block';
+        document.getElementById('dLiverpoolInfo').textContent=`Prevalidación ${(d.prevalidated||[]).length}/5 UPC · ${d.boxClosures.length}/111 tiendas cerradas · ${t.done}/${t.expected} piezas · CAJA ${firstUnclosed?.boxType||next?.boxType||'—'} · ${closeNeeded?'CIERRE PENDIENTE '+firstUnclosed.store:next?'SIGUIENTE '+next.store+' · POS '+next.skuSeq+' · UPC '+next.upc:'PIEZAS COMPLETAS'}`;
     dSummary.textContent=`OC ${d.oc} · LIVERPOOL · ${d.boxClosures.length}/111 tiendas cerradas`;
     dOk.textContent=t.done;dPending.textContent=t.pending;dIncidents.textContent=t.incidents;
     dRows.innerHTML=(d.rows||[]).filter(r=>r.done<r.expected).slice(0,10).map(r=>`<div class="row verify"><b>HU ${escapeHtml(r.master)} · TIENDA ${escapeHtml(r.store)}</b><span class="badge">${r.done}/${r.expected}</span><div class="meta">POS ${r.skuSeq} · UPC ${r.upc}</div></div>`).join('')||'<div class="note">Piezas completas. Verifica cierres HU.</div>';
     if(dOfficeNext)dOfficeNext.style.display='none';renderOfficeDepotGate();return;
-  }else document.getElementById('dLiverpoolPanel').style.display='none';
+  }else {document.body.classList.remove('ix-liverpool-active');document.getElementById('dLiverpoolPanel').style.display='none';document.getElementById('dScanDock').style.display='block';}
   if(isOfficeDepotProfile(d.profile)){
     const next=nextOfficeDepotRow(d);
     const gate=officeDepotGate(d);
@@ -2421,6 +2460,7 @@ async function exportDistributionExcel(){
 document.getElementById('dChangeValidatorBtn').addEventListener('click',changeDistValidator);
 document.getElementById('dPauseBtn').addEventListener('click',pauseDist);
 document.getElementById('dLiverpoolPreBtn').addEventListener('click',prevalidateLiverpool);
+document.getElementById('dLiverpoolPreDetails').addEventListener('toggle',function(){this.dataset.manuallyOpened=this.open?'1':'';});
 document.getElementById('dLiverpoolPreScan').addEventListener('keydown',e=>{if(e.key==='Enter')prevalidateLiverpool()});
 document.getElementById('dLiverpoolCloseBtn').addEventListener('click',closeLiverpoolStore);
 dProfile.addEventListener('change',()=>{updateDistributionProfileUI();renderDistribution();});
@@ -2655,6 +2695,28 @@ refreshDistEmployee();renderEmployeeList();
  document.getElementById('ixScanCancel').addEventListener('click',stop);
  document.addEventListener('visibilitychange',()=>{if(document.hidden)stop();});window.addEventListener('pagehide',stop);
 })();
+</script>
+
+<script>
+/* Mejora visual: no cambia validaciones, almacenamiento ni reportes. */
+window.addEventListener('DOMContentLoaded',()=>{
+ const section=document.getElementById('distribution'),work=document.getElementById('dWork');
+ if(!section||!work)return;
+ const make=(label,open=false)=>{const d=document.createElement('details');d.className='ix-tool';d.open=open;const sm=document.createElement('summary');sm.textContent=label;d.appendChild(sm);return d;};
+ const cards=[...section.children].filter(el=>el.classList?.contains('card')&&el!==work);
+ if(cards[0]){
+   const setup=make('⚙️ Configuración · empleados · importar/exportar Excel',false);
+   section.insertBefore(setup,cards[0]);setup.appendChild(cards[0]);
+   if(cards[1]){const prep=make('▶️ Preparar / iniciar otra distribución',false);section.insertBefore(prep,cards[1]);prep.appendChild(cards[1]);}
+ }
+ section.insertBefore(work,section.firstElementChild);
+ const rows=document.getElementById('dRows'),undo=document.getElementById('dUndoBtn');
+ if(rows&&undo){const hist=make('📋 Ver partidas pendientes / deshacer lectura',false);rows.parentNode.insertBefore(hist,undo);hist.appendChild(undo);hist.appendChild(rows);}
+ const summary=document.createElement('div');summary.className='note';summary.textContent='Pantalla operativa: secuencia y piezas arriba; escáner fijo abajo. Configuración y herramientas permanecen plegadas.';
+ section.insertBefore(summary,work.nextSibling);
+ const initial=document.getElementById('dImportedGroup');
+ if(!initial||!initial.value){const setup=section.querySelector('details.ix-tool');if(setup)setup.open=true;}
+});
 </script>
 </body>
 </html>
