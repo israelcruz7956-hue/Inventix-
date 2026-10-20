@@ -87,7 +87,7 @@ hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
 
 <header>
   <div class="brand">INVENTI<span>X</span> CORE</div>
-  <div class="sub">v1.9.8 · CÁMARA UNIFICADA · LIVERPOOL + CAMBIO DE VALIDADOR + TRAZABILIDAD · secuencia visible + salto automático de tienda</div>
+  <div class="sub">v1.9.9 · CÁMARA UNIFICADA · LIVERPOOL + CAMBIO DE VALIDADOR + TRAZABILIDAD · secuencia visible + salto automático de tienda</div>
   <div id="environmentBanner" style="margin-top:10px;padding:10px;border:2px solid #059669;border-radius:12px;font-weight:900" aria-live="polite">🛡️ OPERACIÓN REAL</div>
   <div style="display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap">
     <button type="button" id="switchEnvironment" style="padding:11px 14px;border:2px solid #f59e0b;border-radius:10px;background:#122a4b;color:white;font-weight:800;cursor:pointer">🧪 Entrar a ambiente de prueba</button>
@@ -335,6 +335,8 @@ hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
     <div id="dLiverpoolPanel" class="card" style="display:none;background:#102746;border:1px solid #38bdf8">
       <h3>🔐 Liverpool · prevalidación y etiqueta HU</h3>
       <div id="dLiverpoolInfo" class="note"></div>
+      <div id="dLiverpoolHero" style="border:2px solid #38bdf8;border-radius:14px;padding:14px;margin:10px 0;background:#071a32" aria-live="polite"></div>
+      <div id="dLiverpoolFeedback" role="status" aria-live="assertive" style="display:none;border-radius:10px;padding:12px;font-weight:900;margin:8px 0"></div>
       <label>Escanear UPC de muestra para prevalidación (5 diferentes)</label><input id="dLiverpoolPreScan" placeholder="UPC de muestra">
       <button type="button" class="btn secondary ix-scan-launch" data-ix-target="dLiverpoolPreScan" data-ix-auto="false">📷 Cámara · prevalidar UPC</button>
       <button type="button" id="dLiverpoolPreBtn" class="btn secondary">✔️ Validar UPC de muestra</button>
@@ -2094,7 +2096,10 @@ function prevalidateLiverpool(){
  const result=expected.includes(code)?'CORRECTO':'UPC NO SOLICITADO';
  if(result==='CORRECTO'&&!d.prevalidated.includes(code))d.prevalidated.push(code);
  d.events=d.events||[];d.events.push({time:nowISO(),type:'PREVALIDACION_UPC',code,result,...employee});
- document.getElementById('dLiverpoolPreScan').value='';save();renderDistribution();toast(`${result} · prevalidación ${d.prevalidated.length}/5`,result!=='CORRECTO');
+ document.getElementById('dLiverpoolPreScan').value='';save();renderDistribution();
+ const f=document.getElementById('dLiverpoolFeedback');
+ if(f){f.style.display='block';f.style.background=result==='CORRECTO'?'#065f46':'#7f1d1d';f.textContent=result==='CORRECTO'?`✓ UPC CORRECTO · ${d.prevalidated.length}/5 REFERENCIAS VALIDADAS`:`✕ ${result}`;}
+ toast(`${result} · prevalidación ${d.prevalidated.length}/5`,result!=='CORRECTO');
 }
 function scanLiverpool(input){
  const employee=ensureDistValidator();if(!employee)return;
@@ -2112,7 +2117,10 @@ function scanLiverpool(input){
  else if(d.rows.some(r=>r.upc===code)) {result='FUERA DE SECUENCIA';message=`UPC ${code} pertenece a otra posición. Esperado POS ${next.skuSeq}: ${next.upc}`;}
  else {result='UPC NO SOLICITADO';message=`UPC ${code} no está en OC ${d.oc}`;}
  d.scans.push({id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),time:nowISO(),profile:'LIVERPOOL',oc:d.oc,store:next.store,skuSeq:next.skuSeq,upc:code,expectedUpc:next.upc,rowIndex:d.rows.indexOf(next),result,message,...employee});
- dScanCode.value='';save();renderDistribution();toast(message,result!=='CORRECTO');
+ dScanCode.value='';save();renderDistribution();
+ const f=document.getElementById('dLiverpoolFeedback');
+ if(f){f.style.display='block';f.style.background=result==='CORRECTO'?'#065f46':'#7f1d1d';f.textContent=(result==='CORRECTO'?'✓ ':'✕ ')+message;}
+ toast(message,result!=='CORRECTO');
 }
 function closeLiverpoolStore(){
  const employee=ensureDistValidator();if(!employee)return;
@@ -2128,7 +2136,11 @@ function closeLiverpoolStore(){
  if(scanned!==hu){d.events=d.events||[];d.events.push({time:nowISO(),type:'HU_INCORRECTA',store:target,code:scanned,expected:hu,...employee});save();return toast('HU INCORRECTA · esperada '+hu,true);}
  d.boxClosures.push({time:nowISO(),store:target,master:hu,expectedQty:rows.reduce((n,r)=>n+r.expected,0),status:'OK',boxType:rows[0]?.boxType||'',validation:'HU + CINCO POSICIONES + UPC + CUBIX',...employee});
  d.events=d.events||[];d.events.push({time:nowISO(),type:'CIERRE_TIENDA',store:target,code:hu,boxType:rows[0]?.boxType||'',...employee});
- document.getElementById('dLiverpoolHU').value='';save();renderDistribution();toast('TIENDA '+target+' cerrada · HU '+hu);
+ document.getElementById('dLiverpoolHU').value='';save();renderDistribution();
+ const f=document.getElementById('dLiverpoolFeedback');
+ if(f){f.style.display='block';f.style.background='#065f46';f.textContent='✓ CAJA CERRADA · TIENDA '+target+' · HU '+hu+' · SIGUIENTE TIENDA LISTA';}
+ toast('TIENDA '+target+' cerrada · HU '+hu);
+ setTimeout(()=>{try{document.getElementById('dScanCode').focus()}catch(e){}},80);
 }
 function scanDistribution(input){
   const employee=ensureDistValidator();if(!employee)return;
@@ -2202,6 +2214,20 @@ function renderDistribution(){
     const panel=document.getElementById('dLiverpoolPanel');panel.style.display='block';
     const next=liverpoolNext(d),firstUnclosed=d.rows.find(r=>!d.boxClosures.some(c=>c.store===r.store));
     const closeNeeded=firstUnclosed&&d.rows.filter(r=>r.store===firstUnclosed.store).every(r=>r.done===r.expected);
+    const hero=document.getElementById('dLiverpoolHero');
+    if(hero){
+      const focus=firstUnclosed||next,storeRows=focus?d.rows.filter(r=>r.store===focus.store):[];
+      const current=storeRows.find(r=>r.done<r.expected);
+      const completed=storeRows.reduce((n,r)=>n+r.done,0),expected=storeRows.reduce((n,r)=>n+r.expected,0);
+      const pre=(d.prevalidated||[]).length;
+      hero.innerHTML=pre<5
+        ?`<div style="font-size:22px;font-weight:900;color:#fbbf24">PREVALIDACIÓN UPC · ${pre}/5</div><div style="font-size:15px;margin-top:8px">Escanea las cinco referencias antes de iniciar el surtido.</div>`
+        :current
+          ?`<div style="font-size:18px;font-weight:900">TIENDA ${escapeHtml(current.store)} · HU ${escapeHtml(current.master)}</div><div style="font-size:15px;margin:8px 0">CAJA ${escapeHtml(current.boxType||'—')} · AVANCE ${completed}/${expected}</div><div style="display:flex;gap:12px;text-align:center"><div style="flex:1;border:1px solid #38bdf8;border-radius:12px;padding:12px"><div>SECUENCIA</div><div style="font-size:76px;font-weight:900;line-height:1.1">${escapeHtml(current.skuSeq)}</div></div><div style="flex:1;border:1px solid #38bdf8;border-radius:12px;padding:12px"><div>PIEZAS PENDIENTES</div><div style="font-size:76px;font-weight:900;line-height:1.1">${current.expected-current.done}</div><div>${current.done}/${current.expected} validadas</div></div></div><div style="font-size:13px;margin-top:10px">UPC de referencia: ${escapeHtml(current.upc)}</div>`
+          :focus
+            ?`<div style="font-size:28px;font-weight:900;color:#fbbf24">✓ PIEZAS COMPLETAS · ${completed}/${expected}</div><div style="font-size:20px;margin-top:8px">CAJA ${escapeHtml(focus.boxType||'—')} · TIENDA ${escapeHtml(focus.store)}</div><div style="margin-top:8px">ESCANEA LA HU FÍSICA PARA CERRAR Y AVANZAR: <b>${escapeHtml(focus.master)}</b></div>`
+            :'<div style="font-size:24px;font-weight:900">TODAS LAS TIENDAS CERRADAS</div>';
+    }
     document.getElementById('dLiverpoolInfo').textContent=`Prevalidación ${(d.prevalidated||[]).length}/5 UPC · ${d.boxClosures.length}/111 tiendas cerradas · ${t.done}/${t.expected} piezas · CAJA ${firstUnclosed?.boxType||next?.boxType||'—'} · ${closeNeeded?'CIERRE PENDIENTE '+firstUnclosed.store:next?'SIGUIENTE '+next.store+' · POS '+next.skuSeq+' · UPC '+next.upc:'PIEZAS COMPLETAS'}`;
     dSummary.textContent=`OC ${d.oc} · LIVERPOOL · ${d.boxClosures.length}/111 tiendas cerradas`;
     dOk.textContent=t.done;dPending.textContent=t.pending;dIncidents.textContent=t.incidents;
