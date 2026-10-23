@@ -156,7 +156,7 @@ body.ix-liverpool-active #dWork #dRows{margin-top:0!important}
     <div class="toolbar">
       <button id="importInvBtn" class="btn secondary">📥 Importar Excel</button>
       <button id="templateInvBtn" class="btn ghost">🧾 Plantilla</button>
-      <button id="exportInvBtn" class="btn ghost">📤 Exportar Excel</button>
+      <button id="exportInvBtn" class="btn ghost">📤 Exportar Excel por OC</button>
     </div>
     <input id="importInvFile" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none">
     <div class="note" style="margin-top:8px">Columnas aceptadas: UPC/CODIGO/SKU, DESCRIPCION, EXISTENCIA/CANTIDAD/QTY/STOCK y UBICACION.</div>
@@ -229,7 +229,7 @@ body.ix-liverpool-active #dWork #dRows{margin-top:0!important}
     <div class="toolbar">
       <button id="importVerifyBtn" class="btn secondary">📥 Importar Excel</button>
       <button id="templateVerifyBtn" class="btn ghost">🧾 Plantilla Cantidad</button>
-      <button id="exportVerifyBtn" class="btn primary">📤 Exportar Excel</button>
+      <button id="exportVerifyBtn" class="btn primary">📤 Exportar Excel por OC</button>
     </div>
     <input id="importVerifyFile" type="file" accept=".xlsx,.xls,.csv,text/csv,.txt,text/plain" style="display:none">
     <button id="templateVerifyTechBtn" class="btn ghost">📱 Plantilla Verify Tech · Series</button>
@@ -304,7 +304,7 @@ body.ix-liverpool-active #dWork #dRows{margin-top:0!important}
     <div class="toolbar" style="margin-top:10px">
       <button id="dImportBtn" class="btn secondary">📥 Importar Excel</button>
       <button id="dTemplateBtn" class="btn ghost">🧾 Plantilla Excel</button>
-      <button id="dExportBtn" class="btn ghost">📤 Exportar Excel</button>
+      <button id="dExportBtn" class="btn ghost">📤 Exportar Excel por OC</button>
     </div>
     <input id="dImportFile" type="file" accept=".xlsx,.xls,.csv,text/csv,.txt,text/plain" style="display:none">
     <div class="note" style="margin-top:8px"><b>Genérico:</b> OC · DESTINO/TIENDA · UPC/SKU · DESCRIPCION · CANTIDAD · ETIQUETA MASTER. <b>Office Depot:</b> ORDER_NO · LOC_ID · SKU (secuencia) · CANT/MAX_CANT y marcadores BLOQUE. <b>Office Max:</b> PALLET · NUM_ORD · TIENDA · UPC · SKU (secuencia) · PIEZAS_ORDENADAS/PIEZAS_AGENDADAS. En Office Max el archivo ya trae la relación SKU→UPC y Verify avanza automáticamente a la siguiente tienda cuando termina todas sus partidas. El libro puede traer varias hojas: Inventix busca la hoja compatible.</div>
@@ -648,7 +648,7 @@ function forceTextColumns(ws, headerNames){
   }
 }
 async function downloadWorkbook(filename, sheetDefs){
-  if(!window.XLSX) return toast('Motor Excel no disponible. Conecta el teléfono a internet y vuelve a abrir Inventix.',true);
+  if(!window.XLSX) throw Error('Motor Excel no disponible');
   try{
     const wb=XLSX.utils.book_new();
     for(const def of sheetDefs){
@@ -662,10 +662,10 @@ async function downloadWorkbook(filename, sheetDefs){
     const file=new File([blob],filename,{type:blob.type});
     if(navigator.canShare&&navigator.share&&navigator.canShare({files:[file]})){
       try{await navigator.share({files:[file],title:'INVENTIX Excel'});toast('Excel exportado / compartido');return;}
-      catch(err){if(err&&err.name==='AbortError')return;}
+      catch(err){console.warn('Compartir no completado; se intentará descargar',err);}
     }
     const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=filename;a.style.display='none';document.body.appendChild(a);a.click();setTimeout(()=>{a.remove();URL.revokeObjectURL(url)},2000);toast('Excel generado');
-  }catch(err){console.error(err);toast('No se pudo generar Excel',true);}
+  }catch(err){console.error(err);toast('No se pudo generar Excel; distribución conservada para reexportar',true);throw err;}
 }
 
 
@@ -1576,7 +1576,7 @@ function autoCloseOfficeMaxStore(d,row){
 function finalizeOfficeMaxDistribution(d){
   const t=distTotals(d);d.closedAt=nowISO();d.status='CERRADA';d.totalPieces=t.expected;d.incidents=t.incidents;
   state.distributions=state.distributions||[];state.distributions.unshift(JSON.parse(JSON.stringify(d)));state.activeDistribution=null;
-  dScanCode.value='';save();renderDistribution();renderDistributionHistory();setDistBanner('CORRECTO','OFFICE MAX · DISTRIBUCIÓN COMPLETA');toast('Office Max cerrada · tiendas confirmadas por UPC y cantidad');
+  dScanCode.value='';save();renderDistribution();renderDistributionHistory();setDistBanner('CORRECTO','OFFICE MAX · DISTRIBUCIÓN COMPLETA');autoExportClosedDistribution(d);toast('Office Max cerrada · tiendas confirmadas por UPC y cantidad');
 }
 function nextOfficeDepotRow(d){
   if(!d||!isOfficeDepotProfile(d.profile))return null;
@@ -1761,7 +1761,7 @@ function finalizeOfficeDepotDistribution(d){
   dScanCode.value='';
   save();renderDistribution();renderDistributionHistory();
   setDistBanner('CORRECTO','OFFICE DEPOT · DISTRIBUCIÓN Y TARIMAS COMPLETAS');
-  toast('Office Depot cerrada · cajas y bloques confirmados');
+  autoExportClosedDistribution(d);toast('Office Depot cerrada · cajas y bloques confirmados');
 }
 function confirmOfficeDepotGate(){
   const employee=ensureDistValidator();if(!employee)return;
@@ -1788,7 +1788,8 @@ function confirmOfficeDepotGate(){
     }
     setOfficeDepotGate(d,null);
     if(officeDepotAllBlocksClosed(d)&&distTotals(d).pending===0){
-      finalizeOfficeDepotDistribution(d);return;
+      if(!canGenerateDistributionExcel())return;
+    finalizeOfficeDepotDistribution(d);return;
     }
     save();renderDistribution();toast(`BLOQUE ${g.block} / TARIMA cerrada · siguiente bloque liberado`);
     setTimeout(()=>{try{dScanCode.focus()}catch(e){}},80);
@@ -2216,6 +2217,15 @@ function undoDistribution(){
   else if(last.result==='EXCESO'){const row=d.rows.find(r=>r.code===last.code);if(row&&row.excess>0)row.excess--;}
   save();renderDistribution();setDistBanner('',`DESHECHO · ${last.store||last.code||''}`);toast('Última validación deshecha');
 }
+function canGenerateDistributionExcel(){
+  if(window.XLSX)return true;
+  toast('Cierre pendiente: motor Excel no cargado. Conéctate a internet antes de cerrar; los escaneos siguen guardados.',true);
+  return false;
+}
+function autoExportClosedDistribution(d){
+  // Cierre guardado en historial antes de solicitar descarga; reexportación disponible.
+  exportDistributionExcel(d).catch(err=>{console.error(err);toast('Cierre guardado, pero Excel no generado. Reexporta desde el historial.',true);});
+}
 function closeDistribution(){
   const employee=ensureDistValidator();if(!employee)return;
   const d=state.activeDistribution;if(!d)return toast('No hay distribución activa',true);
@@ -2223,20 +2233,23 @@ function closeDistribution(){
   if(isLiverpoolProfile(d.profile)){
     if((d.prevalidated||[]).length!==5)return toast('Falta prevalidación UPC',true);
     if((d.boxClosures||[]).length!==111)return toast('Faltan cierres de tiendas: '+(111-(d.boxClosures||[]).length),true);
+    if(!canGenerateDistributionExcel())return;
     d.closedAt=nowISO();d.status='CERRADA';d.totalPieces=t.expected;d.incidents=t.incidents;
-    state.distributions.unshift(JSON.parse(JSON.stringify(d)));state.activeDistribution=null;save();renderDistribution();renderDistributionHistory();toast('Liverpool cerrado · 111 HU verificadas');return;
+    state.distributions.unshift(JSON.parse(JSON.stringify(d)));state.activeDistribution=null;save();renderDistribution();renderDistributionHistory();autoExportClosedDistribution(d);toast('Liverpool cerrado · 111 HU verificadas');return;
   }
   if(isOfficeDepotProfile(d.profile)){
     if(officeDepotGate(d))return toast('Hay un cierre de caja/bloque pendiente',true);
     if(!officeDepotAllBlocksClosed(d))return toast('No se puede cerrar: falta confirmar al menos una TARIMA/BLOQUE',true);
+    if(!canGenerateDistributionExcel())return;
     finalizeOfficeDepotDistribution(d);return;
   }
-  if(isOfficeMaxProfile(d.profile)){finalizeOfficeMaxDistribution(d);return;}
+  if(isOfficeMaxProfile(d.profile)){if(!canGenerateDistributionExcel())return;finalizeOfficeMaxDistribution(d);return;}
   const master=idText(dMasterScan.value);if(!master)return toast('Escanea o captura la Etiqueta Master',true);
   if(d.masterExpected&&master!==d.masterExpected)return toast(`MASTER INCORRECTA. Esperada: ${d.masterExpected}`,true);
+  if(!canGenerateDistributionExcel())return;
   d.masterScanned=master;d.closedAt=nowISO();d.status='CERRADA';d.totalPieces=t.expected;d.incidents=t.incidents;
   state.distributions=state.distributions||[];state.distributions.unshift(JSON.parse(JSON.stringify(d)));state.activeDistribution=null;
-  dMasterScan.value='';dScanCode.value='';save();renderDistribution();renderDistributionHistory();setDistBanner('CORRECTO','MASTER VALIDADA · DISTRIBUCIÓN COMPLETA');toast('Etiqueta Master cerrada y validada');
+  dMasterScan.value='';dScanCode.value='';save();renderDistribution();renderDistributionHistory();setDistBanner('CORRECTO','MASTER VALIDADA · DISTRIBUCIÓN COMPLETA');autoExportClosedDistribution(d);toast('Etiqueta Master cerrada y validada');
 }
 function renderDistribution(){
   const d=state.activeDistribution;updateDistributionProfileUI();if(!d){document.body.classList.remove('ix-liverpool-active');dWork.style.display='none';document.getElementById('dLiverpoolPanel').style.display='none';return;}
@@ -2342,17 +2355,24 @@ function renderDistribution(){
 }
 function renderDistributionHistory(){
   if(!dHistory)return;const arr=state.distributions||[];
-  dHistory.innerHTML=arr.length?arr.slice(0,40).map(d=>`<div class="row ok"><b>${escapeHtml(d.oc)} · ${isOfficeDepotProfile(d.profile)?'OFFICE DEPOT':isOfficeMaxProfile(d.profile)?'OFFICE MAX':escapeHtml(d.store)}</b> <span class="badge">${d.totalPieces||0} pzas</span><div class="meta">${isOfficeDepotProfile(d.profile)?'Bloques / tienda visual + UPC · sin Master':isOfficeMaxProfile(d.profile)?'SKU secuencia + UPC + salto automático de tienda':'Master: '+escapeHtml(d.masterScanned||d.masterExpected||'SIN MASTER')} · Incidencias: ${d.incidents||0}<br>${fmtDate(d.closedAt)}</div></div>`).join(''):'<div class="note">Sin distribuciones cerradas.</div>';
+  dHistory.innerHTML=arr.length?arr.slice(0,40).map(d=>`<div class="row ok"><b>${escapeHtml(d.oc)} · ${isOfficeDepotProfile(d.profile)?'OFFICE DEPOT':isOfficeMaxProfile(d.profile)?'OFFICE MAX':escapeHtml(d.store)}</b> <span class="badge">${d.totalPieces||0} pzas</span><div class="meta">${isOfficeDepotProfile(d.profile)?'Bloques / tienda visual + UPC · sin Master':isOfficeMaxProfile(d.profile)?'SKU secuencia + UPC + salto automático de tienda':'Master: '+escapeHtml(d.masterScanned||d.masterExpected||'SIN MASTER')} · Incidencias: ${d.incidents||0}<br>${fmtDate(d.closedAt)}<br><button type="button" class="btn ghost ix-reexport" data-dist-id="${escapeHtml(d.id||'')}">📤 Reexportar esta OC</button></div></div>`).join(''):'<div class="note">Sin distribuciones cerradas.</div>';
 }
-async function exportDistributionExcel(){
+document.getElementById('dHistory')?.addEventListener('click',e=>{
+  const btn=e.target.closest('.ix-reexport');if(!btn)return;
+  const d=(state.distributions||[]).find(x=>String(x.id)===btn.dataset.distId);
+  if(d)exportDistributionExcel(d);
+});
+async function exportDistributionExcel(selectedDistribution=null){
+  const dSelected=selectedDistribution || state.activeDistribution || (state.distributions||[])[0];
+  if(!dSelected)return toast('No hay distribución para exportar',true);
   // INVENTIX v1.8.6 · Exportable Núñez / Kernel Hulk
   // Diseño permanente: 3 hojas — BASE, ESCANEO_EJECUCION, RESUMEN_MC.
   // Objetivo: conservar plan, evidencia de ejecución y comparación solicitado vs físico + mejora continua.
 
   const base=[['PERFIL','FOLIO_PEDIDO','BLOQUE/PALLET','TIENDA_DESTINO','SKU_SECUENCIA','UPC','DESCRIPCION','CANTIDAD_SOLICITADA','ORDEN_EJECUCION']];
-  distRows().forEach(r=>base.push([
-    r.profile||state.distributionImport?.profile||'GENERIC',
-    r.oc||'',r.block||r.pallet||'',r.store||'',r.skuSeq||r.sku||'',r.upc||r.code||'',r.desc||'',Number(r.qty||0),r.sequence||''
+  (dSelected.rows||[]).forEach(r=>base.push([
+    dSelected.profile||'GENERIC',
+    dSelected.oc||'',r.block||r.pallet||'',r.store||'',r.skuSeq||r.sku||'',r.upc||r.code||'',r.desc||'',Number(r.expected??r.qty??0),r.sequence||''
   ]));
 
   const execution=[['FECHA_HORA','TIPO_EVENTO','FOLIO_PEDIDO','BLOQUE/PALLET','TIENDA','SKU_SECUENCIA','UPC_LEIDO','UPC_ESPERADO','SOLICITADO','VALIDADO','RESULTADO','DETALLE','USUARIO','NUM_EMPLEADO']];
@@ -2365,8 +2385,7 @@ async function exportDistributionExcel(){
 
   const summaryRows=[];
   const mcRows=[];
-  const all=[...(state.distributions||[])];
-  if(state.activeDistribution)all.unshift(state.activeDistribution);
+  const all=[dSelected];
 
   all.forEach(d=>{
     const t=distTotals(d);
@@ -2450,7 +2469,9 @@ async function exportDistributionExcel(){
   // Fila vacía editable para documentar un evento no generado automáticamente.
   resumenMc.push([all[0]?.oc||'','','','','','','','','','','ABIERTA']);
 
-  await downloadWorkbook('inventix_verify_distribution_'+dateTag()+'.xlsx',[
+  const safeOC=String(dSelected.oc||'SIN_OC').replace(/[^A-Za-z0-9_-]/g,'_');
+  const safeProfile=String(dSelected.profile||'GENERIC').replace(/[^A-Za-z0-9_-]/g,'_');
+  await downloadWorkbook('INVENTIX_'+safeProfile+'_OC_'+safeOC+'_'+dateTag()+'.xlsx',[
     {name:'BASE',rows:base,textColumns:['FOLIO_PEDIDO','TIENDA_DESTINO','SKU_SECUENCIA','UPC'],widths:[20,18,10,18,15,24,34,18,16]},
     {name:'ESCANEO_EJECUCION',rows:execution,textColumns:['FOLIO_PEDIDO','TIENDA','SKU_SECUENCIA','UPC_LEIDO','UPC_ESPERADO'],widths:[22,18,18,10,16,15,24,24,12,12,20,58,18]},
     {name:'RESUMEN_MC',rows:resumenMc,textColumns:['FOLIO_PEDIDO','TIENDA','SKU_SECUENCIA','UPC'],widths:[18,12,16,15,24,16,16,14,18,28,18]}
@@ -2496,7 +2517,7 @@ function resetDistributionTest(){
 }
 document.getElementById('dResetTestBtn').addEventListener('click',resetDistributionTest);
 
-dExportBtn.addEventListener('click',exportDistributionExcel);
+dExportBtn.addEventListener('click',()=>exportDistributionExcel());
 dTemplateBtn.addEventListener('click',async()=>{
   await downloadWorkbook('plantilla_verify_distribution.xlsx',[
     {name:'GENERICA',rows:[['OC','DESTINO/TIENDA','UPC/SKU','DESCRIPCION','CANTIDAD','ETIQUETA MASTER'],['OC 673505','MACSTORE BUENAVISTA','7500000000001','ARTICULO EJEMPLO',3,'MASTER-673505'],['OC 673505','MACSTORE BUENAVISTA','7500000000002','SEGUNDO ARTICULO',2,'MASTER-673505']],textColumns:['OC','UPC/SKU','ETIQUETA MASTER'],widths:[18,28,22,36,12,24]},
