@@ -8,7 +8,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <link rel="manifest" href="manifest.json">
-<title>INVENTIX Core v1.10.2 · Liverpool dinámico</title>
+<title>INVENTIX Core v1.10.3 · Liverpool CUBIX por prioridad</title>
 <style>
 :root{
   --navy:#0F2747;--navy2:#08192f;--blue:#1E4DBC;--orange:#F5A623;
@@ -112,7 +112,7 @@ body.ix-liverpool-active #dWork #dRows{margin-top:0!important}
 
 <header>
   <div class="brand">INVENTI<span>X</span> CORE</div>
-  <div class="sub">v1.10.2 · CÁMARA UNIFICADA · LIVERPOOL + CAMBIO DE VALIDADOR + TRAZABILIDAD · secuencia visible + salto automático de tienda</div>
+  <div class="sub">v1.10.3 · CÁMARA UNIFICADA · LIVERPOOL + CAMBIO DE VALIDADOR + TRAZABILIDAD · secuencia visible + salto automático de tienda</div>
   <div id="environmentBanner" style="margin-top:10px;padding:10px;border:2px solid #059669;border-radius:12px;font-weight:900" aria-live="polite">🛡️ OPERACIÓN REAL</div>
   <div style="display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap">
     <button type="button" id="switchEnvironment" style="padding:11px 14px;border:2px solid #f59e0b;border-radius:10px;background:#122a4b;color:white;font-weight:800;cursor:pointer">🧪 Entrar a ambiente de prueba</button>
@@ -1374,13 +1374,29 @@ function parseLiverpoolWorkbook(wb){
       if(skuCatalog.has(a))throw Error('Liverpool: SKU duplicado en catálogo '+a);
       skuCatalog.set(a,{seq:b,upc:c});
     }
+    // CUBIX: A=mínimo, B=máximo, C=caja, D=prioridad (1 primero).
     const min=Number(a),max=Number(b),box=c.toUpperCase();
-    if(Number.isInteger(min)&&min>0&&Number.isInteger(max)&&max>=min&&/^L-\d+$/.test(box))boxRules.push({min,max,box});
+    const priorityText=idText(line[3]);
+    const priority=priorityText===''?null:Number(priorityText);
+    if(Number.isInteger(min)&&min>0&&Number.isInteger(max)&&max>=min&&/^L-\d+$/.test(box)){
+      if(!Number.isInteger(priority)||priority<1)
+        throw Error('Liverpool: falta secuencia válida en columna D para caja '+box+' fila '+(r+1));
+      boxRules.push({min,max,box,priority});
+    }
   }
   if(!skuCatalog.size)throw Error('Liverpool: catálogo sin SKU/UPC válidos');
   if(!boxRules.length)throw Error('Liverpool: faltan reglas CUBIX mínimo/máximo/caja');
-  boxRules.sort((a,b)=>a.min-b.min);
-  for(let i=1;i<boxRules.length;i++)if(boxRules[i].min<=boxRules[i-1].max)throw Error('Liverpool: rangos de caja superpuestos');
+  // Primero la secuencia menor (1 = prioridad mayor). Un empate con
+  // rangos coincidentes es ambiguo y se rechaza en lugar de elegir al azar.
+  boxRules.sort((a,b)=>a.priority-b.priority||a.min-b.min||a.max-b.max);
+  for(let i=0;i<boxRules.length;i++){
+    for(let j=i+1;j<boxRules.length;j++){
+      if(boxRules[i].priority===boxRules[j].priority &&
+         boxRules[i].min<=boxRules[j].max && boxRules[j].min<=boxRules[i].max)
+        throw Error('Liverpool: cajas '+boxRules[i].box+' y '+boxRules[j].box+
+          ' comparten secuencia '+boxRules[i].priority+' y rango de piezas');
+    }
+  }
   const matrix=sheets.find(x=>x!==detail&&x.aoa.length>=33&&x.aoa[31]?.some(v=>/^C\d{8}$/i.test(idText(v))));
   const matrixHU=new Map(),matrixQty=new Map(),matrixSkuQty=new Map();
   if(matrix){
