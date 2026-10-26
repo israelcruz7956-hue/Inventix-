@@ -8,7 +8,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <link rel="manifest" href="manifest.json">
-<title>INVENTIX Core v1.10.0 · Liverpool guiado</title>
+<title>INVENTIX Core v1.10.2 · Liverpool dinámico</title>
 <style>
 :root{
   --navy:#0F2747;--navy2:#08192f;--blue:#1E4DBC;--orange:#F5A623;
@@ -112,7 +112,7 @@ body.ix-liverpool-active #dWork #dRows{margin-top:0!important}
 
 <header>
   <div class="brand">INVENTI<span>X</span> CORE</div>
-  <div class="sub">v1.10.1 · CÁMARA UNIFICADA · LIVERPOOL + CAMBIO DE VALIDADOR + TRAZABILIDAD · secuencia visible + salto automático de tienda</div>
+  <div class="sub">v1.10.2 · CÁMARA UNIFICADA · LIVERPOOL + CAMBIO DE VALIDADOR + TRAZABILIDAD · secuencia visible + salto automático de tienda</div>
   <div id="environmentBanner" style="margin-top:10px;padding:10px;border:2px solid #059669;border-radius:12px;font-weight:900" aria-live="polite">🛡️ OPERACIÓN REAL</div>
   <div style="display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap">
     <button type="button" id="switchEnvironment" style="padding:11px 14px;border:2px solid #f59e0b;border-radius:10px;background:#122a4b;color:white;font-weight:800;cursor:pointer">🧪 Entrar a ambiente de prueba</button>
@@ -361,7 +361,7 @@ body.ix-liverpool-active #dWork #dRows{margin-top:0!important}
       <div id="dLiverpoolInfo" class="note"></div>
       <div id="dLiverpoolHero" style="border:2px solid #38bdf8;border-radius:14px;padding:14px;margin:10px 0;background:#071a32" aria-live="polite"></div>
       <div id="dLiverpoolFeedback" role="status" aria-live="assertive" style="display:none;border-radius:10px;padding:12px;font-weight:900;margin:8px 0"></div>
-      <details id="dLiverpoolPreDetails" style="margin-top:10px;border:1px solid #31557b;border-radius:10px;padding:10px"><summary style="cursor:pointer;font-weight:900">🔎 Prevalidar cinco UPC · desplegar / ocultar</summary>
+      <details id="dLiverpoolPreDetails" style="margin-top:10px;border:1px solid #31557b;border-radius:10px;padding:10px"><summary style="cursor:pointer;font-weight:900">🔎 Prevalidar UPC de la OC · desplegar / ocultar</summary>
       <label>Escanear UPC de muestra para prevalidación (5 diferentes)</label><input id="dLiverpoolPreScan" placeholder="UPC de muestra">
       <button type="button" class="btn secondary ix-scan-launch" data-ix-target="dLiverpoolPreScan" data-ix-auto="false">📷 Cámara · prevalidar UPC</button>
       <button type="button" id="dLiverpoolPreBtn" class="btn secondary">✔️ Validar UPC de muestra</button></details>
@@ -1370,14 +1370,14 @@ function parseLiverpoolWorkbook(wb){
   const skuCatalog=new Map(),boxRules=[];
   for(let r=1;r<catalog.aoa.length;r++){
     const line=catalog.aoa[r]||[],a=idText(line[0]),b=idText(line[1]),c=idText(line[2]);
-    if(/^\d{8,}$/.test(a)&&/^[1-5]$/.test(b)&&/^\d{8,}$/.test(c)){
+    if(/^\d{8,}$/.test(a)&&/^\d+$/.test(b) && Number(b)>0&&/^\d{8,}$/.test(c)){
       if(skuCatalog.has(a))throw Error('Liverpool: SKU duplicado en catálogo '+a);
       skuCatalog.set(a,{seq:b,upc:c});
     }
     const min=Number(a),max=Number(b),box=c.toUpperCase();
     if(Number.isInteger(min)&&min>0&&Number.isInteger(max)&&max>=min&&/^L-\d+$/.test(box))boxRules.push({min,max,box});
   }
-  if(skuCatalog.size!==5)throw Error('Liverpool: catálogo debe contener exactamente 5 SKU/UPC');
+  if(!skuCatalog.size)throw Error('Liverpool: catálogo sin SKU/UPC válidos');
   if(!boxRules.length)throw Error('Liverpool: faltan reglas CUBIX mínimo/máximo/caja');
   boxRules.sort((a,b)=>a.min-b.min);
   for(let i=1;i<boxRules.length;i++)if(boxRules[i].min<=boxRules[i-1].max)throw Error('Liverpool: rangos de caja superpuestos');
@@ -1392,10 +1392,7 @@ function parseLiverpoolWorkbook(wb){
       if(matrixHU.has(store))throw Error('Liverpool: tienda duplicada en matriz '+store);
       matrixHU.set(store,hu);
       const q=Number(m[9]?.[c]);if(Number.isFinite(q))matrixQty.set(store,q);
-      for(let r=4;r<=8;r++){
-        const sku=idText(m[r]?.[0]),v=Number(m[r]?.[c]);
-        if(sku&&Number.isFinite(v))matrixSkuQty.set(store+'|'+sku,v);
-      }
+      // La matriz es dinámica: no asumir que los SKU están en filas 5 a 9.
     }
   }
   const rows=[],byStore=new Map(),huOwner=new Map(),seqOwner=new Map(),ocSet=new Set();
@@ -1417,12 +1414,12 @@ function parseLiverpoolWorkbook(wb){
     byStore.get(store).push(row);
   }
   const total=rows.reduce((n,r)=>n+r.qty,0);
-  if(rows.length!==555||byStore.size!==111||huOwner.size!==111||total!==2000||ocSet.size!==1||!ocSet.has('33872728'))
+  if(!rows.length||!byStore.size||huOwner.size!==byStore.size||ocSet.size!==1)
     throw Error(`Liverpool: diferencias (${rows.length} partidas, ${byStore.size} tiendas, ${huOwner.size} HU, ${total} piezas)`);
-  if(matrix&&matrixHU.size!==111)throw Error('Liverpool: matriz incompleta de HU');
+  if(matrix&&matrixHU.size!==byStore.size)throw Error('Liverpool: matriz incompleta de HU');
   const boxCount={};
   for(const [store,items] of byStore){
-    if(items.length!==5||new Set(items.map(x=>x.skuSeq)).size!==5)throw Error('Liverpool: tienda '+store+' no tiene cinco posiciones únicas');
+    if(new Set(items.map(x=>x.skuSeq)).size!==items.length)throw Error('Liverpool: secuencia SKU duplicada en tienda '+store);
     const count=items.reduce((n,x)=>n+x.qty,0);
     if(matrixQty.has(store)&&matrixQty.get(store)!==count)throw Error('Liverpool: total no coincide con hoja 1, tienda '+store);
     const rule=boxRules.find(x=>count>=x.min&&count<=x.max);
@@ -1430,7 +1427,6 @@ function parseLiverpoolWorkbook(wb){
     items.forEach(x=>{x.boxType=rule.box;x.storePieces=count;});
     boxCount[rule.box]=(boxCount[rule.box]||0)+1;
   }
-  if(boxCount['L-28']!==61||boxCount['L-29']!==50)throw Error('Liverpool: cajas CUBIX no cuadran con 61 L-28 / 50 L-29');
   rows.sort((a,b)=>a.master.localeCompare(b.master,undefined,{numeric:true})||Number(a.skuSeq)-Number(b.skuSeq));
   rows.forEach((r,i)=>r.sequence=i+1);
   return {profile:'LIVERPOOL',rows,sheetName:detail.name,boxCount};
@@ -1850,7 +1846,7 @@ function fillDistributionGroup(key){
   }else if(isLiverpoolProfile(g.profile)){
     dProfile.value='LIVERPOOL';dStore.value='POR TIENDAS';dMasterExpected.value='';
     dExpected.value=g.rows.map(r=>`HU ${r.master} · TIENDA ${r.store} · POS ${r.skuSeq} · UPC ${r.upc} · ${r.qty}`).join('\n');
-    dImportStatus.textContent=`Liverpool · ${g.storeCount} tiendas · ${g.pieces} piezas · 111 HU · 5 UPC · CUBIX 61 L-28 / 50 L-29`;
+    dImportStatus.textContent=`Liverpool · ${g.storeCount} tiendas · ${g.pieces} piezas · ${new Set(g.rows.map(r=>r.master)).size} HU · ${new Set(g.rows.map(r=>r.upc)).size} UPC · CUBIX según reglas`;
   }else if(isOfficeMaxProfile(g.profile)){
     dProfile.value='OFFICE_MAX';dStore.value='POR TIENDAS';dMasterExpected.value='';
     const preview=officeMaxExecutionRows(g.rows);
@@ -1891,7 +1887,7 @@ function restoreDistributionUI(){
   }).join(''):'<option value="">Sin archivo cargado</option>';
   if(groups.length){
     if(isLiverpoolProfile(state.distributionImport?.profile)){
-      dImportStatus.textContent=`Liverpool · ${distRows().length} partidas · 111 determinantes · 2,000 piezas · HU importadas`;
+      dImportStatus.textContent=`Liverpool · ${distRows().length} partidas · ${new Set(distRows().map(r=>r.store)).size} determinantes · ${distRows().reduce((n,r)=>n+Number(r.qty||0),0)} piezas · HU importadas`;
     }else if(isOfficeDepotProfile(state.distributionImport?.profile)){
       const blocks=[...new Set(distRows().map(r=>Number(r.block||0)).filter(Boolean))].sort((a,b)=>b-a),stores=new Set(distRows().map(r=>r.store));
       dImportStatus.textContent=`${state.distributionImport.sourceName||'Archivo'} · OFFICE DEPOT · hoja ${state.distributionImport.sheetName||''} · ${distRows().length} renglones · ${stores.size} tiendas · ${distRows().reduce((a,r)=>a+Number(r.qty||0),0)} piezas · bloques ${blocks.join(' → ')}`;
@@ -1935,7 +1931,7 @@ async function importDistributionFile(file){
   state.distributionImport={rows,sourceName:file.name,loadedAt:nowISO(),profile:data.profile||'GENERIC',sheetName:data.sheetName||''};
   registerImportedFile(data.hash,'DISTRIBUTION',file.name,rows.length);save();restoreDistributionUI();
   if(isLiverpoolProfile(data.profile)){
-    toast(`Liverpool cargado · 111 tiendas · 2,000 piezas · HU y UPC vinculados`);
+    toast(`Liverpool cargado · ${new Set(rows.map(r=>r.store)).size} tiendas · ${rows.reduce((n,r)=>n+Number(r.qty||0),0)} piezas · HU y UPC vinculados`);
   }else if(isOfficeDepotProfile(data.profile)){
     for(const oc of [...new Set(rows.map(r=>idText(r.oc)).filter(Boolean))])populateOfficeDepotMapFromImport(oc,rows.filter(r=>idText(r.oc)===oc));
     localStorage.setItem(STORAGE_KEY,JSON.stringify(state));
@@ -2007,7 +2003,7 @@ function startDistribution(){
     if(!selected)return toast('Selecciona la OC Liverpool importada',true);
     const rows=selected.rows.map(r=>({...r,expected:Number(r.qty),done:0,excess:0}));
     state.activeDistribution={...employee,currentValidator:{...employee},id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),profile:'LIVERPOOL',oc:selected.oc,store:'POR TIENDAS',rows,scans:[],events:[{time:nowISO(),type:'INICIO',...employee}],boxClosures:[],prevalidated:[],startedAt:nowISO(),status:'ABIERTA'};
-    save();renderDistribution();toast('Liverpool iniciado · primero prevalidar 5 UPC');return;
+    save();renderDistribution();toast(`Liverpool iniciado · primero prevalidar ${liverpoolUPCCount(state.activeDistribution)} UPC`);return;
   }
   if(isOfficeDepotProfile(profile)){
     const selected=distGroups().find(g=>g.key===dImportedGroup.value) || distGroups().find(g=>isOfficeDepotProfile(g.profile)&&idText(g.oc)===idText(dOC.value));
@@ -2112,6 +2108,8 @@ function confirmOfficeMaxUPC(input){
   d.scans=d.scans||[];d.scans.push({id:crypto.randomUUID?crypto.randomUUID():String(Date.now()+Math.random()),time:nowISO(),profile:'OFFICE_MAX',oc:d.oc,pallet:expected.pallet||'',store:expected.store,expectedStore:expected.store,skuSeq:expected.skuSeq||'',upc,expectedUpc:expected.code,rowIndex:next.index,result,message,...employee});
   dScanCode.value='';save();renderDistribution();setDistBanner(result,message);toast(message,result!=='CORRECTO');setTimeout(()=>{try{dScanCode.focus()}catch(e){}},70);
 }
+function liverpoolUPCCount(d){return new Set((d?.rows||[]).map(r=>idText(r.upc)).filter(Boolean)).size;}
+function liverpoolStoreCount(d){return new Set((d?.rows||[]).map(r=>r.store)).size;}
 function liverpoolNext(d){return (d.rows||[]).find(r=>r.done<r.expected);}
 function liverpoolCurrentStore(d){const next=liverpoolNext(d);return next?.store||null;}
 function prevalidateLiverpool(){
@@ -2120,18 +2118,19 @@ function prevalidateLiverpool(){
  const code=idText(document.getElementById('dLiverpoolPreScan').value);
  const expected=[...new Set(d.rows.map(r=>r.upc))];
  const result=expected.includes(code)?'CORRECTO':'UPC NO SOLICITADO';
+ d.prevalidated=d.prevalidated||[];
  if(result==='CORRECTO'&&!d.prevalidated.includes(code))d.prevalidated.push(code);
  d.events=d.events||[];d.events.push({time:nowISO(),type:'PREVALIDACION_UPC',code,result,...employee});
  document.getElementById('dLiverpoolPreScan').value='';save();renderDistribution();
  const f=document.getElementById('dLiverpoolFeedback');
- if(f){f.style.display='block';f.style.background=result==='CORRECTO'?'#065f46':'#7f1d1d';f.textContent=result==='CORRECTO'?`✓ UPC CORRECTO · ${d.prevalidated.length}/5 REFERENCIAS VALIDADAS`:`✕ ${result}`;}
- toast(`${result} · prevalidación ${d.prevalidated.length}/5`,result!=='CORRECTO');
- if(d.prevalidated.length===5){document.getElementById('dLiverpoolPreDetails').open=false;setTimeout(()=>document.getElementById('dScanCode')?.focus(),100);}
+ if(f){f.style.display='block';f.style.background=result==='CORRECTO'?'#065f46':'#7f1d1d';f.textContent=result==='CORRECTO'?`✓ UPC CORRECTO · ${d.prevalidated.length}/${liverpoolUPCCount(d)} REFERENCIAS VALIDADAS`:`✕ ${result}`;}
+ toast(`${result} · prevalidación ${d.prevalidated.length}/${liverpoolUPCCount(d)}`,result!=='CORRECTO');
+ if(d.prevalidated.length===liverpoolUPCCount(d)){document.getElementById('dLiverpoolPreDetails').open=false;setTimeout(()=>document.getElementById('dScanCode')?.focus(),100);}
 }
 function scanLiverpool(input){
  const employee=ensureDistValidator();if(!employee)return;
  const d=state.activeDistribution,code=idText(input);
- if((d.prevalidated||[]).length!==5)return toast('Primero prevalida los cinco UPC diferentes',true);
+ if((d.prevalidated||[]).length!==liverpoolUPCCount(d))return toast('Primero prevalida todos los UPC diferentes de esta OC',true);
  if(!code)return toast('Escanea UPC de producto',true);
  const next=liverpoolNext(d);
  if(!next)return toast('Todas las piezas están completas; falta verificar cierres',true);
@@ -2158,7 +2157,7 @@ function scanLiverpool(input){
 function closeLiverpoolStore(){
  const employee=ensureDistValidator();if(!employee)return;
  const d=state.activeDistribution;if(!isLiverpoolProfile(d?.profile))return;
- if((d.prevalidated||[]).length!==5)return toast('Prevalidación incompleta',true);
+ if((d.prevalidated||[]).length!==liverpoolUPCCount(d))return toast('Prevalidación incompleta',true);
  const pending=d.rows.find(r=>r.done<r.expected);
  const store=pending?d.rows.find(r=>r.store!==pending.store&&r.done===r.expected&&!d.boxClosures.some(c=>c.store===r.store))?.store:null;
  const target=store||(!pending?d.rows.find(r=>!d.boxClosures.some(c=>c.store===r.store))?.store:null);
@@ -2231,11 +2230,11 @@ function closeDistribution(){
   const d=state.activeDistribution;if(!d)return toast('No hay distribución activa',true);
   const t=distTotals(d);if(t.pending>0)return toast(`No se puede cerrar: faltan ${t.pending} piezas`,true);
   if(isLiverpoolProfile(d.profile)){
-    if((d.prevalidated||[]).length!==5)return toast('Falta prevalidación UPC',true);
-    if((d.boxClosures||[]).length!==111)return toast('Faltan cierres de tiendas: '+(111-(d.boxClosures||[]).length),true);
+    if((d.prevalidated||[]).length!==liverpoolUPCCount(d))return toast('Falta prevalidación UPC',true);
+    if((d.boxClosures||[]).length!==liverpoolStoreCount(d))return toast('Faltan cierres de tiendas: '+(liverpoolStoreCount(d)-(d.boxClosures||[]).length),true);
     if(!canGenerateDistributionExcel())return;
     d.closedAt=nowISO();d.status='CERRADA';d.totalPieces=t.expected;d.incidents=t.incidents;
-    state.distributions.unshift(JSON.parse(JSON.stringify(d)));state.activeDistribution=null;save();renderDistribution();renderDistributionHistory();autoExportClosedDistribution(d);toast('Liverpool cerrado · 111 HU verificadas');return;
+    state.distributions.unshift(JSON.parse(JSON.stringify(d)));state.activeDistribution=null;save();renderDistribution();renderDistributionHistory();autoExportClosedDistribution(d);toast('Liverpool cerrado · HU verificadas');return;
   }
   if(isOfficeDepotProfile(d.profile)){
     if(officeDepotGate(d))return toast('Hay un cierre de caja/bloque pendiente',true);
@@ -2265,8 +2264,8 @@ function renderDistribution(){
       const current=storeRows.find(r=>r.done<r.expected);
       const completed=storeRows.reduce((n,r)=>n+r.done,0),expected=storeRows.reduce((n,r)=>n+r.expected,0);
       const pre=(d.prevalidated||[]).length;
-      hero.innerHTML=pre<5
-        ?`<div style="font-size:22px;font-weight:900;color:#fbbf24">PREVALIDACIÓN UPC · ${pre}/5</div><div style="font-size:15px;margin-top:8px">Escanea las cinco referencias antes de iniciar el surtido.</div>`
+      hero.innerHTML=pre<liverpoolUPCCount(d)
+        ?`<div style="font-size:22px;font-weight:900;color:#fbbf24">PREVALIDACIÓN UPC · ${pre}/${liverpoolUPCCount(d)}</div><div style="font-size:15px;margin-top:8px">Escanea todas las referencias de esta OC antes de iniciar el surtido.</div>`
         :current
           ?`<div style="font-size:18px;font-weight:900">TIENDA ${escapeHtml(current.store)} · HU ${escapeHtml(current.master)}</div><div style="font-size:15px;margin:8px 0">CAJA ${escapeHtml(current.boxType||'—')} · AVANCE ${completed}/${expected}</div><div style="display:flex;gap:12px;text-align:center"><div style="flex:1;border:1px solid #38bdf8;border-radius:12px;padding:12px"><div>SECUENCIA</div><div style="font-size:76px;font-weight:900;line-height:1.1">${escapeHtml(current.skuSeq)}</div></div><div style="flex:1;border:1px solid #38bdf8;border-radius:12px;padding:12px"><div>PIEZAS PENDIENTES</div><div style="font-size:76px;font-weight:900;line-height:1.1">${current.expected-current.done}</div><div>${current.done}/${current.expected} validadas</div></div></div><div style="font-size:13px;margin-top:10px">UPC de referencia: ${escapeHtml(current.upc)}</div>`
           :focus
@@ -2277,11 +2276,11 @@ function renderDistribution(){
     const huWrap=document.getElementById('dLiverpoolHUWrap');
     if(huWrap)huWrap.style.display=closeNeeded?'block':'none';
     const preDetails=document.getElementById('dLiverpoolPreDetails');
-    if(preDetails && (d.prevalidated||[]).length<5)preDetails.open=true;
+    if(preDetails && (d.prevalidated||[]).length<liverpoolUPCCount(d))preDetails.open=true;
     const dock=document.getElementById('dScanDock');
     if(dock)dock.style.display=closeNeeded?'none':'block';
-        document.getElementById('dLiverpoolInfo').textContent=`Prevalidación ${(d.prevalidated||[]).length}/5 UPC · ${d.boxClosures.length}/111 tiendas cerradas · ${t.done}/${t.expected} piezas · CAJA ${firstUnclosed?.boxType||next?.boxType||'—'} · ${closeNeeded?'CIERRE PENDIENTE '+firstUnclosed.store:next?'SIGUIENTE '+next.store+' · POS '+next.skuSeq+' · UPC '+next.upc:'PIEZAS COMPLETAS'}`;
-    dSummary.textContent=`OC ${d.oc} · LIVERPOOL · ${d.boxClosures.length}/111 tiendas cerradas`;
+        document.getElementById('dLiverpoolInfo').textContent=`Prevalidación ${(d.prevalidated||[]).length}/${liverpoolUPCCount(d)} UPC · ${d.boxClosures.length}/${liverpoolStoreCount(d)} tiendas cerradas · ${t.done}/${t.expected} piezas · CAJA ${firstUnclosed?.boxType||next?.boxType||'—'} · ${closeNeeded?'CIERRE PENDIENTE '+firstUnclosed.store:next?'SIGUIENTE '+next.store+' · POS '+next.skuSeq+' · UPC '+next.upc:'PIEZAS COMPLETAS'}`;
+    dSummary.textContent=`OC ${d.oc} · LIVERPOOL · ${d.boxClosures.length}/${liverpoolStoreCount(d)} tiendas cerradas`;
     dOk.textContent=t.done;dPending.textContent=t.pending;dIncidents.textContent=t.incidents;
     dRows.innerHTML=(d.rows||[]).filter(r=>r.done<r.expected).slice(0,10).map(r=>`<div class="row verify"><b>HU ${escapeHtml(r.master)} · TIENDA ${escapeHtml(r.store)}</b><span class="badge">${r.done}/${r.expected}</span><div class="meta">POS ${r.skuSeq} · UPC ${r.upc}</div></div>`).join('')||'<div class="note">Piezas completas. Verifica cierres HU.</div>';
     if(dOfficeNext)dOfficeNext.style.display='none';renderOfficeDepotGate();return;
