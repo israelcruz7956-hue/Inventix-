@@ -80,6 +80,15 @@ hr{border:0;border-top:1px solid #1E4DBC33;margin:12px 0}
 .office-gate .gate-actions .btn{margin-top:8px}
 
 
+/* v1.10.4: lenguaje operativo común; reglas de cliente intactas */
+.ix-unified-guide{border:2px solid #f5a623;border-radius:13px;padding:11px 13px;margin:10px 0;background:#4b3b0d;color:#fff3c4}
+.ix-unified-guide strong{display:block;font-size:18px;color:#fff2a5}
+.ix-unified-guide .ix-guide-detail{font-size:13px;line-height:1.45;margin-top:5px}
+.ix-liverpool-start{margin:10px 0;padding:12px;border:2px solid #f5a623;border-radius:12px;background:#30260e}
+.ix-liverpool-start select{width:100%;font-size:19px;font-weight:800}
+.ix-mazo-gate{display:none;margin:9px 0;padding:13px;border:2px solid #f5a623;border-radius:12px;background:#42330b}
+.ix-mazo-gate strong{font-size:19px;color:#fff1a3}
+.ix-recovery{padding:10px;border:1px solid #365476;border-radius:10px;margin:10px 0;background:#102746}
 /* Inventix 1.10 · estación de dictado Liverpool, visible sin reducir zoom */
 body.ix-liverpool-active header{position:relative}
 body.ix-liverpool-active main{padding-bottom:220px}
@@ -112,7 +121,7 @@ body.ix-liverpool-active #dWork #dRows{margin-top:0!important}
 
 <header>
   <div class="brand">INVENTI<span>X</span> CORE</div>
-  <div class="sub">v1.10.3 · CÁMARA UNIFICADA · LIVERPOOL + CAMBIO DE VALIDADOR + TRAZABILIDAD · secuencia visible + salto automático de tienda</div>
+  <div class="sub">v1.10.4 · INTERFAZ GUIADA · CÁMARA UNIFICADA · LIVERPOOL + CAMBIO DE VALIDADOR + TRAZABILIDAD · secuencia visible + salto automático de tienda</div>
   <div id="environmentBanner" style="margin-top:10px;padding:10px;border:2px solid #059669;border-radius:12px;font-weight:900" aria-live="polite">🛡️ OPERACIÓN REAL</div>
   <div style="display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap">
     <button type="button" id="switchEnvironment" style="padding:11px 14px;border:2px solid #f59e0b;border-radius:10px;background:#122a4b;color:white;font-weight:800;cursor:pointer">🧪 Entrar a ambiente de prueba</button>
@@ -311,6 +320,7 @@ body.ix-liverpool-active #dWork #dRows{margin-top:0!important}
     <label>OC / destino importado</label>
     <select id="dImportedGroup"><option value="">Sin archivo cargado</option></select>
     <div id="dImportStatus" class="note" style="margin-top:6px"></div>
+    <details id="dGlobalUPCPreview" style="display:none;margin-top:10px"><summary style="font-weight:850;cursor:pointer">🔎 PREVIO · cantidades globales por UPC</summary><div id="dGlobalUPCPreviewBody" class="note" style="padding:9px"></div></details>
 
     <div id="dOfficeMapPanel" style="display:none;margin-top:12px;padding:12px;border:1px solid #F5A62355;border-radius:12px;background:#0A1E38">
       <h2 style="margin-bottom:6px">Catálogo UPC · Office Depot</h2>
@@ -343,6 +353,11 @@ body.ix-liverpool-active #dWork #dRows{margin-top:0!important}
     <div id="dMasterPrepareWrap"><label>Etiqueta Master esperada</label><input id="dMasterExpected" placeholder="Master / código de etiqueta"></div>
     <label>Esperado de esta OC / Master</label>
     <textarea id="dExpected" rows="7" style="width:100%;background:#0A1E38;border:1.5px solid #1E4DBC55;border-radius:10px;color:white;padding:11px 12px;font-size:14px" placeholder="UPC,CANTIDAD,DESCRIPCION&#10;7500000000001,3,ARTICULO A&#10;7500000000002,2,ARTICULO B"></textarea>
+    <div id="dLiverpoolStartTypeWrap" class="ix-liverpool-start" style="display:none">
+      <label for="dLiverpoolStartType">🏷️ LIVERPOOL · ¿CON QUÉ MAZO DE ETIQUETAS COMIENZAS?</label>
+      <select id="dLiverpoolStartType"><option value="">Selecciona tipo de etiqueta</option><option value="C">C · etiquetas C</option><option value="G">G · etiquetas G</option></select>
+      <div id="dLiverpoolStartTypeInfo" class="note">La elección ordena las tiendas por tipo sin cambiar UPC, HU ni cantidades.</div>
+    </div>
     <button id="dStartBtn" class="btn primary">▶️ Iniciar validación</button>
   </div>
 
@@ -355,6 +370,7 @@ body.ix-liverpool-active #dWork #dRows{margin-top:0!important}
       <div><strong id="dIncidents">0</strong><small>INCIDENCIAS</small></div>
     </div>
     <div id="dLastStatus" class="dist-banner">LISTO PARA ESCANEAR</div>
+    <div id="dUnifiedGuide" class="ix-unified-guide" aria-live="polite"><strong id="dUnifiedGuideTitle">CIERRE DE CAJA</strong><div id="dUnifiedGuideDetail" class="ix-guide-detail">Verifica las piezas y etiqueta antes de liberar la caja.</div></div>
     <div id="dOfficeNext" class="note" style="display:none;margin:10px 0;padding:10px;border:1px solid #F5A62355;border-radius:10px;background:#0A1E38"></div>
     <div id="dLiverpoolPanel" class="card" style="display:none;background:#102746;border:1px solid #38bdf8">
       <h3>🔐 Liverpool · prevalidación y etiqueta HU</h3>
@@ -365,6 +381,11 @@ body.ix-liverpool-active #dWork #dRows{margin-top:0!important}
       <label>Escanear UPC de muestra para prevalidación (5 diferentes)</label><input id="dLiverpoolPreScan" placeholder="UPC de muestra">
       <button type="button" class="btn secondary ix-scan-launch" data-ix-target="dLiverpoolPreScan" data-ix-auto="false">📷 Cámara · prevalidar UPC</button>
       <button type="button" id="dLiverpoolPreBtn" class="btn secondary">✔️ Validar UPC de muestra</button></details>
+      <div id="dLiverpoolMazoGate" class="ix-mazo-gate" role="status" aria-live="assertive">
+        <strong id="dLiverpoolMazoTitle">CAMBIO DE MAZO</strong>
+        <div class="note" style="margin:7px 0">Se terminó el tipo anterior. Prepara físicamente el nuevo mazo antes de continuar.</div>
+        <button id="dLiverpoolMazoConfirm" type="button" class="btn primary">✅ Confirmar cambio de mazo</button>
+      </div>
       <div id="dLiverpoolHUWrap"><label>HU / RFID física de la tienda actual (para cierre)</label><input id="dLiverpoolHU" placeholder="C56217834">
       <button type="button" class="btn secondary ix-scan-launch" data-ix-target="dLiverpoolHU" data-ix-auto="false">📷 Cámara · etiqueta HU</button>
       <button type="button" id="dLiverpoolCloseBtn" class="btn primary">🔒 Validar HU y cerrar tienda</button></div>
@@ -396,6 +417,11 @@ body.ix-liverpool-active #dWork #dRows{margin-top:0!important}
 
   <div class="card">
     <h2>Historial de distribución</h2>
+    <div id="dLastExportRescue" class="ix-recovery" style="display:none">
+      <div id="dLastExportRescueInfo" class="note"></div>
+      <button type="button" id="dReexportLastBtn" class="btn secondary">📤 DESCARGAR OTRA VEZ · ÚLTIMA OC</button>
+      <div class="note">Disponible mientras el historial siga guardado en este navegador. No borres datos del sitio antes de respaldar el Excel.</div>
+    </div>
     <div id="dHistory"></div>
   </div>
 </section>
@@ -1849,6 +1875,85 @@ function renderOfficeDepotGate(){
   }
 }
 
+// v1.10.4 · PREVIO visual de cantidades, sin bloquear ni modificar el flujo de escaneo.
+function renderDistributionUPCPreview(){
+  const wrap=document.getElementById('dGlobalUPCPreview'),body=document.getElementById('dGlobalUPCPreviewBody');
+  if(!wrap||!body)return;
+  const group=distGroups().find(g=>g.key===dImportedGroup.value);
+  if(!group){wrap.style.display='none';body.textContent='';return;}
+  const counts=new Map(),missing=new Set();
+  for(const r of group.rows){
+    const code=idText(r.upc||r.code||(isOfficeDepotProfile(group.profile)?officeDepotMappedUPC(group.oc,r.skuSeq||r.sku):''));
+    if(!code){missing.add(idText(r.skuSeq||r.sku));continue;}
+    counts.set(code,(counts.get(code)||0)+Number(r.qty||0));
+  }
+  wrap.style.display='block';
+  body.innerHTML='<div>Compara estas cantidades contra el conteo físico ANTES de iniciar. No se descuentan existencias aquí.</div>'+
+    [...counts].sort((a,b)=>a[0].localeCompare(b[0])).map(([code,n])=>`<div style="padding:5px 0;border-bottom:1px solid #ffffff22"><b>${escapeHtml(code)}</b> · <b>${n} piezas</b></div>`).join('')+
+    (missing.size?`<div style="color:#ffce77;margin-top:8px">⚠️ UPC por mapear · SKU ${escapeHtml([...missing].join(', '))}</div>`:'');
+}
+// v1.10.4 · La clasificación C/G procede del importador Liverpool actual.
+function liverpoolTypes(rows){return [...new Set((rows||[]).map(r=>String(r.boxType||'').trim().toUpperCase()).filter(x=>x==='C'||x==='G'))];}
+function renderLiverpoolStartType(){
+  const wrap=document.getElementById('dLiverpoolStartTypeWrap'),select=document.getElementById('dLiverpoolStartType'),info=document.getElementById('dLiverpoolStartTypeInfo');
+  if(!wrap||!select)return;
+  const group=distGroups().find(g=>g.key===dImportedGroup.value&&isLiverpoolProfile(g.profile));
+  const types=liverpoolTypes(group?.rows),both=types.includes('C')&&types.includes('G');
+  wrap.style.display=group?'block':'none';
+  if(!group)return;
+  if(both){
+    select.disabled=false;
+    if(!types.includes(select.value))select.value='';
+    info.textContent='Esta OC contiene C y G. Elige el mazo físico antes de iniciar; Inventix agrupará las tiendas sin cambiar sus cantidades ni HU.';
+  }else{
+    select.value=types[0]||'';select.disabled=true;
+    info.textContent=types.length?`Esta OC solo tiene etiquetas ${types[0]}; se usará ese mazo.`:'No se identificaron tipos C/G en el archivo. Revisa el catálogo de cajas.';
+  }
+}
+function liverpoolMazoPendiente(d){
+  if(!isLiverpoolProfile(d?.profile))return null;
+  const next=liverpoolNext(d);if(!next)return null;
+  const target=String(next.boxType||'').toUpperCase();if(!['C','G'].includes(target))return null;
+  const firstIndex=d.rows.findIndex(r=>String(r.boxType||'').toUpperCase()===target);
+  if(firstIndex<1||d.rows[firstIndex]!==next)return null;
+  const prevRows=d.rows.slice(0,firstIndex);
+  const previous=String(prevRows[prevRows.length-1].boxType||'').toUpperCase();
+  if(previous===target||!prevRows.every(r=>r.done>=r.expected))return null;
+  const prevStores=[...new Set(prevRows.map(r=>r.store))];
+  if(!prevStores.every(store=>(d.boxClosures||[]).some(c=>c.store===store&&c.status==='OK')))return null;
+  if((d.events||[]).some(e=>e.type==='CAMBIO_MAZO'&&e.from===previous&&e.to===target))return null;
+  return {from:previous,to:target};
+}
+function confirmLiverpoolMazo(){
+  const employee=ensureDistValidator();if(!employee)return;
+  const d=state.activeDistribution,pending=liverpoolMazoPendiente(d);
+  if(!pending)return toast('No hay cambio de mazo pendiente',true);
+  d.events=d.events||[];
+  d.events.push({time:nowISO(),type:'CAMBIO_MAZO',from:pending.from,to:pending.to,detail:`Mazo ${pending.from} → ${pending.to} confirmado`,...employee});
+  save();renderDistribution();toast(`Mazo ${pending.to} confirmado · continúa con la siguiente tienda`);
+  setTimeout(()=>document.getElementById('dScanCode')?.focus(),100);
+}
+function renderUnifiedDistributionGuide(d){
+  const title=document.getElementById('dUnifiedGuideTitle'),detail=document.getElementById('dUnifiedGuideDetail');
+  if(!title||!detail||!d)return;
+  const last=(d.boxClosures||[]).at(-1);
+  if(isOfficeDepotProfile(d.profile)){
+    const gate=officeDepotGate(d);
+    if(gate?.type==='BOX'){title.textContent='🟨 CIERRE DE CAJA · TIENDA '+gate.store;detail.textContent='Recontar, etiquetar, verificar Master = tienda + cantidad y confirmar el cierre en el control de abajo.';}
+    else if(gate?.type==='BLOCK'){title.textContent='🟨 CIERRE DE BLOQUE / TARIMA '+gate.block;detail.textContent='Todas las cajas del bloque deben estar cerradas y acomodadas. Confirma el cambio de tarima para liberar el siguiente bloque.';}
+    else{title.textContent='🟨 CIERRE DE CAJA';detail.textContent=last?`Última caja confirmada: tienda ${last.store}. Continúa el dictado; al completar la siguiente tienda aparecerá el candado de cierre.`:'Dicta y valida por UPC. Al completar la tienda, verifica etiqueta y cantidad antes de confirmar CIERRE DE CAJA.';}
+  }else if(isOfficeMaxProfile(d.profile)){
+    title.textContent='🟨 CIERRE DE CAJA · AUTOMÁTICO';
+    detail.textContent=last?`TIENDA ${last.store} cerrada automáticamente por UPC y cantidad. El sistema avanzó a la siguiente tienda; verifica físicamente el etiquetado y segundo conteo.`:'El sistema cerrará la tienda al completar sus UPC y cantidades. La verificación física de etiqueta y segundo conteo sigue siendo obligatoria en piso.';
+  }else if(isLiverpoolProfile(d.profile)){
+    const change=liverpoolMazoPendiente(d);
+    const first=(d.rows||[]).find(r=>!(d.boxClosures||[]).some(c=>c.store===r.store));
+    const completed=first&&(d.rows||[]).filter(r=>r.store===first.store).every(r=>r.done>=r.expected);
+    if(change){title.textContent='🟨 CAMBIO DE MAZO '+change.from+' → '+change.to;detail.textContent='Detén el dictado. Prepara las etiquetas '+change.to+' y confirma el cambio para liberar la siguiente tienda.';}
+    else if(completed){title.textContent='🟨 CIERRE DE CAJA · '+first.boxType;detail.textContent='TIENDA '+first.store+' completa. Recontar, colocar etiqueta y escanear la HU correcta para cerrar.';}
+    else{title.textContent='🟨 CIERRE DE CAJA · '+(first?.boxType||'—');detail.textContent='Mazo '+(first?.boxType||'—')+' · Dicta y valida UPC. Al completar las piezas, verifica HU y cierra la tienda.';}
+  }else{title.textContent='🟨 CIERRE DE CAJA / MASTER';detail.textContent='Valida cantidades y confirma la etiqueta Master según el perfil activo.';}
+}
 function fillDistributionGroup(key){
   const g=distGroups().find(x=>x.key===key); if(!g)return;
   dOC.value=g.oc;
@@ -1873,7 +1978,7 @@ function fillDistributionGroup(key){
     const agg=aggregateDistExpected(g.rows);dExpected.value=agg.map(r=>`${r.code},${r.expected},${r.desc||''}`).join('\n');
     dImportStatus.textContent=`${state.distributionImport.sourceName||'Archivo'} · ${g.oc||'SIN OC'} · ${g.store||'SIN DESTINO'} · ${g.pieces} piezas${g.master?' · Master '+g.master:''}`;
   }
-  updateDistributionProfileUI();
+  updateDistributionProfileUI();renderDistributionUPCPreview();renderLiverpoolStartType();
 }
 function updateDistributionProfileUI(){
   const profile=distributionProfile();
@@ -1913,7 +2018,7 @@ function restoreDistributionUI(){
     }else dImportStatus.textContent=`${state.distributionImport.sourceName||'Archivo'}: ${distRows().length} renglones · ${groups.length} OC/Master · ${distRows().reduce((a,r)=>a+Number(r.qty||0),0)} piezas`;
   }
   if(dProfile){dProfile.value=state.distributionImport?.profile||'AUTO';}
-  updateDistributionProfileUI();renderOfficeDepotMapPanel();renderDistribution();renderDistributionHistory();
+  updateDistributionProfileUI();renderOfficeDepotMapPanel();renderDistributionUPCPreview();renderLiverpoolStartType();renderDistribution();renderDistributionHistory();
 }
 async function importDistributionFile(file){
   const data=await readDistributionDataFile(file);
@@ -2017,8 +2122,13 @@ function startDistribution(){
   if(isLiverpoolProfile(profile)){
     const selected=distGroups().find(g=>g.key===dImportedGroup.value&&isLiverpoolProfile(g.profile));
     if(!selected)return toast('Selecciona la OC Liverpool importada',true);
+    const types=liverpoolTypes(selected.rows),both=types.includes('C')&&types.includes('G');
+    const requested=String(document.getElementById('dLiverpoolStartType')?.value||'').toUpperCase();
+    if(both&&!types.includes(requested))return toast('Liverpool: selecciona primero el mazo C o G',true);
+    const startType=both?requested:(types[0]||'');
     const rows=selected.rows.map(r=>({...r,expected:Number(r.qty),done:0,excess:0}));
-    state.activeDistribution={...employee,currentValidator:{...employee},id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),profile:'LIVERPOOL',oc:selected.oc,store:'POR TIENDAS',rows,scans:[],events:[{time:nowISO(),type:'INICIO',...employee}],boxClosures:[],prevalidated:[],startedAt:nowISO(),status:'ABIERTA'};
+    if(both)rows.sort((a,b)=>((a.boxType===startType)?0:1)-((b.boxType===startType)?0:1));
+    state.activeDistribution={...employee,currentValidator:{...employee},id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),profile:'LIVERPOOL',oc:selected.oc,store:'POR TIENDAS',rows,scans:[],events:[{time:nowISO(),type:'INICIO',...employee},{time:nowISO(),type:'MAZO_INICIAL',to:startType,detail:'Mazo inicial '+startType,...employee}],boxClosures:[],prevalidated:[],labelStartType:startType,startedAt:nowISO(),status:'ABIERTA'};
     save();renderDistribution();toast(`Liverpool iniciado · primero prevalidar ${liverpoolUPCCount(state.activeDistribution)} UPC`);return;
   }
   if(isOfficeDepotProfile(profile)){
@@ -2147,6 +2257,7 @@ function scanLiverpool(input){
  const employee=ensureDistValidator();if(!employee)return;
  const d=state.activeDistribution,code=idText(input);
  if((d.prevalidated||[]).length!==liverpoolUPCCount(d))return toast('Primero prevalida todos los UPC diferentes de esta OC',true);
+ if(liverpoolMazoPendiente(d))return toast('CAMBIO DE MAZO PENDIENTE: confirma el mazo de etiquetas antes de continuar',true);
  if(!code)return toast('Escanea UPC de producto',true);
  const next=liverpoolNext(d);
  if(!next)return toast('Todas las piezas están completas; falta verificar cierres',true);
@@ -2268,7 +2379,7 @@ function closeDistribution(){
 }
 function renderDistribution(){
   const d=state.activeDistribution;updateDistributionProfileUI();if(!d){document.body.classList.remove('ix-liverpool-active');dWork.style.display='none';document.getElementById('dLiverpoolPanel').style.display='none';return;}
-  dWork.style.display='block';const t=distTotals(d);
+  dWork.style.display='block';const t=distTotals(d);renderUnifiedDistributionGuide(d);
   const vs=document.getElementById('dValidatorStatus');if(vs)vs.textContent=`Asignado: ${sessionValidator(d).user} (#${sessionValidator(d).employeeNo}) · ${d.pausedAt?'PAUSADA':'ACTIVA'} · relevos ${(d.events||[]).filter(x=>x.type==='CAMBIO_VALIDADOR').length}`;
   if(isLiverpoolProfile(d.profile)){
     const panel=document.getElementById('dLiverpoolPanel');panel.style.display='block';
@@ -2289,12 +2400,14 @@ function renderDistribution(){
             :'<div style="font-size:24px;font-weight:900">TODAS LAS TIENDAS CERRADAS</div>';
     }
     document.body.classList.add('ix-liverpool-active');
+    const mazo=liverpoolMazoPendiente(d),mazoGate=document.getElementById('dLiverpoolMazoGate');
+    if(mazoGate){mazoGate.style.display=mazo?'block':'none';if(mazo)document.getElementById('dLiverpoolMazoTitle').textContent=`🟨 CAMBIA EL MAZO ${mazo.from} POR ${mazo.to}`;}
     const huWrap=document.getElementById('dLiverpoolHUWrap');
     if(huWrap)huWrap.style.display=closeNeeded?'block':'none';
     const preDetails=document.getElementById('dLiverpoolPreDetails');
     if(preDetails && (d.prevalidated||[]).length<liverpoolUPCCount(d))preDetails.open=true;
     const dock=document.getElementById('dScanDock');
-    if(dock)dock.style.display=closeNeeded?'none':'block';
+    if(dock)dock.style.display=(closeNeeded||mazo)?'none':'block';
         document.getElementById('dLiverpoolInfo').textContent=`Prevalidación ${(d.prevalidated||[]).length}/${liverpoolUPCCount(d)} UPC · ${d.boxClosures.length}/${liverpoolStoreCount(d)} tiendas cerradas · ${t.done}/${t.expected} piezas · CAJA ${firstUnclosed?.boxType||next?.boxType||'—'} · ${closeNeeded?'CIERRE PENDIENTE '+firstUnclosed.store:next?'SIGUIENTE '+next.store+' · POS '+next.skuSeq+' · UPC '+next.upc:'PIEZAS COMPLETAS'}`;
     dSummary.textContent=`OC ${d.oc} · LIVERPOOL · ${d.boxClosures.length}/${liverpoolStoreCount(d)} tiendas cerradas`;
     dOk.textContent=t.done;dPending.textContent=t.pending;dIncidents.textContent=t.incidents;
@@ -2370,8 +2483,15 @@ function renderDistribution(){
 }
 function renderDistributionHistory(){
   if(!dHistory)return;const arr=state.distributions||[];
+  const rescue=document.getElementById('dLastExportRescue'),info=document.getElementById('dLastExportRescueInfo');
+  if(rescue)rescue.style.display=arr.length?'block':'none';
+  if(info&&arr.length)info.textContent=`Último cierre guardado en este navegador: ${arr[0].profile||'DISTRIBUTION'} · OC ${arr[0].oc||'SIN OC'} · ${arr[0].totalPieces||0} piezas. Puedes reexportar sin repetir el surtido.`;
   dHistory.innerHTML=arr.length?arr.slice(0,40).map(d=>`<div class="row ok"><b>${escapeHtml(d.oc)} · ${isOfficeDepotProfile(d.profile)?'OFFICE DEPOT':isOfficeMaxProfile(d.profile)?'OFFICE MAX':escapeHtml(d.store)}</b> <span class="badge">${d.totalPieces||0} pzas</span><div class="meta">${isOfficeDepotProfile(d.profile)?'Bloques / tienda visual + UPC · sin Master':isOfficeMaxProfile(d.profile)?'SKU secuencia + UPC + salto automático de tienda':'Master: '+escapeHtml(d.masterScanned||d.masterExpected||'SIN MASTER')} · Incidencias: ${d.incidents||0}<br>${fmtDate(d.closedAt)}<br><button type="button" class="btn ghost ix-reexport" data-dist-id="${escapeHtml(d.id||'')}">📤 Reexportar esta OC</button></div></div>`).join(''):'<div class="note">Sin distribuciones cerradas.</div>';
 }
+document.getElementById('dReexportLastBtn')?.addEventListener('click',()=>{
+  const last=(state.distributions||[])[0];if(!last)return toast('No hay cierre guardado para reexportar',true);
+  exportDistributionExcel(last);
+});
 document.getElementById('dHistory')?.addEventListener('click',e=>{
   const btn=e.target.closest('.ix-reexport');if(!btn)return;
   const d=(state.distributions||[]).find(x=>String(x.id)===btn.dataset.distId);
@@ -2499,13 +2619,14 @@ document.getElementById('dLiverpoolPreBtn').addEventListener('click',prevalidate
 document.getElementById('dLiverpoolPreDetails').addEventListener('toggle',function(){this.dataset.manuallyOpened=this.open?'1':'';});
 document.getElementById('dLiverpoolPreScan').addEventListener('keydown',e=>{if(e.key==='Enter')prevalidateLiverpool()});
 document.getElementById('dLiverpoolCloseBtn').addEventListener('click',closeLiverpoolStore);
-dProfile.addEventListener('change',()=>{updateDistributionProfileUI();renderDistribution();});
+document.getElementById('dLiverpoolMazoConfirm').addEventListener('click',confirmLiverpoolMazo);
+dProfile.addEventListener('change',()=>{updateDistributionProfileUI();renderDistributionUPCPreview();renderLiverpoolStartType();renderDistribution();});
 if(document.getElementById('odSaveMapBtn'))document.getElementById('odSaveMapBtn').addEventListener('click',saveOfficeDepotMap);
 if(document.getElementById('dOfficeGateConfirm'))document.getElementById('dOfficeGateConfirm').addEventListener('click',confirmOfficeDepotGate);
 if(document.getElementById('dOfficeGateVariant'))document.getElementById('dOfficeGateVariant').addEventListener('click',registerOfficeDepotVariant);
 dImportBtn.addEventListener('click',()=>dImportFile.click());
 dImportFile.addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{await importDistributionFile(f);}catch(err){console.error(err);toast(err.message||'No se pudo importar Distribution',true);}e.target.value='';});
-dImportedGroup.addEventListener('change',()=>fillDistributionGroup(dImportedGroup.value));
+dImportedGroup.addEventListener('change',()=>{document.getElementById('dLiverpoolStartType').value='';fillDistributionGroup(dImportedGroup.value);});
 dStartBtn.addEventListener('click',startDistribution);
 dScanBtn.addEventListener('click',()=>scanDistribution(dScanCode.value));
 dScanCode.addEventListener('keydown',e=>{if(e.key==='Enter')scanDistribution(dScanCode.value)});
