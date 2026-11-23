@@ -8,7 +8,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <link rel="manifest" href="manifest.json">
-<title>INVENTIX Core v1.10.9 · Secuencia oficial sin sustitución SKU</title>
+<title>INVENTIX Core v1.10.10 · Secuencia oficial sin sustitución SKU</title>
 <style>
 :root{
   --navy:#0F2747;--navy2:#08192f;--blue:#1E4DBC;--orange:#F5A623;
@@ -511,6 +511,8 @@ body.ix-office-unified #dOfficeNext{padding:0!important;background:transparent!i
     </div>
     <button id="dCloseBtn" class="btn primary">🔒 Cerrar y validar Master</button>
     <button id="dResetTestBtn" class="btn ghost" style="margin-top:10px;border:1px solid #f59e0b">🧹 Reiniciar prueba de esta distribución</button>
+    <button id="dDiscardTestBtn" type="button" class="btn danger" style="margin-top:8px;display:none">🧼 DESCARTAR SESIÓN DE PRUEBA Y REIMPORTAR EXCEL</button>
+    <p id="dDiscardTestHelp" class="note" style="display:none;margin:7px 0">Descarta únicamente la distribución de prueba activa y su archivo cargado; NO borra empleados, inventario, Kardex ni historial de distribuciones cerradas. Se perderán los avances NO cerrados de esta prueba.</p>
     <div class="note">Disponible únicamente en PRUEBA. Reinicia el evento activo sin borrar el Excel importado ni afectar operación real.</div>
   </div>
 
@@ -619,6 +621,9 @@ function renderEnvironmentMode(){
   btn.textContent=TEST_MODE?'🛡️ Volver a operación real':'🧪 Entrar a ambiente de prueba';
   const reset=document.getElementById('dResetTestBtn');
   if(reset)reset.style.display=TEST_MODE?'':'none';
+  const discard=document.getElementById('dDiscardTestBtn'),help=document.getElementById('dDiscardTestHelp');
+  if(discard)discard.style.display=TEST_MODE?'':'none';
+  if(help)help.style.display=TEST_MODE?'':'none';
 }
 document.getElementById('switchEnvironment').addEventListener('click',()=>{
   const next=TEST_MODE?'REAL':'TEST';
@@ -3212,6 +3217,36 @@ function resetDistributionTest(){
   toast('Prueba reiniciada: lista para escanear desde la primera partida');
 }
 document.getElementById('dResetTestBtn').addEventListener('click',resetDistributionTest);
+
+// Limpieza quirúrgica solo en SANDBOX: la sesión activa antigua almacena el SKU en
+// lugar de SECUENCIA. Un "reinicio" de cantidades no repara esa estructura.
+function discardDistributionTestForReimport(){
+  if(!TEST_MODE)return toast('Solo disponible en ambiente de prueba',true);
+  const active=state.activeDistribution,imported=state.distributionImport;
+  if(!active&&!(imported?.rows||[]).length)return toast('No hay distribución de prueba para descartar',true);
+  const oc=idText(active?.oc||'');
+  const source=String(imported?.sourceName||'sin archivo');
+  const pieces=(active?.scans||[]).filter(e=>e.result==='CORRECTO').length;
+  if(!confirm('DESCARTAR SOLO PRUEBA\n\nOC: '+(oc||'SIN OC')+'\nArchivo cargado: '+source+'\nEscaneos correctos en la sesión: '+pieces+'\n\nSe perderán los avances de la SESIÓN ACTIVA de PRUEBA y el archivo de Distribution importado.\nSe CONSERVAN empleados, inventario, Kardex e historial cerrado.\n\n¿Continuar?'))return;
+  const check=prompt('Escribe NUEVA PRUEBA para confirmar:');
+  if(check!=='NUEVA PRUEBA')return toast('Descarte cancelado; los datos siguen intactos');
+  state.activeDistribution=null;
+  state.distributionImport={rows:[],sourceName:'',loadedAt:null,profile:'GENERIC',sheetName:''};
+  // El hash antiguo ya no puede bloquear la reimportación del mismo archivo.
+  state.importedFiles=(state.importedFiles||[]).filter(x=>x.kind!=='DISTRIBUTION');
+  if(typeof dScanCode!=='undefined')dScanCode.value='';
+  if(typeof dOC!=='undefined')dOC.value='';
+  if(typeof dStore!=='undefined')dStore.value='';
+  if(typeof dExpected!=='undefined')dExpected.value='';
+  if(typeof dMasterExpected!=='undefined')dMasterExpected.value='';
+  save();restoreDistributionUI();
+  const info=document.getElementById('dImportStatus');
+  if(info)info.textContent='✅ Prueba anterior descartada. Carga el Excel original que contenga columnas SKU, SECUENCIA y HU.';
+  toast('Prueba descartada. Importa el Excel original con SECUENCIA y HU');
+  document.getElementById('dImportBtn')?.focus();
+}
+document.getElementById('dDiscardTestBtn')?.addEventListener('click',discardDistributionTestForReimport);
+
 
 dExportBtn.addEventListener('click',()=>exportDistributionExcel());
 dTemplateBtn.addEventListener('click',async()=>{
