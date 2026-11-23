@@ -113,6 +113,29 @@ body.ix-liverpool-active #dLiverpoolInfo{font-size:12px}
 body.ix-liverpool-active #dLiverpoolHero{margin:4px 0!important;padding:8px!important}
 body.ix-liverpool-active #dScanDock{bottom:63px}
 body.ix-liverpool-active #dWork #dRows{margin-top:0!important}
+
+/* INVENTIX · máscara unificada de prueba: Office Depot / OfficeMax (SOLO VISTA) */
+body.ix-office-unified main{padding-bottom:195px}
+body.ix-office-unified #dScanDock{position:fixed;bottom:63px;left:50%;transform:translateX(-50%);width:min(520px,100%);z-index:35;background:#071a32;border:2px solid #38bdf8;border-radius:14px 14px 0 0;padding:9px 12px;box-shadow:0 -7px 30px #0009}
+body.ix-office-unified #dScanCode{font-size:19px;padding:11px}
+body.ix-office-unified #dScanDock label{font-size:12px;color:#fff;margin:0 0 4px}
+body.ix-office-unified #dOfficeNext{padding:0!important;background:transparent!important;border:0!important;font-size:13px!important}
+.ix-unified-hero{background:#071a32;border:2px solid #38bdf8;border-radius:14px;padding:12px;margin:7px 0;color:#fff}
+.ix-unified-hero .ix-unified-head{font-size:13px;color:#9fc3ff;font-weight:800;overflow-wrap:anywhere}
+.ix-unified-hero .ix-unified-store{font-size:clamp(23px,7vw,37px);font-weight:900;line-height:1.25;margin:9px 0;overflow-wrap:anywhere}
+.ix-unified-hero .ix-unified-numbers{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
+.ix-unified-hero .ix-unified-num{border:1px solid #38bdf8;border-radius:12px;text-align:center;padding:9px 5px;min-width:0}
+.ix-unified-hero .ix-unified-num small{display:block;font-size:11px;font-weight:800;color:#bcd8ee}
+.ix-unified-hero .ix-unified-num strong{display:block;font-size:clamp(35px,11vw,62px);font-weight:900;line-height:1.12;white-space:nowrap;font-variant-numeric:tabular-nums}.ix-unified-hero .ix-unified-num strong.ix-quantity{font-size:clamp(34px,12vw,62px)}
+.ix-unified-hero .ix-unified-upc{font-size:14px;overflow-wrap:anywhere;margin:9px 0;color:#d6e7fc}
+.ix-unified-hero .ix-unified-alert{padding:10px;background:#5b3010;border-radius:9px;font-weight:900;color:#ffdf9a}
+.ix-unified-hero .ix-unified-done{padding:10px;background:#123f2a;border-radius:9px;font-weight:900;color:#8fe0ad}
+.ix-unified-extra{border:1px solid #365476;border-radius:10px;padding:10px;margin:8px 0;background:#10243d}
+.ix-unified-extra summary{font-weight:850;cursor:pointer}
+.ix-unified-extra-content{font-size:12px;color:#d0dfef;line-height:1.6;margin-top:8px}
+.ix-office-pre{display:none;border:2px solid #f59e0b;border-radius:13px;background:#30260e;padding:12px;margin:9px 0}.ix-office-pre strong{display:block;font-size:20px;color:#ffe58a}.ix-office-pre .btn{margin-top:7px}.ix-office-pre .note{color:#ffe9bb}.ix-office-pre-result{margin-top:8px;font-size:13px;font-weight:800;min-height:18px}.ix-office-pre-result.bad{color:#ffaaaa}.ix-office-pre-result.ok{color:#8fe0ad}
+.ix-pre-list{display:grid;gap:7px;margin-top:12px}.ix-pre-row{background:#10243d;border:1px solid #365476;border-radius:9px;padding:9px;overflow-wrap:anywhere}.ix-pre-row.ok{border-color:#1A9A54;background:#123f2a}.ix-pre-row.warn{border-color:#f59e0b;background:#503817}.ix-pre-row strong{display:block;font-size:13px}.ix-pre-row small{display:block;color:#bbd4eb;margin-top:4px}.ix-pre-error{background:#602020;color:#fff2cb;border:2px solid #ff7b7b;padding:11px;border-radius:10px;margin:10px 0;font-weight:800}.ix-pre-alert{background:#604212;border:2px solid #f59e0b;padding:10px;border-radius:10px;color:#ffedae;margin-top:8px}.ix-pre-pair{display:grid;grid-template-columns:1fr 1fr;gap:8px} @media(max-width:400px){.ix-pre-pair{grid-template-columns:1fr}}.ix-pre-pair input{font-size:17px}.ix-pre-pair label{font-size:11px}
+@media(max-width:380px){body.ix-office-unified .ix-dock-buttons .btn{font-size:11px}}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
@@ -121,7 +144,7 @@ body.ix-liverpool-active #dWork #dRows{margin-top:0!important}
 
 <header>
   <div class="brand">INVENTI<span>X</span> CORE</div>
-  <div class="sub">v1.10.4 · INTERFAZ GUIADA · CÁMARA UNIFICADA · LIVERPOOL + CAMBIO DE VALIDADOR + TRAZABILIDAD · secuencia visible + salto automático de tienda</div>
+  <div class="sub">v1.10.6 · PREVALIDACIÓN VISIBLE EN PREVIO · INTERFAZ GUIADA · CÁMARA UNIFICADA · LIVERPOOL + CAMBIO DE VALIDADOR + TRAZABILIDAD · secuencia visible + salto automático de tienda</div>
   <div id="environmentBanner" style="margin-top:10px;padding:10px;border:2px solid #059669;border-radius:12px;font-weight:900" aria-live="polite">🛡️ OPERACIÓN REAL</div>
   <div style="display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap">
     <button type="button" id="switchEnvironment" style="padding:11px 14px;border:2px solid #f59e0b;border-radius:10px;background:#122a4b;color:white;font-weight:800;cursor:pointer">🧪 Entrar a ambiente de prueba</button>
@@ -363,7 +386,18 @@ body.ix-liverpool-active #dWork #dRows{margin-top:0!important}
     <label>OC / destino importado</label>
     <select id="dImportedGroup"><option value="">Sin archivo cargado</option></select>
     <div id="dImportStatus" class="note" style="margin-top:6px"></div>
-    <details id="dGlobalUPCPreview" style="display:none;margin-top:10px"><summary style="font-weight:850;cursor:pointer">🔎 PREVIO · cantidades globales por UPC</summary><div id="dGlobalUPCPreviewBody" class="note" style="padding:9px"></div></details>
+    <details id="dGlobalUPCPreview" style="display:none;margin-top:10px" open><summary style="font-weight:850;cursor:pointer">🔐 PREVALIDACIÓN · escanear UPC y contar físicamente</summary><div id="dGlobalUPCPreviewBody" class="note" style="padding:9px"></div>    <div id="dOfficePre" class="ix-office-pre" aria-live="polite">
+      <strong id="dOfficePreTitle">🔐 PREVALIDACIÓN UPC</strong>
+      <div class="note">Escanea cada referencia y cuenta físicamente las piezas disponibles de la OC. Captura la cantidad manualmente. Este conteo NO descuenta inventario ni completa piezas de la distribución.</div>
+      <div class="ix-pre-pair"><div><label>UPC a prevalidar</label><input id="dOfficePreScan" placeholder="Escanea UPC" autocomplete="off" inputmode="numeric"></div><div><label>Cantidad física contada</label><input id="dOfficePreQty" type="number" min="0" step="1" inputmode="numeric" placeholder="Cantidad"></div></div>
+      <button type="button" class="btn secondary ix-scan-launch" data-ix-target="dOfficePreScan" data-ix-auto="false">📷 Cámara · leer UPC</button>
+      <button type="button" id="dOfficePreBtn" class="btn primary">✅ Validar código y cantidad</button>
+      <div id="dOfficePreFeedback" class="ix-office-pre-result" role="status" aria-live="assertive"></div>
+      <div id="dOfficePreAlert" style="display:none" class="ix-pre-alert" role="alert"></div>
+      <button id="dOfficePreAcknowledge" type="button" class="btn ghost" style="display:none;border-color:#f59e0b;color:#ffdfa0">⚠️ Documentar diferencia y continuar</button>
+      <div id="dOfficePreList" class="ix-pre-list"></div>
+    </div>
+    </details>
 
     <div id="dOfficeMapPanel" style="display:none;margin-top:12px;padding:12px;border:1px solid #F5A62355;border-radius:12px;background:#0A1E38">
       <h2 style="margin-bottom:6px">Catálogo UPC · Office Depot</h2>
@@ -2045,9 +2079,26 @@ function renderDistributionUPCPreview(){
     counts.set(code,(counts.get(code)||0)+Number(r.qty||0));
   }
   wrap.style.display='block';
-  body.innerHTML='<div>Compara estas cantidades contra el conteo físico ANTES de iniciar. No se descuentan existencias aquí.</div>'+
-    [...counts].sort((a,b)=>a[0].localeCompare(b[0])).map(([code,n])=>`<div style="padding:5px 0;border-bottom:1px solid #ffffff22"><b>${escapeHtml(code)}</b> · <b>${n} piezas</b></div>`).join('')+
-    (missing.size?`<div style="color:#ffce77;margin-top:8px">⚠️ UPC por mapear · SKU ${escapeHtml([...missing].join(', '))}</div>`:'');
+  const office=isOfficeMaxProfile(group.profile)||isOfficeDepotProfile(group.profile);
+  const prebox=document.getElementById('dOfficePre');
+  if(prebox)prebox.style.display=office?'block':'none';
+  if(office){
+    wrap.open=true;
+    const active=state.activeDistribution;
+    const same=active&&(isOfficeMaxProfile(active.profile)||isOfficeDepotProfile(active.profile))&&idText(active.oc)===idText(group.oc);
+    const records=same?(active.officePreCounts||{}):{};
+    const ok=Object.values(records).filter(x=>x.status==='OK'||x.status==='DIFERENCIA_DOCUMENTADA').length;
+    body.innerHTML=`<div style="font-size:13px;color:#fff0c0;margin:5px 0 8px"><b>${escapeHtml(group.oc)} · ${ok}/${counts.size} UPC revisados.</b> Escanea una referencia y registra la cantidad física. Si coincide aparecerá ✅; si difiere se mostrará ⚠️ con la cantidad prevista. <b>Esto no descuenta inventario.</b></div>`+
+      (missing.size?`<div style="color:#ffce77;margin-top:8px">⚠️ UPC por mapear · SKU ${escapeHtml([...missing].join(', '))}</div>`:'');
+    if(!same){
+      const el=document.getElementById('dOfficePreList');
+      if(el)el.innerHTML=[...counts].sort((a,b)=>a[0].localeCompare(b[0])).map(([code,n])=>`<div class="ix-pre-row"><strong>⬜ UPC ${escapeHtml(code)}</strong><small>Prevista: <b>${n}</b> piezas · PENDIENTE DE ESCANEO</small></div>`).join('');
+    }else renderOfficePreChecklist(active);
+    document.getElementById('dOfficePreTitle').textContent=`🔐 ESCANEO Y CONTEO · ${ok}/${counts.size}`;
+    return;
+  }
+  body.innerHTML='<div>📋 Cantidades previstas por UPC. La prevalidación física se aplica a los perfiles OfficeMax y Office Depot.</div>'+
+    [...counts].sort((a,b)=>a[0].localeCompare(b[0])).map(([code,n])=>`<div style="padding:5px 0;border-bottom:1px solid #ffffff22"><b>${escapeHtml(code)}</b> · <b>${n} piezas</b></div>`).join('');
 }
 // v1.10.4 · La clasificación C/G procede del importador Liverpool actual.
 function liverpoolTypes(rows){return [...new Set((rows||[]).map(r=>String(r.boxType||'').trim().toUpperCase()).filter(x=>x==='C'||x==='G'))];}
@@ -2462,6 +2513,7 @@ function scanDistribution(input){
   const employee=ensureDistValidator();if(!employee)return;
   const d=state.activeDistribution;if(!d)return toast('Primero inicia una distribución',true);
   if(isLiverpoolProfile(d.profile))return scanLiverpool(input);
+  if((isOfficeDepotProfile(d.profile)||isOfficeMaxProfile(d.profile))&&!officePrevalidated(d))return toast('PREVALIDACIÓN PENDIENTE: confirma todos los UPC antes de surtir',true);
   if(isOfficeDepotProfile(d.profile))return confirmOfficeDepotUPC(input);
   if(isOfficeMaxProfile(d.profile))return confirmOfficeMaxUPC(input);
   const code=idText(input);if(!code)return toast('Escanea o captura UPC/SKU',true);
@@ -2534,8 +2586,126 @@ function closeDistribution(){
   state.distributions=state.distributions||[];state.distributions.unshift(JSON.parse(JSON.stringify(d)));state.activeDistribution=null;
   dMasterScan.value='';dScanCode.value='';save();renderDistribution();renderDistributionHistory();setDistBanner('CORRECTO','MASTER VALIDADA · DISTRIBUCIÓN COMPLETA');autoExportClosedDistribution(d);toast('Etiqueta Master cerrada y validada');
 }
+
+// Prevalidación física y documental. La discrepancia NO se convierte en un conteo OK.
+function officeDistinctUPCs(d){return [...new Set((d?.rows||[]).map(r=>idText(r.upc||r.code)).filter(Boolean))];}
+function officePreCounts(d){
+ const map=new Map();
+ for(const r of d?.rows||[]){const code=idText(r.upc||r.code);if(code)map.set(code,(map.get(code)||0)+Number(r.expected??r.qty??0));}
+ return map;
+}
+function officePreRecord(d,code){return d.officePreCounts?.[code]||null;}
+function officePrevalidated(d){
+ const codes=officeDistinctUPCs(d);
+ return codes.length>0&&codes.every(code=>{const r=officePreRecord(d,code);return r&&(r.status==='OK'||r.status==='DIFERENCIA_DOCUMENTADA');});
+}
+function renderOfficePreChecklist(d){
+ const el=document.getElementById('dOfficePreList');if(!el||!d)return;
+ const counts=officePreCounts(d);
+ el.innerHTML=[...counts].sort((a,b)=>a[0].localeCompare(b[0])).map(([code,expected])=>{
+   const rec=officePreRecord(d,code),done=!!rec;
+   const status=rec?.status==='OK'?'✅':rec?.status==='DIFERENCIA_DOCUMENTADA'?'⚠️':'⬜';
+   const css=rec?.status==='OK'?'ok':rec?.status==='DIFERENCIA_DOCUMENTADA'?'warn':'';
+   return `<div class="ix-pre-row ${css}"><strong>${status} UPC ${escapeHtml(code)}</strong><small>Prevista: <b>${expected}</b> pzas${done?` · Física: <b>${rec.physical}</b> · Diferencia: <b>${rec.difference>0?'+':''}${rec.difference}</b>`:' · PENDIENTE DE ESCANEO Y CONTEO'}</small></div>`;
+ }).join('');
+}
+function prevalidateOfficeUPC(){
+ // El primer escaneo activa automáticamente la sesión de la OC seleccionada.
+ // Solo usa startDistribution existente: no modifica reglas del perfil.
+ if(!state.activeDistribution){
+   const group=distGroups().find(g=>g.key===dImportedGroup.value);
+   if(!group||!(isOfficeDepotProfile(group.profile)||isOfficeMaxProfile(group.profile)))return toast('Primero selecciona una OC OfficeMax u Office Depot',true);
+   if(!requireDistEmployee())return;
+   startDistribution();
+ }
+ const employee=ensureDistValidator();if(!employee)return;
+ const d=state.activeDistribution;
+ if(!d||!(isOfficeDepotProfile(d.profile)||isOfficeMaxProfile(d.profile)))return toast('La OC no pudo iniciarse. Revisa el archivo y el validador.',true);
+ const code=idText(document.getElementById('dOfficePreScan').value),raw=document.getElementById('dOfficePreQty').value.trim();
+ const counts=officePreCounts(d),status=document.getElementById('dOfficePreFeedback'),alert=document.getElementById('dOfficePreAlert'),ack=document.getElementById('dOfficePreAcknowledge');
+ if(!code)return toast('Primero escanea el UPC de la referencia',true);
+ if(!counts.has(code)){
+   d.events=d.events||[];d.events.push({time:nowISO(),type:'PREVALIDACION_UPC',code,result:'UPC NO SOLICITADO',...employee});save();
+   if(status){status.className='ix-office-pre-result bad';status.textContent='✕ UPC NO SOLICITADO · '+code;}
+   toast('UPC no solicitado en esta OC',true);return;
+ }
+ if(raw===''||!/^(0|[1-9]\d*)$/.test(raw))return toast('Captura la cantidad física: número entero de 0 en adelante',true);
+ const physical=Number(raw),expected=counts.get(code),difference=physical-expected;
+ if(officePreRecord(d,code))return toast('Este UPC ya fue documentado. No se duplica la prevalidación.',true);
+ if(alert)alert.style.display='none';if(ack)ack.style.display='none';
+ d.events=d.events||[];
+ if(difference!==0){
+   d.officePrePending={code,physical,expected,difference};
+   if(status){status.className='ix-office-pre-result bad';status.textContent=`⚠️ CANTIDAD DIFERENTE · UPC ${code}`;}
+   if(alert){alert.style.display='block';alert.textContent=`CANTIDAD PREVISTA: ${expected} PIEZAS · CONTADAS: ${physical} · DIFERENCIA: ${difference>0?'+':''}${difference}. Verifica el material. Si la diferencia es real, documenta la desviación; no se marcará como OK.`;}
+   if(ack)ack.style.display='block';
+   d.events.push({time:nowISO(),type:'PREVALIDACION_DIFERENCIA_DETECTADA',code,expected,physical,difference,...employee});
+   save();toast(`⚠️ PREVISTO ${expected} · FÍSICO ${physical} · REVISA DIFERENCIA`,true);return;
+ }
+ d.officePreCounts=d.officePreCounts||{};
+ d.officePreCounts[code]={expected,physical,difference:0,status:'OK',time:nowISO(),...employee};
+ d.officePrePending=null;
+ d.events.push({time:nowISO(),type:'PREVALIDACION_UPC_CANTIDAD',code,expected,physical,difference:0,result:'OK',...employee});
+ document.getElementById('dOfficePreScan').value='';document.getElementById('dOfficePreQty').value='';
+ save();renderDistribution();renderDistributionUPCPreview();
+ if(status){status.className='ix-office-pre-result ok';status.textContent=`✅ ${code} · ${physical}/${expected} piezas · VALIDADO`;}
+ toast(`✅ UPC ${code} · cantidad conforme`);
+}
+function documentOfficePreDifference(){
+ const employee=ensureDistValidator();if(!employee)return;
+ const d=state.activeDistribution,p=d?.officePrePending;if(!p)return;
+ if(!confirm(`DOCUMENTAR DIFERENCIA FÍSICA\nUPC ${p.code}\nPREVISTO: ${p.expected}\nFÍSICO: ${p.physical}\nDIFERENCIA: ${p.difference>0?'+':''}${p.difference}\n\nSe permitirá continuar, pero la diferencia quedará como INCIDENCIA DOCUMENTADA. No modifica el solicitado ni las cantidades por validar. ¿Confirmas?`))return;
+ d.officePreCounts=d.officePreCounts||{};
+ d.officePreCounts[p.code]={...p,status:'DIFERENCIA_DOCUMENTADA',time:nowISO(),...employee};
+ d.events=d.events||[];d.events.push({time:nowISO(),type:'PREVALIDACION_DIFERENCIA_DOCUMENTADA',result:'DIFERENCIA',...p,...employee});
+ d.officePrePending=null;
+ document.getElementById('dOfficePreScan').value='';document.getElementById('dOfficePreQty').value='';
+ document.getElementById('dOfficePreAlert').style.display='none';document.getElementById('dOfficePreAcknowledge').style.display='none';
+ save();renderDistribution();renderDistributionUPCPreview();
+ const status=document.getElementById('dOfficePreFeedback');if(status){status.className='ix-office-pre-result bad';status.textContent=`⚠️ ${p.code} · diferencia ${p.difference>0?'+':''}${p.difference} DOCUMENTADA`;}
+ toast('Diferencia documentada. Cantidades esperadas de distribución sin cambios.',true);
+}
+// Máscara de dictado unificada. NO cambia scanDistribution(), secuencias, cierre ni Kernel Hulk.
+function renderOfficeUnifiedScreen(d,detailsHtml){
+  const panel=document.getElementById('dOfficeNext');
+  if(!panel||!d)return;
+  const depot=isOfficeDepotProfile(d.profile);
+  const next=depot?nextOfficeDepotRow(d):nextOfficeMaxRow(d);
+  const gate=depot?officeDepotGate(d):null;
+  const title=depot?'OFFICE DEPOT':'OFFICE MAX';
+  const esc=v=>escapeHtml(String(v??''));
+  let main='';
+  if(gate){
+    const msg=gate.type==='BOX'?`TIENDA ${esc(gate.store)} · cierre de caja pendiente`:`BLOQUE ${esc(gate.block)} · cierre de tarima pendiente`;
+    main=`<div class="ix-unified-head">${title} · OC ${esc(d.oc)}</div><div class="ix-unified-store">⛔ FLUJO DETENIDO</div><div class="ix-unified-alert">${msg}. Confirma el candado de cierre antes de avanzar.</div>`;
+  } else if(next){
+    const r=next.row;
+    const st=depot?officeDepotStoreTotals(d,r.block,r.store):officeMaxStoreTotals(d,r.store);
+    const part=depot?officeDepotPartInfo(d,r):officeMaxPartInfo(d,r);
+    const distinctSKUs=[...new Set((d.rows||[]).map(x=>idText(x.skuSeq||x.sku)).filter(Boolean))];
+    const seq=esc(distinctSKUs.indexOf(idText(r.skuSeq||r.sku))+1);
+    const remaining=Math.max(0,Number(r.expected||0)-Number(r.done||0));
+    main=`<div class="ix-unified-head">${title} · OC ${esc(d.oc)} · ${depot?'BLOQUE '+esc(r.block):'PALLET '+esc(r.pallet||'—')}</div>
+      <div class="ix-unified-store">TIENDA ${esc(r.store)}</div>
+      <div class="ix-unified-head">POSICIÓN ${part.part}/${part.parts} · progreso tienda ${st.done}/${st.expected}</div>
+      <div class="ix-unified-numbers"><div class="ix-unified-num"><small>SECUENCIA</small><strong>${seq}</strong></div><div class="ix-unified-num"><small>PIEZAS PENDIENTES</small><strong class="ix-quantity">${remaining}</strong></div></div>
+      <div class="ix-unified-upc">UPC esperado: <b>${esc(r.code||r.upc||'—')}</b> · ${Number(r.done||0)}/${Number(r.expected||0)} validadas</div><div class="ix-unified-head">SKU de referencia: ${esc(r.skuSeq||r.sku||'—')}</div>`;
+  } else {
+    main=`<div class="ix-unified-head">${title} · OC ${esc(d.oc)}</div><div class="ix-unified-store">✓ PIEZAS COMPLETAS</div><div class="ix-unified-done">Revisa los cierres requeridos por el perfil antes de finalizar la distribución.</div>`;
+  }
+  const pre=officeDistinctUPCs(d),done=pre.filter(x=>!!officePreRecord(d,x)).length,ready=officePrevalidated(d);
+  renderOfficePreChecklist(d);
+  const prebox=document.getElementById('dOfficePre');
+  if(prebox){prebox.style.display='block';document.getElementById('dOfficePreTitle').textContent=`🔐 ESCANEO Y CONTEO · ${done}/${pre.length}`;}
+  if(!ready)main=`<div class="ix-unified-head">${title} · OC ${esc(d.oc)}</div><div class="ix-unified-store">PREVALIDACIÓN UPC</div><div class="ix-unified-alert">${done}/${pre.length} referencias confirmadas · la distribución permanece bloqueada hasta validar todos los UPC distintos.</div>`;
+  panel.innerHTML=`<div class="ix-unified-hero" aria-live="polite">${main}</div><details class="ix-unified-extra"><summary>🔎 Ver detalle de ejecución</summary><div class="ix-unified-extra-content">${detailsHtml}</div></details>`;
+  document.body.classList.add('ix-office-unified');
+  const dock=document.getElementById('dScanDock');
+  if(dock)dock.style.display=(gate||!ready)?'none':'block';
+}
+
 function renderDistribution(){
-  const d=state.activeDistribution;updateDistributionProfileUI();if(!d){document.body.classList.remove('ix-liverpool-active');dWork.style.display='none';document.getElementById('dLiverpoolPanel').style.display='none';return;}
+  const d=state.activeDistribution;updateDistributionProfileUI();document.body.classList.toggle('ix-office-unified',!!d&&(isOfficeDepotProfile(d.profile)||isOfficeMaxProfile(d.profile)));if(!d){document.body.classList.remove('ix-liverpool-active');dWork.style.display='none';document.getElementById('dLiverpoolPanel').style.display='none';return;}
   dWork.style.display='block';const t=distTotals(d);renderUnifiedDistributionGuide(d);
   const vs=document.getElementById('dValidatorStatus');if(vs)vs.textContent=`Asignado: ${sessionValidator(d).user} (#${sessionValidator(d).employeeNo}) · ${d.pausedAt?'PAUSADA':'ACTIVA'} · relevos ${(d.events||[]).filter(x=>x.type==='CAMBIO_VALIDADOR').length}`;
   if(isLiverpoolProfile(d.profile)){
@@ -2599,6 +2769,7 @@ function renderDistribution(){
         dOfficeNext.innerHTML='<b style="color:#1A9A54">PIEZAS COMPLETAS · REVISA CIERRES DE CAJA/BLOQUE</b>';
       }
     }
+    renderOfficeUnifiedScreen(d,dOfficeNext?.innerHTML||'');
     dOk.textContent=t.done;dPending.textContent=t.pending;dIncidents.textContent=t.incidents;
     const pending=(d.rows||[]).map((r,i)=>({...r,_i:i})).filter(r=>r.done<r.expected).slice(0,10);
     const completed=(d.rows||[]).filter(r=>r.done>=r.expected).length;
@@ -2626,6 +2797,7 @@ function renderDistribution(){
           UPC esperado ${escapeHtml(next.row.code)} · tienda acumulada ${st.done}/${st.expected}<br><span class="note">Al completar todas las partidas de la tienda, Verify registra el cierre y brinca automáticamente a la siguiente.</span>`;
       }else dOfficeNext.innerHTML='<b style="color:#1A9A54">TODAS LAS TIENDAS COMPLETAS · LISTO PARA CIERRE FINAL</b>';
     }
+    renderOfficeUnifiedScreen(d,dOfficeNext?.innerHTML||'');
     dOk.textContent=t.done;dPending.textContent=t.pending;dIncidents.textContent=t.incidents;
     const pending=(d.rows||[]).map((r,i)=>({...r,_i:i})).filter(r=>r.done<r.expected).slice(0,10),completed=(d.rows||[]).filter(r=>r.done>=r.expected).length;
     dRows.innerHTML=`<div class="note">Renglones completos: ${completed}/${d.rows.length}. Próximos 10 en orden del archivo:</div>`+pending.map((r,i)=>{const pi=officeMaxPartInfo(d,d.rows[r._i]);return `<div class="row ${i===0?'verify':''}"><b>PALLET ${escapeHtml(r.pallet||'')} · TIENDA ${escapeHtml(r.store)}</b> <span class="badge">${r.done}/${r.expected}</span><div class="meta">SKU SEQ ${escapeHtml(r.skuSeq||'')} · UPC ${escapeHtml(r.code)} · partida ${pi.part}/${pi.parts} · orden ${r.sequence||r._i+1}</div></div>`;}).join('');
@@ -2773,6 +2945,10 @@ async function exportDistributionExcel(selectedDistribution=null){
 document.getElementById('dChangeValidatorBtn').addEventListener('click',changeDistValidator);
 document.getElementById('dPauseBtn').addEventListener('click',pauseDist);
 document.getElementById('dLiverpoolPreBtn').addEventListener('click',prevalidateLiverpool);
+document.getElementById('dOfficePreBtn').addEventListener('click',prevalidateOfficeUPC);
+document.getElementById('dOfficePreAcknowledge').addEventListener('click',documentOfficePreDifference);
+document.getElementById('dOfficePreScan').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();document.getElementById('dOfficePreQty').focus();}});
+document.getElementById('dOfficePreQty').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();prevalidateOfficeUPC();}});
 document.getElementById('dLiverpoolPreDetails').addEventListener('toggle',function(){this.dataset.manuallyOpened=this.open?'1':'';});
 document.getElementById('dLiverpoolPreScan').addEventListener('keydown',e=>{if(e.key==='Enter')prevalidateLiverpool()});
 document.getElementById('dLiverpoolCloseBtn').addEventListener('click',closeLiverpoolStore);
@@ -2798,7 +2974,7 @@ function resetDistributionTest(){
   const confirmation=prompt('Para confirmar, escribe REINICIAR en mayúsculas:');
   if(confirmation!=='REINICIAR')return toast('Reinicio cancelado',true);
   (d.rows||[]).forEach(r=>{r.done=0;r.excess=0;});
-  d.scans=[];d.boxClosures=[];d.blockClosures=[];d.variants=[];
+  d.scans=[];d.boxClosures=[];d.blockClosures=[];d.variants=[];d.officePrevalidated=[];d.officePreCounts={};d.officePrePending=null;
   d.officeGate=null;d.masterScanned='';d.closedAt=null;d.status='ABIERTA';
   d.resetCount=Number(d.resetCount||0)+1;
   d.lastResetAt=nowISO();
