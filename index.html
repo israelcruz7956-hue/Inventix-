@@ -136,6 +136,13 @@ body.ix-office-unified #dOfficeNext{padding:0!important;background:transparent!i
 .ix-office-pre{display:none;border:2px solid #f59e0b;border-radius:13px;background:#30260e;padding:12px;margin:9px 0}.ix-office-pre strong{display:block;font-size:20px;color:#ffe58a}.ix-office-pre .btn{margin-top:7px}.ix-office-pre .note{color:#ffe9bb}.ix-office-pre-result{margin-top:8px;font-size:13px;font-weight:800;min-height:18px}.ix-office-pre-result.bad{color:#ffaaaa}.ix-office-pre-result.ok{color:#8fe0ad}
 .ix-pre-list{display:grid;gap:7px;margin-top:12px}.ix-pre-row{background:#10243d;border:1px solid #365476;border-radius:9px;padding:9px;overflow-wrap:anywhere}.ix-pre-row.ok{border-color:#1A9A54;background:#123f2a}.ix-pre-row.warn{border-color:#f59e0b;background:#503817}.ix-pre-row strong{display:block;font-size:13px}.ix-pre-row small{display:block;color:#bbd4eb;margin-top:4px}.ix-pre-error{background:#602020;color:#fff2cb;border:2px solid #ff7b7b;padding:11px;border-radius:10px;margin:10px 0;font-weight:800}.ix-pre-alert{background:#604212;border:2px solid #f59e0b;padding:10px;border-radius:10px;color:#ffedae;margin-top:8px}.ix-pre-pair{display:grid;grid-template-columns:1fr 1fr;gap:8px} @media(max-width:400px){.ix-pre-pair{grid-template-columns:1fr}}.ix-pre-pair input{font-size:17px}.ix-pre-pair label{font-size:11px}
 @media(max-width:380px){body.ix-office-unified .ix-dock-buttons .btn{font-size:11px}}
+/* HU físico por tienda: rojo = bloqueo, verde = validación */
+.ix-hu-gate,.ix-hu-required{border:2px solid #f59e0b;border-radius:13px;background:#102746;padding:13px;margin:12px 0}
+.ix-hu-gate h3{font-size:19px;margin-bottom:8px;color:#ffdb8a}
+.ix-hu-required b{color:#ffdb8a;font-size:17px}.ix-hu-small{font-size:13px;margin:7px 0;color:#d0e3f8;overflow-wrap:anywhere}
+.ix-hu-feedback{position:sticky;top:4px;z-index:60;padding:14px;border-radius:12px;font-size:16px;font-weight:900;margin:8px 0;line-height:1.5}
+.ix-hu-feedback.ok{background:#075d35;color:#bbf7d0;border:2px solid #22c55e}
+.ix-hu-feedback.bad{background:#801b25;color:#ffe0e0;border:2px solid #ff4141}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
@@ -144,7 +151,7 @@ body.ix-office-unified #dOfficeNext{padding:0!important;background:transparent!i
 
 <header>
   <div class="brand">INVENTI<span>X</span> CORE</div>
-  <div class="sub">v1.10.6 · PREVALIDACIÓN VISIBLE EN PREVIO · INTERFAZ GUIADA · CÁMARA UNIFICADA · LIVERPOOL + CAMBIO DE VALIDADOR + TRAZABILIDAD · secuencia visible + salto automático de tienda</div>
+  <div class="sub">v1.10.7 · OPERADOR PERSISTENTE · INTERFAZ GUIADA · CÁMARA UNIFICADA · LIVERPOOL + CAMBIO DE VALIDADOR + TRAZABILIDAD · secuencia visible + salto automático de tienda</div>
   <div id="environmentBanner" style="margin-top:10px;padding:10px;border:2px solid #059669;border-radius:12px;font-weight:900" aria-live="polite">🛡️ OPERACIÓN REAL</div>
   <div style="display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap">
     <button type="button" id="switchEnvironment" style="padding:11px 14px;border:2px solid #f59e0b;border-radius:10px;background:#122a4b;color:white;font-weight:800;cursor:pointer">🧪 Entrar a ambiente de prueba</button>
@@ -440,6 +447,7 @@ body.ix-office-unified #dOfficeNext{padding:0!important;background:transparent!i
 
   <div id="dWork" class="card" style="display:none">
     <h2>Distribución activa</h2>
+    <div id="dOfficeHUFeedback" class="ix-hu-feedback" style="display:none" role="alert" aria-live="assertive"></div>
     <div id="dSummary" class="note"></div>
     <div class="dist-kpis">
       <div><strong id="dOk">0</strong><small>CORRECTOS</small></div>
@@ -466,6 +474,20 @@ body.ix-office-unified #dOfficeNext{padding:0!important;background:transparent!i
       <div id="dLiverpoolHUWrap"><label>HU / RFID física de la tienda actual (para cierre)</label><input id="dLiverpoolHU" placeholder="C56217834">
       <button type="button" class="btn secondary ix-scan-launch" data-ix-target="dLiverpoolHU" data-ix-auto="false">📷 Cámara · etiqueta HU</button>
       <button type="button" id="dLiverpoolCloseBtn" class="btn primary">🔒 Validar HU y cerrar tienda</button></div>
+    </div>
+    <details id="dHUAttachPanel" style="border:1px solid #31557b;border-radius:10px;padding:10px;margin:10px 0">
+      <summary style="font-weight:900">📎 Vincular HU desde Excel a esta sesión activa (sin perder escaneos)</summary>
+      <p class="note" style="margin:8px 0">Usa el Excel original corregido que contiene HU como valores. No reinicia la distribución ni borra las lecturas.</p>
+      <input id="dHUAttachFile" type="file" accept=".xlsx,.xls" style="width:100%">
+      <div id="dHUAttachStatus" class="note" role="status"></div>
+    </details>
+    <div id="dOfficeHUGate" class="ix-hu-gate" style="display:none" aria-live="polite">
+      <h3>🔐 CIERRE DE TIENDA · HU OBLIGATORIA</h3>
+      <div id="dOfficeHUInfo"></div>
+      <label>Escanear HU de etiqueta física</label>
+      <input id="dOfficeHUScan" inputmode="numeric" placeholder="Escanea HU física" autocomplete="off">
+      <button type="button" class="btn secondary ix-scan-launch" data-ix-target="dOfficeHUScan" data-ix-auto="false">📷 Cámara · HU</button>
+      <button type="button" id="dOfficeHUConfirm" class="btn primary">🔒 Validar HU y cerrar tienda</button>
     </div>
     <div id="dOfficeGate" class="office-gate">
       <h3 id="dOfficeGateTitle">Cierre</h3>
@@ -560,6 +582,34 @@ const TEST_STORAGE_KEY = 'inventix_core_sandbox_v1_9';
 const MODE_KEY = 'inventix_core_environment_v1_9';
 const TEST_MODE = localStorage.getItem(MODE_KEY)==='TEST';
 const STORAGE_KEY = TEST_MODE ? TEST_STORAGE_KEY : REAL_STORAGE_KEY;
+
+// Persistencia de identificación de operador por ambiente y por este equipo.
+// No cambia la clave del estado CORE ni escribe sobre distribuciones activas.
+const IX_OPERATOR_KEY = TEST_MODE ? 'inventix_operador_prueba_v1' : 'inventix_operador_real_v1';
+function ixRememberOperator(no){
+  const normalized=String(no||'').trim().replace(/^0+(?=\d)/,'');
+  if(!normalized)return;
+  if(!state.employees || !state.employees[normalized])return;
+  try{localStorage.setItem(IX_OPERATOR_KEY, normalized);}catch(err){console.warn('No se pudo guardar la preferencia de operador',err);}
+}
+function ixRestoreOperator(){
+  const active=state.activeDistribution;
+  const assigned=active ? (active.currentValidator||{employeeNo:active.employeeNo}) : null;
+  let stored='';
+  try{stored=localStorage.getItem(IX_OPERATOR_KEY)||'';}catch(e){}
+  // Si hay distribución activa, el validador asignado tiene prioridad sobre
+  // cualquier preferencia recordada para impedir relevos silenciosos.
+  const no=String(assigned?.employeeNo||stored||'').trim().replace(/^0+(?=\d)/,'');
+  const known=Boolean(no&&state.employees?.[no]);
+  if(!known)return;
+  const hub=document.getElementById('ixVerifyEmployee');
+  const dist=document.getElementById('dEmployeeNo');
+  if(hub)hub.value=no;
+  if(dist)dist.value=no;
+  if(typeof ixRefreshEmployee==='function')ixRefreshEmployee();
+  if(typeof refreshDistEmployee==='function')refreshDistEmployee();
+}
+
 function renderEnvironmentMode(){
   const banner=document.getElementById('environmentBanner');
   const btn=document.getElementById('switchEnvironment');
@@ -1079,7 +1129,7 @@ function ixRefreshEmployee(){
  document.getElementById('ixEmployeeReady').textContent=name?'✅ EMPLEADO IDENTIFICADO: '+no+' — '+name:'';
  document.getElementById('ixEmployeeHelp').textContent=!no?'PASO 1 · Escribe tu número de empleado.':name?'Número encontrado. Ahora selecciona VERIFY y captura la OC.':'Número '+no+' sin registro. Completa el nombre en el recuadro amarillo y guarda.';
 }
-ixEmployee.addEventListener('input',()=>{document.getElementById('ixNewEmployeeNo').value=ixEmployee.value;ixRefreshEmployee();});
+ixEmployee.addEventListener('input',()=>{document.getElementById('ixNewEmployeeNo').value=ixEmployee.value;ixRefreshEmployee();ixRememberOperator(ixEmployee.value);});
 document.getElementById('ixNewEmployeeNo').addEventListener('input',e=>{ixEmployee.value=e.target.value;ixRefreshEmployee();});
 document.getElementById('ixRegisterEmployee').addEventListener('click',()=>{
  const no=(document.getElementById('ixNewEmployeeNo').value.trim()||ixEmployee.value.trim()).replace(/^0+(?=[0-9])/,'') , name=document.getElementById('ixNewEmployeeName').value.trim();
@@ -1090,6 +1140,7 @@ document.getElementById('ixRegisterEmployee').addEventListener('click',()=>{
  ixEmployee.value=no;
  state.employees=state.employees||{};
  state.employees[no]=name;
+ ixRememberOperator(no);
  save();
  renderEmployeeList();
  ixRefreshEmployee();
@@ -1116,6 +1167,7 @@ document.getElementById('ixVerifyOpen').addEventListener('click',()=>{
   ixNavigate('verifyOperational');
  }else{
   document.getElementById('dEmployeeNo').value=no;
+  ixRememberOperator(no);
   if(typeof refreshDistEmployee==='function')refreshDistEmployee();
   const distOC=document.getElementById('dOC');
   if(distOC)distOC.value=folio;
@@ -1533,6 +1585,7 @@ function parseOfficeMaxAOA(aoa,sheetName){
   const iUpc=distributionHeaderIndex(headers,['UPC','EAN','CODIGO_BARRAS','CODIGO BARRAS','BARCODE']);
   const iSku=distributionHeaderIndex(headers,['SKU','SECUENCIA','SKU_SECUENCIA','SKU SECUENCIA']);
   const iQty=distributionHeaderIndex(headers,['PIEZAS_ORDENADAS','PIEZAS ORDENADAS','PIEZAS_AGENDADAS','PIEZAS AGENDADAS','CANTIDAD','QTY']);
+  const iHU=distributionHeaderIndex(headers,['HU','RFID / HU','RFID/HU','ETIQUETA MASTER','MASTER']);
   if(iPallet<0||iOC<0||iStore<0||iUpc<0||iSku<0||iQty<0)return null;
   const rows=[];
   for(let r=1;r<aoa.length;r++){
@@ -1540,7 +1593,7 @@ function parseOfficeMaxAOA(aoa,sheetName){
     const pallet=idText(line[iPallet]),oc=idText(line[iOC]),store=String(line[iStore]||'').trim().toUpperCase();
     const upc=idText(line[iUpc]),skuSeq=idText(line[iSku]),q=qty(line[iQty]);
     if(!oc||!store||!upc||!skuSeq||q<=0)continue;
-    rows.push({profile:'OFFICE_MAX',oc,pallet,store,code:upc,upc,sku:skuSeq,skuSeq,desc:'',qty:q,master:'',sourceRow:r+1,sequence:rows.length+1,sheetName});
+    rows.push({profile:'OFFICE_MAX',oc,pallet,store,code:upc,upc,sku:skuSeq,skuSeq,desc:'',qty:q,master:iHU>=0?idText(line[iHU]):'',sourceRow:r+1,sequence:rows.length+1,sheetName});
   }
   return rows.length?{profile:'OFFICE_MAX',rows,sheetName}:null;
 }
@@ -1553,6 +1606,7 @@ function parseOfficeDepotAOA(aoa,sheetName){
   const iUpc=distributionHeaderIndex(headers,['UPC','EAN','CODIGO_BARRAS','CODIGO BARRAS','BARCODE']);
   const iQty=distributionHeaderIndex(headers,['CANT']);
   const iMax=distributionHeaderIndex(headers,['MAX_CANT']);
+  const iHU=distributionHeaderIndex(headers,['HU','RFID / HU','RFID/HU','ETIQUETA MASTER','MASTER']);
   if(iOC<0||iStore<0||iSku<0||(iQty<0&&iMax<0))return null;
   const rows=[];let block='';
   for(let r=1;r<aoa.length;r++){
@@ -1566,7 +1620,7 @@ function parseOfficeDepotAOA(aoa,sheetName){
     const maxQty=qty(iMax>=0?line[iMax]:q);
     if(!oc||!store||!skuSeq||q<=0)continue;
     if(!block)block=inferOfficeDepotBlock(store);
-    rows.push({profile:'OFFICE_DEPOT',oc,store,code:upc,upc,sku:skuSeq,skuSeq,desc:'',qty:q,maxQty,master:'',block,sourceRow:r+1,sequence:rows.length+1,sheetName});
+    rows.push({profile:'OFFICE_DEPOT',oc,store,code:upc,upc,sku:skuSeq,skuSeq,desc:'',qty:q,maxQty,master:iHU>=0?idText(line[iHU]):'',block,sourceRow:r+1,sequence:rows.length+1,sheetName});
   }
   return rows.length?{profile:'OFFICE_DEPOT',rows,sheetName}:null;
 }
@@ -1774,7 +1828,7 @@ function distTotals(d){
 function officeMaxExecutionRows(rows){
   const prepared=(rows||[]).map(r=>({
     pallet:idText(r.pallet),store:String(r.store||'').trim().toUpperCase(),code:idText(r.upc||r.code),upc:idText(r.upc||r.code),
-    skuSeq:idText(r.skuSeq||r.sku),desc:r.desc||'',expected:Number(r.qty||0),done:0,excess:0,sourceRow:Number(r.sourceRow||0),sequence:Number(r.sequence||0)
+    skuSeq:idText(r.skuSeq||r.sku),master:idText(r.master),desc:r.desc||'',expected:Number(r.qty||0),done:0,excess:0,sourceRow:Number(r.sourceRow||0),sequence:Number(r.sequence||0)
   })).filter(r=>r.store&&r.code&&r.skuSeq&&r.expected>0);
   prepared.sort((a,b)=>{
     const pa=Number(a.pallet),pb=Number(b.pallet);
@@ -1797,10 +1851,92 @@ function officeMaxStoreTotals(d,store){
 function officeMaxStoreComplete(d,store){const t=officeMaxStoreTotals(d,store);return t.expected>0&&t.pending===0;}
 function officeMaxStoreClosed(d,store){return (d?.boxClosures||[]).some(x=>String(x.store).toUpperCase()===String(store).toUpperCase()&&x.status==='OK');}
 function officeMaxPartInfo(d,row){const rows=officeMaxStoreRows(d,row.store),i=rows.indexOf(row);return {part:Math.max(1,i+1),parts:rows.length};}
+function officeNextHUPending(d){return d?.officeHUPending||d?.officeHUQueue?.[0]||null;}
+async function attachHUToActiveSession(file){
+ const d=state.activeDistribution,status=document.getElementById('dHUAttachStatus');
+ if(!d||!isOfficeMaxProfile(d.profile))throw Error('Este vínculo está disponible durante una distribución Office Max activa.');
+ if(!window.XLSX)throw Error('Se necesita el motor XLSX cargado. Abre Inventix con conexión.');
+ const buffer=await file.arrayBuffer(),wb=XLSX.read(buffer,{type:'array'});
+ let imported=null;
+ for(const name of wb.SheetNames){
+  const rows=XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,defval:'',raw:false});
+  const parsed=parseOfficeMaxAOA(rows,name);
+  if(parsed&&parsed.rows.some(x=>idText(x.oc)===idText(d.oc))){imported=parsed.rows.filter(x=>idText(x.oc)===idText(d.oc));break;}
+ }
+ if(!imported)throw Error('No encontré la misma OC en el Excel.');
+ if(imported.length!==d.rows.length)throw Error('El archivo trae otro número de renglones. No se cambiarán los datos.');
+ const bySource=new Map(imported.map(r=>[String(r.sourceRow),r]));
+ const updates=[];
+ for(const r of d.rows){
+  const fresh=bySource.get(String(r.sourceRow));
+  if(!fresh||idText(r.store)!==idText(fresh.store)||idText(r.code)!==idText(fresh.code)||idText(r.skuSeq)!==idText(fresh.skuSeq)||Number(r.expected)!==Number(fresh.qty))throw Error('Difieren tienda, SKU, UPC o cantidad. Se canceló el vínculo de HU.');
+  if(!idText(fresh.master))throw Error('HU vacía en tienda '+r.store+'. Pega valores y revisa el Excel.');
+  updates.push({r,hu:idText(fresh.master)});
+ }
+ const group=new Map();for(const u of updates){if(!group.has(u.r.store))group.set(u.r.store,new Set());group.get(u.r.store).add(u.hu);}
+ for(const [store,values] of group){if(values.size!==1)throw Error('HU distintas para una misma tienda: '+store);}
+ for(const u of updates)u.r.master=u.hu;
+ if(d.officeHUPending?.missing){d.officeHUPending.expected=[...group.get(d.officeHUPending.store)||[]][0]||'';d.officeHUPending.missing=!d.officeHUPending.expected;}
+ const backlog=[];
+ for(const c of d.boxClosures||[]){
+  if(c.status!=='OK'||idText(c.master))continue;
+  const hu=[...group.get(c.store)||[]][0];if(hu)backlog.push({store:c.store,expected:hu,pallet:c.pallet,qty:c.expectedQty,legacy:true});
+ }
+ d.officeHUQueue=backlog;
+ d.events=d.events||[];d.events.push({time:nowISO(),type:'HU_VINCULADAS_ARCHIVO',source:file.name,stores:group.size,previousClosures:backlog.length});
+ save();renderDistribution();
+ if(status)status.textContent=`✅ ${group.size} tiendas con HU vinculadas, ${backlog.length} cierres previos pendientes de revalidar. Escaneos conservados.`;
+ toast('HU vinculadas · no se borró ninguna lectura');
+}
+function officeHUForStore(d,store,block=null){
+ const rows=(d?.rows||[]).filter(r=>idText(r.store)===idText(store)&&(block==null||Number(r.block)===Number(block)));
+ const codes=[...new Set(rows.map(r=>idText(r.master)).filter(Boolean))];
+ return codes.length===1?codes[0]:'';
+}
+function officeHUFeedback(result,message){
+ const el=document.getElementById('dOfficeHUFeedback');
+ if(el){el.style.display='block';el.className='ix-hu-feedback '+(result==='CORRECTO'?'ok':'bad');el.textContent=(result==='CORRECTO'?'🟢 ✅ ':'🔴 ❌ ')+message;}
+ setDistBanner(result,message);
+}
+function officeCheckHU(d,store,expected,scanned,employee){
+ d.events=d.events||[];
+ const ok=!!scanned&&scanned===expected;
+ d.events.push({time:nowISO(),type:ok?'HU_CORRECTA':'HU_INCORRECTA',store,expected,code:scanned,result:ok?'CORRECTO':'HU INCORRECTA',...employee});
+ save();
+ if(!ok){officeHUFeedback('ERROR',`HU INCORRECTA · TIENDA ${store} · leída ${scanned||'VACÍA'} · esperada ${expected} · CIERRE BLOQUEADO`);toast('HU INCORRECTA · NO SE CIERRA TIENDA',true);return false;}
+ officeHUFeedback('CORRECTO',`HU CORRECTA · TIENDA ${store} · ${expected} · CAJA LIBERADA`);
+ return true;
+}
+function confirmOfficeMaxHU(){
+ const employee=ensureDistValidator();if(!employee)return;
+ const d=state.activeDistribution,p=officeNextHUPending(d);
+ if(!d||!isOfficeMaxProfile(d.profile)||!p)return toast('No hay HU pendiente',true);
+ if(!p.expected)return toast('HU no disponible en esta sesión: vincula el Excel corregido con HU primero',true);
+ const actual=idText(document.getElementById('dOfficeHUScan').value);
+ if(!officeCheckHU(d,p.store,p.expected,actual,employee))return;
+ const t=officeMaxStoreTotals(d,p.store);
+ d.boxClosures=d.boxClosures||[];
+ const previous=(d.boxClosures||[]).find(c=>c.store===p.store&&c.status==='OK');
+ if(previous){previous.master=p.expected;previous.huVerifiedAt=nowISO();previous.huValidator=employee;previous.validation='UPC + CANTIDAD + HU FÍSICA (REVALIDACIÓN)';}
+ else d.boxClosures.push({time:nowISO(),pallet:p.pallet,store:p.store,master:p.expected,expectedQty:t.expected,parts:t.parts,status:'OK',validation:'UPC + CANTIDAD + HU FÍSICA',...employee});
+ d.events.push({time:nowISO(),type:'CIERRE_TIENDA_HU',store:p.store,code:actual,result:'CORRECTO',...employee});
+ if(p.legacy){d.officeHUQueue.shift();}else{d.officeHUPending=null;}document.getElementById('dOfficeHUScan').value='';save();renderDistribution();
+ officeHUFeedback('CORRECTO',`HU CORRECTA · TIENDA ${p.store} CERRADA · CONTINÚA CON LA SIGUIENTE`);
+ toast('HU validada · tienda '+p.store+' cerrada');
+}
+function renderOfficeMaxHUGate(d){
+ const gate=document.getElementById('dOfficeHUGate'),info=document.getElementById('dOfficeHUInfo');if(!gate)return;
+ const p=isOfficeMaxProfile(d?.profile)?officeNextHUPending(d):null;
+ gate.style.display=p?'block':'none';
+ if(info&&p)info.innerHTML=`<div style="font-size:24px;font-weight:900">TIENDA ${escapeHtml(p.store)}</div><div class="ix-hu-small">${p.qty} piezas completas · HU esperada: <b>${escapeHtml(p.expected)}</b></div><div style="color:#ffcd84;font-weight:900">NO SE LIBERA LA SIGUIENTE TIENDA HASTA VALIDAR HU</div>`;
+}
 function autoCloseOfficeMaxStore(d,row){
   if(!officeMaxStoreComplete(d,row.store)||officeMaxStoreClosed(d,row.store))return;
   const t=officeMaxStoreTotals(d,row.store);d.boxClosures=d.boxClosures||[];
-  d.boxClosures.push({time:nowISO(),pallet:row.pallet,store:row.store,expectedQty:t.expected,parts:t.parts,status:'OK',validation:'AUTO · TIENDA COMPLETA POR UPC/CANTIDAD',user:d.user,employeeNo:d.employeeNo});
+  const hu=idText(row.master);
+  if(!hu&&['4500093263','4500092576'].includes(idText(d.oc))){d.officeHUPending={store:row.store,pallet:row.pallet,expected:'',qty:t.expected,missing:true};return;}
+  if(hu){d.officeHUPending={store:row.store,block:null,pallet:row.pallet,expected:hu,qty:t.expected};return;}
+  d.boxClosures.push({time:nowISO(),pallet:row.pallet,store:row.store,expectedQty:t.expected,parts:t.parts,status:'OK',validation:'AUTO · TIENDA COMPLETA POR UPC/CANTIDAD (SIN HU EN ARCHIVO)',user:d.user,employeeNo:d.employeeNo});
 }
 function finalizeOfficeMaxDistribution(d){
   const t=distTotals(d);d.closedAt=nowISO();d.status='CERRADA';d.totalPieces=t.expected;d.incidents=t.incidents;
@@ -1862,7 +1998,7 @@ function officeDepotExecutionRows(rows,oc){
     return {
       block:Number(r.block||inferOfficeDepotBlock(r.store)),
       store:idText(r.store),code:resolvedUpc,upc:resolvedUpc,
-      skuSeq:idText(r.skuSeq||r.sku),desc:r.desc||'',
+      skuSeq:idText(r.skuSeq||r.sku),master:idText(r.master),desc:r.desc||'',
       expected:Number(r.qty||0),done:0,excess:0,
       sourceRow:Number(r.sourceRow||0),maxQty:Number(r.maxQty||r.qty||0)
     };
@@ -1997,9 +2133,15 @@ function confirmOfficeDepotGate(){
   const d=state.activeDistribution,g=officeDepotGate(d);
   if(!d||!g)return toast('No hay cierre pendiente',true);
   if(g.type==='BOX'){
+    const expectedHU=officeHUForStore(d,g.store,g.block);
+    if(expectedHU){
+      const scanned=idText(document.getElementById('dOfficeDepotHUScan')?.value);
+      if(!officeCheckHU(d,g.store,expectedHU,scanned,employee))return;
+      document.getElementById('dOfficeDepotHUScan').value='';
+    }
     d.boxClosures=d.boxClosures||[];
     if(!officeDepotStoreClosed(d,g.block,g.store)){
-      d.boxClosures.push({time:nowISO(),block:g.block,store:g.store,expectedQty:g.expectedQty,parts:g.parts,status:'OK',validation:'MASTER VISUAL: TIENDA + CANTIDAD',...employee});
+      d.boxClosures.push({time:nowISO(),block:g.block,store:g.store,master:officeHUForStore(d,g.store,g.block),expectedQty:g.expectedQty,parts:g.parts,status:'OK',validation:officeHUForStore(d,g.store,g.block)?'HU ESCANEADA + UPC + CANTIDAD + MASTER VISUAL':'MASTER VISUAL: TIENDA + CANTIDAD',...employee});
     }
     setOfficeDepotGate(d,null);
     // Cada bloque = una tarima. Si fue la última caja del bloque, detener antes de pasar al siguiente.
@@ -2056,7 +2198,9 @@ function renderOfficeDepotGate(){
     if(body)body.innerHTML=`<div class="big">TIENDA ${escapeHtml(g.store)}</div>
       <div><b>${g.expectedQty} piezas</b> · ${g.parts} partida${g.parts===1?'':'s'} completas</div>
       <div class="note" style="margin-top:8px">Antes de liberar: compara visualmente la etiqueta máster. Debe corresponder a <b>TIENDA ${escapeHtml(g.store)}</b> y <b>${g.expectedQty} piezas</b>. Cierra, pega máster y pasa a la tarima del BLOQUE ${g.block}.</div>`;
-    if(confirmBtn)confirmBtn.textContent=`✅ Máster OK · cerrar tienda ${g.store}`;
+    const expectedHU=officeHUForStore(d,g.store,g.block);
+    if(expectedHU&&body)body.innerHTML+=`<div class="ix-hu-required"><b>🔐 ESCANEA HU PARA CERRAR</b><div class="ix-hu-small">HU prevista: ${escapeHtml(expectedHU)}</div><input id="dOfficeDepotHUScan" inputmode="numeric" autocomplete="off" placeholder="Escanea HU de la etiqueta física"><button type="button" class="btn secondary ix-scan-launch" data-ix-target="dOfficeDepotHUScan" data-ix-auto="false">📷 Cámara · HU de tienda</button></div>`;
+    if(confirmBtn)confirmBtn.textContent=expectedHU?`🔒 Validar HU y cerrar tienda ${g.store}`:`✅ Máster OK · cerrar tienda ${g.store}`;
   }else{
     if(title)title.textContent='🟠 CERRAR BLOQUE / TARIMA';
     if(body)body.innerHTML=`<div class="big">BLOQUE ${g.block}</div>
@@ -2291,7 +2435,7 @@ function saveDistEmployee(){
   const no=String(document.getElementById('dEmployeeEditNo').value||'').trim();
   const name=String(document.getElementById('dEmployeeEditName').value||'').trim();
   if(!/^\d+$/.test(no)||!name)return toast('Captura número numérico y nombre completo',true);
-  state.employees=state.employees||{};state.employees[no]=name;save();refreshDistEmployee();renderEmployeeList();toast('Empleado guardado');
+  state.employees=state.employees||{};state.employees[no]=name;ixRememberOperator(no);save();refreshDistEmployee();renderEmployeeList();toast('Empleado guardado');
 }
 function sessionValidator(d){return d?.currentValidator||{employeeNo:d?.employeeNo||'',user:d?.user||''};}
 function ensureDistValidator(){
@@ -2352,6 +2496,10 @@ function startDistribution(){
   if(isOfficeMaxProfile(profile)){
     const selected=distGroups().find(g=>g.key===dImportedGroup.value) || distGroups().find(g=>isOfficeMaxProfile(g.profile)&&idText(g.oc)===idText(dOC.value));
     if(!selected)return toast('Office Max requiere seleccionar la OC importada',true);
+    if(['4500093263','4500092576'].includes(idText(selected.oc))){
+      const badHU=selected.rows.filter(r=>!idText(r.master));
+      if(badHU.length)return toast('HU OBLIGATORIA: '+badHU.length+' partidas sin HU. Reimporta el Excel con columna HU en valores.',true);
+    }
     const rows=officeMaxExecutionRows(selected.rows);
     state.activeDistribution={...employee,id:crypto.randomUUID?crypto.randomUUID():String(Date.now()+Math.random()),profile:'OFFICE_MAX',oc:idText(selected.oc),store:'POR TIENDAS',masterExpected:'',rows,scans:[],boxClosures:[],variants:[],startedAt:nowISO(),closedAt:null,status:'ABIERTA',sequenceMode:'FILE_ORDER_AUTO_STORE_ADVANCE',validationMode:'SKU_SEQUENCE_PLUS_UPC_QTY'};
     save();renderDistribution();toast('Office Max iniciado · SKU SEQ visible · salto automático de tienda');setTimeout(()=>{try{dScanCode.focus()}catch(e){}},80);return;
@@ -2424,6 +2572,7 @@ function confirmOfficeDepotUPC(input){
 function confirmOfficeMaxUPC(input){
   const employee=ensureDistValidator();if(!employee)return;
   const d=state.activeDistribution;if(!d)return toast('Primero inicia Office Max',true);
+  if(officeNextHUPending(d))return toast('HU PENDIENTE: escanea la etiqueta física para cerrar tienda '+officeNextHUPending(d).store,true);
   const upc=idText(input);if(!upc)return toast('Escanea el UPC del producto',true);
   const next=nextOfficeMaxRow(d);if(!next)return toast('La distribución ya no tiene piezas pendientes',true);
   const expected=next.row;let result='CORRECTO',message='';
@@ -2545,6 +2694,7 @@ function undoDistribution(){
   if(isOfficeMaxProfile(d.profile)&&last.result==='CORRECTO'&&Number.isInteger(last.rowIndex)){
     const row=d.rows[last.rowIndex];if(row) d.boxClosures=(d.boxClosures||[]).filter(x=>String(x.store).toUpperCase()!==String(row.store).toUpperCase());
   }
+  if(isOfficeMaxProfile(d.profile)&&d.officeHUPending&&last.store===d.officeHUPending.store)d.officeHUPending=null;
   d.scans.pop();d.events=d.events||[];d.events.push({time:nowISO(),type:'DESHACER',detail:last.message||'',...employee});
   if(isOfficeDepotProfile(d.profile)||isOfficeMaxProfile(d.profile)||isLiverpoolProfile(d.profile)){
     if(last.result==='CORRECTO'&&Number.isInteger(last.rowIndex)){const row=d.rows[last.rowIndex];if(row&&row.done>0)row.done--;}
@@ -2578,7 +2728,7 @@ function closeDistribution(){
     if(!canGenerateDistributionExcel())return;
     finalizeOfficeDepotDistribution(d);return;
   }
-  if(isOfficeMaxProfile(d.profile)){if(!canGenerateDistributionExcel())return;finalizeOfficeMaxDistribution(d);return;}
+  if(isOfficeMaxProfile(d.profile)){if(officeNextHUPending(d))return toast('HU pendiente: primero cierra tienda '+officeNextHUPending(d).store,true);const total=new Set(d.rows.map(r=>r.store)).size;if((d.boxClosures||[]).filter(x=>x.status==='OK').length!==total)return toast('Faltan cierres HU de tienda',true);if(!canGenerateDistributionExcel())return;finalizeOfficeMaxDistribution(d);return;}
   const master=idText(dMasterScan.value);if(!master)return toast('Escanea o captura la Etiqueta Master',true);
   if(d.masterExpected&&master!==d.masterExpected)return toast(`MASTER INCORRECTA. Esperada: ${d.masterExpected}`,true);
   if(!canGenerateDistributionExcel())return;
@@ -2671,12 +2821,12 @@ function renderOfficeUnifiedScreen(d,detailsHtml){
   if(!panel||!d)return;
   const depot=isOfficeDepotProfile(d.profile);
   const next=depot?nextOfficeDepotRow(d):nextOfficeMaxRow(d);
-  const gate=depot?officeDepotGate(d):null;
+  const gate=depot?officeDepotGate(d):(officeNextHUPending(d)?{type:'HU',store:officeNextHUPending(d).store}:null);
   const title=depot?'OFFICE DEPOT':'OFFICE MAX';
   const esc=v=>escapeHtml(String(v??''));
   let main='';
   if(gate){
-    const msg=gate.type==='BOX'?`TIENDA ${esc(gate.store)} · cierre de caja pendiente`:`BLOQUE ${esc(gate.block)} · cierre de tarima pendiente`;
+    const msg=gate.type==='HU'?`TIENDA ${esc(gate.store)} · escanea y valida HU física`:gate.type==='BOX'?`TIENDA ${esc(gate.store)} · cierre de caja pendiente`:`BLOQUE ${esc(gate.block)} · cierre de tarima pendiente`;
     main=`<div class="ix-unified-head">${title} · OC ${esc(d.oc)}</div><div class="ix-unified-store">⛔ FLUJO DETENIDO</div><div class="ix-unified-alert">${msg}. Confirma el candado de cierre antes de avanzar.</div>`;
   } else if(next){
     const r=next.row;
@@ -2707,6 +2857,7 @@ function renderOfficeUnifiedScreen(d,detailsHtml){
 function renderDistribution(){
   const d=state.activeDistribution;updateDistributionProfileUI();document.body.classList.toggle('ix-office-unified',!!d&&(isOfficeDepotProfile(d.profile)||isOfficeMaxProfile(d.profile)));if(!d){document.body.classList.remove('ix-liverpool-active');dWork.style.display='none';document.getElementById('dLiverpoolPanel').style.display='none';return;}
   dWork.style.display='block';const t=distTotals(d);renderUnifiedDistributionGuide(d);
+  const attachPanel=document.getElementById('dHUAttachPanel');if(attachPanel)attachPanel.style.display=isOfficeMaxProfile(d.profile)?'block':'none';
   const vs=document.getElementById('dValidatorStatus');if(vs)vs.textContent=`Asignado: ${sessionValidator(d).user} (#${sessionValidator(d).employeeNo}) · ${d.pausedAt?'PAUSADA':'ACTIVA'} · relevos ${(d.events||[]).filter(x=>x.type==='CAMBIO_VALIDADOR').length}`;
   if(isLiverpoolProfile(d.profile)){
     const panel=document.getElementById('dLiverpoolPanel');panel.style.display='block';
@@ -2770,6 +2921,7 @@ function renderDistribution(){
       }
     }
     renderOfficeUnifiedScreen(d,dOfficeNext?.innerHTML||'');
+    renderOfficeMaxHUGate(d);
     dOk.textContent=t.done;dPending.textContent=t.pending;dIncidents.textContent=t.incidents;
     const pending=(d.rows||[]).map((r,i)=>({...r,_i:i})).filter(r=>r.done<r.expected).slice(0,10);
     const completed=(d.rows||[]).filter(r=>r.done>=r.expected).length;
@@ -2798,6 +2950,7 @@ function renderDistribution(){
       }else dOfficeNext.innerHTML='<b style="color:#1A9A54">TODAS LAS TIENDAS COMPLETAS · LISTO PARA CIERRE FINAL</b>';
     }
     renderOfficeUnifiedScreen(d,dOfficeNext?.innerHTML||'');
+    renderOfficeMaxHUGate(d);
     dOk.textContent=t.done;dPending.textContent=t.pending;dIncidents.textContent=t.incidents;
     const pending=(d.rows||[]).map((r,i)=>({...r,_i:i})).filter(r=>r.done<r.expected).slice(0,10),completed=(d.rows||[]).filter(r=>r.done>=r.expected).length;
     dRows.innerHTML=`<div class="note">Renglones completos: ${completed}/${d.rows.length}. Próximos 10 en orden del archivo:</div>`+pending.map((r,i)=>{const pi=officeMaxPartInfo(d,d.rows[r._i]);return `<div class="row ${i===0?'verify':''}"><b>PALLET ${escapeHtml(r.pallet||'')} · TIENDA ${escapeHtml(r.store)}</b> <span class="badge">${r.done}/${r.expected}</span><div class="meta">SKU SEQ ${escapeHtml(r.skuSeq||'')} · UPC ${escapeHtml(r.code)} · partida ${pi.part}/${pi.parts} · orden ${r.sequence||r._i+1}</div></div>`;}).join('');
@@ -2946,6 +3099,9 @@ document.getElementById('dChangeValidatorBtn').addEventListener('click',changeDi
 document.getElementById('dPauseBtn').addEventListener('click',pauseDist);
 document.getElementById('dLiverpoolPreBtn').addEventListener('click',prevalidateLiverpool);
 document.getElementById('dOfficePreBtn').addEventListener('click',prevalidateOfficeUPC);
+document.getElementById('dOfficeHUConfirm').addEventListener('click',confirmOfficeMaxHU);
+document.getElementById('dHUAttachFile').addEventListener('change',async e=>{const f=e.target.files?.[0];if(!f)return;try{await attachHUToActiveSession(f);}catch(err){document.getElementById('dHUAttachStatus').textContent='❌ '+err.message;toast(err.message,true);}e.target.value='';});
+document.getElementById('dOfficeHUScan').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();confirmOfficeMaxHU();}});
 document.getElementById('dOfficePreAcknowledge').addEventListener('click',documentOfficePreDifference);
 document.getElementById('dOfficePreScan').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();document.getElementById('dOfficePreQty').focus();}});
 document.getElementById('dOfficePreQty').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();prevalidateOfficeUPC();}});
@@ -3106,9 +3262,10 @@ document.getElementById('labelConvertBtn').addEventListener('click',async()=>{
 
 load();
 restoreDistributionUI();
+ixRestoreOperator(); // Reabrir pantalla tras commit conserva identidad de este dispositivo.
 
 // Inventix Distribution · identificación de empleados
-document.getElementById('dEmployeeNo')?.addEventListener('input',refreshDistEmployee);
+document.getElementById('dEmployeeNo')?.addEventListener('input',()=>{refreshDistEmployee();ixRememberOperator(document.getElementById('dEmployeeNo').value);});
 document.getElementById('dEmployeeSaveBtn')?.addEventListener('click',saveDistEmployee);
 refreshDistEmployee();renderEmployeeList();
 </script>
