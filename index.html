@@ -8,7 +8,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <link rel="manifest" href="manifest.json">
-<title>INVENTIX Core v1.10.3 · Liverpool CUBIX por prioridad</title>
+<title>INVENTIX Core v1.10.9 · Secuencia oficial sin sustitución SKU</title>
 <style>
 :root{
   --navy:#0F2747;--navy2:#08192f;--blue:#1E4DBC;--orange:#F5A623;
@@ -1589,6 +1589,7 @@ function parseOfficeMaxAOA(aoa,sheetName){
   const iHU=distributionHeaderIndex(headers,['HU','RFID / HU','RFID/HU','ETIQUETA MASTER','MASTER']);
   const iDesc=distributionHeaderIndex(headers,['DESC','DESCRIPCION','DESCRIPCIÓN']);
   if(iPallet<0||iOC<0||iStore<0||iUpc<0||iSku<0||iQty<0)return null;
+  if(iSeq<0)throw Error('Office Max: falta la columna SECUENCIA oficial. No se reemplazará con SKU.');
   const rows=[];
   for(let r=1;r<aoa.length;r++){
     const line=aoa[r]||[];
@@ -1596,7 +1597,7 @@ function parseOfficeMaxAOA(aoa,sheetName){
     const upc=idText(line[iUpc]),sku=idText(line[iSku]),assignedSeq=iSeq>=0?idText(line[iSeq]):'',q=qty(line[iQty]);
     if(!oc||!store||!upc||!sku||q<=0)continue;
     if(iSeq>=0&&!/^[1-9]\d*$/.test(assignedSeq))throw Error('Office Max: SECUENCIA inválida en fila '+(r+1)+'. No se usará el SKU como secuencia.');
-    rows.push({profile:'OFFICE_MAX',oc,pallet,store,code:upc,upc,sku,skuSeq:assignedSeq||sku,assignedSeq,desc:iDesc>=0?String(line[iDesc]||'').trim():'',qty:q,master:iHU>=0?idText(line[iHU]):'',sourceRow:r+1,sequence:rows.length+1,sheetName});
+    rows.push({profile:'OFFICE_MAX',oc,pallet,store,code:upc,upc,sku,skuSeq:assignedSeq,assignedSeq,desc:iDesc>=0?String(line[iDesc]||'').trim():'',qty:q,master:iHU>=0?idText(line[iHU]):'',sourceRow:r+1,sequence:rows.length+1,sheetName});
   }
   return rows.length?{profile:'OFFICE_MAX',rows,sheetName}:null;
 }
@@ -1828,11 +1829,17 @@ function distTotals(d){
   const incidents=(d.scans||[]).filter(x=>x.result!=='CORRECTO').length;
   return {expected,done,pending:Math.max(expected-done,0),incidents};
 }
+// SECUENCIA es un dato asignado por la operación, independiente de SKU y posición de tienda.
+function officeValidAssignedSeq(r){
+  const seq=idText(r?.assignedSeq||'');
+  return /^[1-9]\d*$/.test(seq)&&seq!==idText(r?.sku||'');
+}
 function officeMaxExecutionRows(rows){
   const prepared=(rows||[]).map(r=>({
     pallet:idText(r.pallet),store:String(r.store||'').trim().toUpperCase(),code:idText(r.upc||r.code),upc:idText(r.upc||r.code),
-    sku:idText(r.sku),skuSeq:idText(r.assignedSeq||r.skuSeq||r.sku),assignedSeq:idText(r.assignedSeq||''),master:idText(r.master),desc:r.desc||'',expected:Number(r.qty||0),done:0,excess:0,sourceRow:Number(r.sourceRow||0),sequence:Number(r.sequence||0)
-  })).filter(r=>r.store&&r.code&&r.skuSeq&&r.expected>0);
+    sku:idText(r.sku),skuSeq:idText(r.assignedSeq||''),assignedSeq:idText(r.assignedSeq||''),master:idText(r.master),desc:r.desc||'',expected:Number(r.qty||0),done:0,excess:0,sourceRow:Number(r.sourceRow||0),sequence:Number(r.sequence||0)
+  })).filter(r=>r.store&&r.code&&r.expected>0);
+  if(prepared.some(r=>!officeValidAssignedSeq(r)))throw Error('OFFICE MAX: no se encontró la SECUENCIA oficial. Importa el Excel con la columna SECUENCIA; no se mostrará el SKU como sustituto.');
   prepared.sort((a,b)=>{
     const pa=Number(a.pallet),pb=Number(b.pallet);
     if(Number.isFinite(pa)&&Number.isFinite(pb)&&pa!==pb)return pa-pb;
@@ -1921,9 +1928,9 @@ function officeRestoreHUFromImported(d){
  let changed=false;
  for(const x of candidate){
   if(!idText(x.r.master)){x.r.master=x.hu;changed=true;}
-  // Se corrige solo la secuencia antigua ausente o igual al SKU; no se altera el acomodo físico.
-  const cur=idText(x.r.assignedSeq||'');
-  if(x.seq&&/^\d+$/.test(x.seq)&&(!cur||cur===idText(x.r.sku))){
+  // La columna SECUENCIA oficial tiene prioridad absoluta. Corrige sesiones anteriores
+  // incluso si guardaron equivocadamente SKU como assignedSeq. No cambia orden ni lecturas.
+  if(/^[1-9]\d*$/.test(x.seq)&&x.seq!==x.sku){
    if(idText(x.r.assignedSeq)!==x.seq||idText(x.r.skuSeq)!==x.seq){x.r.assignedSeq=x.seq;x.r.skuSeq=x.seq;changed=true;}
   }
   if(!idText(x.r.sku)&&x.sku){x.r.sku=x.sku;changed=true;}
@@ -2554,6 +2561,7 @@ function startDistribution(){
   if(isOfficeMaxProfile(profile)){
     const selected=distGroups().find(g=>g.key===dImportedGroup.value) || distGroups().find(g=>isOfficeMaxProfile(g.profile)&&idText(g.oc)===idText(dOC.value));
     if(!selected)return toast('Office Max requiere seleccionar la OC importada',true);
+    if(selected.rows.some(r=>!officeValidAssignedSeq(r)))return toast('⛔ SECUENCIA oficial faltante. Carga el Excel con columna SECUENCIA; SKU no es secuencia.',true);
     if(['4500093263','4500092576'].includes(idText(selected.oc))){
       const badHU=selected.rows.filter(r=>!idText(r.master));
       if(badHU.length)return toast('HU OBLIGATORIA: '+badHU.length+' partidas sin HU. Reimporta el Excel con columna HU en valores.',true);
@@ -2633,7 +2641,9 @@ function confirmOfficeMaxUPC(input){
   if(officeNextHUPending(d))return toast('HU PENDIENTE: escanea la etiqueta física para cerrar tienda '+officeNextHUPending(d).store,true);
   const upc=idText(input);if(!upc)return toast('Escanea el UPC del producto',true);
   const next=nextOfficeMaxRow(d);if(!next)return toast('La distribución ya no tiene piezas pendientes',true);
-  const expected=next.row;let result='CORRECTO',message='';
+  const expected=next.row;
+  if(!officeValidAssignedSeq(expected))return toast('⛔ SECUENCIA OFICIAL FALTANTE. Vincula el Excel de la OC con columna SECUENCIA. No se acepta SKU en su lugar.',true);
+  let result='CORRECTO',message='';
   if(upc===idText(expected.code)){
     expected.done=Number(expected.done||0)+1;const st=officeMaxStoreTotals(d,expected.store);
     if(Number(expected.done)>=Number(expected.expected)){
@@ -2890,13 +2900,15 @@ function renderOfficeUnifiedScreen(d,detailsHtml){
     const r=next.row;
     const st=depot?officeDepotStoreTotals(d,r.block,r.store):officeMaxStoreTotals(d,r.store);
     const part=depot?officeDepotPartInfo(d,r):officeMaxPartInfo(d,r);
-    const seq=esc(depot?(r.skuSeq||r.sku||'—'):(r.assignedSeq||r.skuSeq||'—'));
+    const seq=esc(depot?(r.skuSeq||r.sku||'—'):(officeValidAssignedSeq(r)?r.assignedSeq:'⚠️'));
+    const missingOfficial=!depot&&!officeValidAssignedSeq(r);
     const remaining=Math.max(0,Number(r.expected||0)-Number(r.done||0));
     main=`<div class="ix-unified-head">${title} · OC ${esc(d.oc)} · ${depot?'BLOQUE '+esc(r.block):'PALLET '+esc(r.pallet||'—')}</div>
       <div class="ix-unified-store">TIENDA ${esc(r.store)}</div>
       <div class="ix-unified-head">POSICIÓN ${part.part}/${part.parts} · progreso tienda ${st.done}/${st.expected}</div>
       <div class="ix-unified-numbers"><div class="ix-unified-num"><small>SECUENCIA</small><strong>${seq}</strong></div><div class="ix-unified-num"><small>PIEZAS PENDIENTES</small><strong class="ix-quantity">${remaining}</strong></div></div>
-      <div class="ix-unified-upc">UPC esperado: <b>${esc(r.code||r.upc||'—')}</b> · ${Number(r.done||0)}/${Number(r.expected||0)} validadas</div><div class="ix-unified-head">SKU de referencia: ${esc(r.sku||r.skuSeq||'—')}</div>`;
+      ${missingOfficial?'<div class="ix-unified-alert" style="background:#7f1d1d;color:white">⛔ SECUENCIA OFICIAL NO DISPONIBLE · Vincula o vuelve a importar la OC con columna SECUENCIA antes de validar. No se usará SKU.</div>':''}
+      <div class="ix-unified-upc">UPC esperado: <b>${esc(r.code||r.upc||'—')}</b> · ${Number(r.done||0)}/${Number(r.expected||0)} validadas</div><div class="ix-unified-head">SKU de referencia: ${esc(r.sku||'—')}</div>`;
   } else {
     main=`<div class="ix-unified-head">${title} · OC ${esc(d.oc)}</div><div class="ix-unified-store">✓ PIEZAS COMPLETAS</div><div class="ix-unified-done">Revisa los cierres requeridos por el perfil antes de finalizar la distribución.</div>`;
   }
@@ -2986,7 +2998,7 @@ function renderDistribution(){
     const completed=(d.rows||[]).filter(r=>r.done>=r.expected).length;
     dRows.innerHTML=`<div class="note">Renglones completos: ${completed}/${d.rows.length}. Próximos 10 en orden de ejecución:</div>`+pending.map((r,i)=>{
       const pi=officeDepotPartInfo(d,d.rows[r._i]);
-      return `<div class="row ${i===0&&!gate?'verify':''}"><b>B${r.block} · TIENDA ${escapeHtml(r.store)}</b> <span class="badge">${r.done}/${r.expected}</span><div class="meta">SECUENCIA ${escapeHtml(r.assignedSeq||r.skuSeq||'')} · SKU ${escapeHtml(r.sku||'—')} · UPC ${escapeHtml(r.code)} · partida ${pi.part}/${pi.parts} · orden ${r.sequence||r._i+1}</div></div>`;
+      return `<div class="row ${i===0&&!gate?'verify':''}"><b>B${r.block} · TIENDA ${escapeHtml(r.store)}</b> <span class="badge">${r.done}/${r.expected}</span><div class="meta">SECUENCIA ${escapeHtml(officeValidAssignedSeq(r)?r.assignedSeq:'NO DISPONIBLE')} · SKU ${escapeHtml(r.sku||'—')} · UPC ${escapeHtml(r.code)} · partida ${pi.part}/${pi.parts} · orden ${r.sequence||r._i+1}</div></div>`;
     }).join('');
     renderOfficeDepotGate();
     const last=(d.scans||[])[d.scans.length-1];
@@ -3003,7 +3015,7 @@ function renderDistribution(){
         dOfficeNext.innerHTML=`<b style="color:${same?'#8fe0ad':'#F5A623'}">${same?'MISMA TIENDA · SIGUIENTE PARTIDA':'SIGUIENTE TIENDA / CAJA'}</b><br>
           <span style="font-size:30px;font-weight:900">TIENDA ${escapeHtml(next.row.store)}</span><br>
           <span style="font-size:32px;font-weight:900;color:#F5A623">${Number(next.row.expected||0)-Number(next.row.done||0)} PIEZAS</span><br>
-          <span style="font-size:25px;font-weight:900">SECUENCIA ${escapeHtml(next.row.assignedSeq||next.row.skuSeq||'')} · POSICIÓN ${pi.part}/${pi.parts}</span><br>
+          <span style="font-size:25px;font-weight:900">SECUENCIA ${escapeHtml(officeValidAssignedSeq(next.row)?next.row.assignedSeq:'NO DISPONIBLE')} · POSICIÓN ${pi.part}/${pi.parts}</span><br>
           SKU ${escapeHtml(next.row.sku||'—')} · PALLET ${escapeHtml(next.row.pallet||'')}<br>
           UPC esperado ${escapeHtml(next.row.code)} · tienda acumulada ${st.done}/${st.expected}<br><span class="note">Al completar todas las partidas de la tienda, Verify registra el cierre y brinca automáticamente a la siguiente.</span>`;
       }else dOfficeNext.innerHTML='<b style="color:#1A9A54">TODAS LAS TIENDAS COMPLETAS · LISTO PARA CIERRE FINAL</b>';
