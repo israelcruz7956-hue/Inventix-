@@ -510,6 +510,8 @@ body.ix-office-unified #dOfficeNext{padding:0!important;background:transparent!i
 <button type="button" class="btn secondary ix-scan-launch" data-ix-target="dMasterScan" data-ix-auto="false" style="margin-top:6px">📷 Cámara · Distribution etiqueta Master</button>
     </div>
     <button id="dCloseBtn" class="btn primary">🔒 Cerrar y validar Master</button>
+    <button id="dPanicRealBtn" type="button" class="btn danger" style="display:none;margin-top:12px;padding:16px;border:2px solid #ffdd80">🚨 LIBERAR OC ACTIVA · AMBIENTE REAL</button>
+    <p id="dPanicRealHelp" class="note" style="display:none;margin-top:7px;color:#ffd9ab">CONTINGENCIA: archiva como ANULADA la distribución activa, conserva escaneos, genera respaldo JSON y permite importar otra OC. NO equivale a cierre ni entrega.</p>
     <button id="dResetTestBtn" class="btn ghost" style="margin-top:10px;border:1px solid #f59e0b">🧹 Reiniciar prueba de esta distribución</button>
     <button id="dDiscardTestBtn" type="button" class="btn danger" style="margin-top:8px;display:none">🧼 DESCARTAR SESIÓN DE PRUEBA Y REIMPORTAR EXCEL</button>
     <p id="dDiscardTestHelp" class="note" style="display:none;margin:7px 0">Descarta únicamente la distribución de prueba activa y su archivo cargado; NO borra empleados, inventario, Kardex ni historial de distribuciones cerradas. Se perderán los avances NO cerrados de esta prueba.</p>
@@ -619,6 +621,10 @@ function renderEnvironmentMode(){
   banner.style.borderColor=TEST_MODE?'#f59e0b':'#059669';
   banner.style.background=TEST_MODE?'#573c0b':'#103d30';
   btn.textContent=TEST_MODE?'🛡️ Volver a operación real':'🧪 Entrar a ambiente de prueba';
+  const panic=document.getElementById('dPanicRealBtn');
+  const panicHelp=document.getElementById('dPanicRealHelp');
+  if(panic)panic.style.display=TEST_MODE?'none':'block';
+  if(panicHelp)panicHelp.style.display=TEST_MODE?'none':'block';
   const reset=document.getElementById('dResetTestBtn');
   if(reset)reset.style.display=TEST_MODE?'':'none';
   const discard=document.getElementById('dDiscardTestBtn'),help=document.getElementById('dDiscardTestHelp');
@@ -641,7 +647,7 @@ function nowISO(){ return new Date().toISOString(); }
 function fmtDate(iso){ return new Date(iso).toLocaleString('es-MX'); }
 
 function blankState(){
-  return {inventory:{},kardex:[],verify:[],verifyExpected:{},verifyClosures:[],verifyTechUPC:{},physicalCounts:[],importedFiles:[],officeDepotUpcMap:{},distributions:[],distributionImport:{rows:[],sourceName:'',loadedAt:null},activeDistribution:null};
+  return {inventory:{},kardex:[],verify:[],verifyExpected:{},verifyClosures:[],verifyTechUPC:{},physicalCounts:[],importedFiles:[],officeDepotUpcMap:{},distributions:[],distributionImport:{rows:[],sourceName:'',loadedAt:null},activeDistribution:null,skipLegacyDistributionMigration:false};
 }
 function normalizeState(parsed){
   const b=blankState(); parsed=parsed||{};
@@ -658,7 +664,8 @@ function normalizeState(parsed){
     employees:parsed.employees||b.employees,
     distributions:parsed.distributions||b.distributions,
     distributionImport:parsed.distributionImport||b.distributionImport,
-    activeDistribution:parsed.activeDistribution||b.activeDistribution
+    activeDistribution:parsed.activeDistribution||b.activeDistribution,
+    skipLegacyDistributionMigration:!!parsed.skipLegacyDistributionMigration
   };
 }
 function load(){
@@ -675,7 +682,7 @@ function load(){
     state.verifyExpected=migrateVerifyExpectedObject(state.verifyExpected);
 
     // Migra la sesión de Distribution de v1.4 si existe.
-    if(!TEST_MODE && !state.activeDistribution){
+    if(!TEST_MODE && !state.activeDistribution && !state.skipLegacyDistributionMigration){
       const oldActive=localStorage.getItem('inventix_core_v1_4_activeDistribution');
       if(oldActive){
         const a=JSON.parse(oldActive);
@@ -686,7 +693,7 @@ function load(){
         };
       }
     }
-    if(!TEST_MODE && !(state.distributionImport?.rows||[]).length){
+    if(!TEST_MODE && !(state.distributionImport?.rows||[]).length && !state.skipLegacyDistributionMigration){
       const oldImport=localStorage.getItem('inventix_core_v1_4_importedDistribution');
       if(oldImport){
         const oi=JSON.parse(oldImport);
@@ -3217,6 +3224,74 @@ function resetDistributionTest(){
   toast('Prueba reiniciada: lista para escanear desde la primera partida');
 }
 document.getElementById('dResetTestBtn').addEventListener('click',resetDistributionTest);
+// CONTINGENCIA REAL v1.10.11 · ANULACION CONTROLADA, NUNCA CIERRE FICTICIO.
+function releaseRealDistributionEmergency(){
+  if(TEST_MODE)return toast('El botón de contingencia REAL no funciona en PRUEBA',true);
+  const active=state.activeDistribution;
+  if(!active)return toast('No hay una OC activa que liberar',true);
+  const oc=idText(active.oc||'SIN_OC');
+  const pending=distTotals(active).pending;
+  const scanned=(active.scans||[]).length;
+  const employee=ensureDistValidator();
+  if(!employee)return;
+  const msg=`CONTINGENCIA · AMBIENTE REAL
+
+OC: ${oc}
+Escaneos registrados: ${scanned}
+Piezas pendientes: ${pending}
+
+La OC se archiva como ANULADA (NO ENTREGADA). Se conservan escaneos, incidencias y operador. Se descargará un respaldo JSON. Después podrás importar la siguiente OC.
+
+¿Deseas continuar?`;
+  if(!confirm(msg))return;
+  const typed=prompt('Por seguridad, escribe exactamente el número de OC que vas a liberar: '+oc);
+  if(idText(typed)!==oc)return toast('OC no coincide. No se cambió nada.',true);
+  const reason=prompt('Motivo obligatorio para auditoría (ej.: CORRECCION DE SECUENCIA OFICIAL / REIMPORTACION):');
+  if(!reason||!reason.trim())return toast('Sin motivo no se anula ni libera la OC',true);
+  const at=nowISO();
+  const archive=JSON.parse(JSON.stringify(active));
+  archive.status='ANULADA';
+  archive.cancelledAt=at;
+  archive.closedAt=null;
+  archive.cancellationReason=reason.trim();
+  archive.cancelledBy={...employee};
+  archive.events=archive.events||[];
+  archive.events.push({time:at,type:'ANULACION_CONTINGENCIA_REAL',result:'ANULADA_NO_ENTREGADA',detail:reason.trim(),...employee});
+  const rescue={kind:'INVENTIX_CONTINGENCIA_REAL',oc,at,operator:employee,reason:reason.trim(),distribution:archive,importSource:state.distributionImport?.sourceName||'',importedRows:(state.distributionImport?.rows||[]).filter(r=>idText(r.oc)===oc)};
+  // Persistir primero, sin tocar inventario/Kardex ni registros de otras OC.
+  const previous={activeDistribution:state.activeDistribution,distributionImport:state.distributionImport,importedFiles:state.importedFiles,distributions:state.distributions,skipLegacyDistributionMigration:state.skipLegacyDistributionMigration};
+  try{
+    state.distributions=[archive,...(state.distributions||[])];
+    state.activeDistribution=null;
+    state.distributionImport={rows:[],sourceName:'',loadedAt:null,profile:'GENERIC',sheetName:''};
+    state.importedFiles=(state.importedFiles||[]).filter(x=>x.kind!=='DISTRIBUTION');
+    state.skipLegacyDistributionMigration=true;
+    localStorage.setItem(STORAGE_KEY,JSON.stringify(state));
+  }catch(err){
+    Object.assign(state,previous);
+    console.error('No se pudo archivar contingencia',err);
+    toast('ALTO: no pudo guardarse la evidencia. No se liberó la OC.',true);return;
+  }
+  try{
+    const blob=new Blob([JSON.stringify(rescue,null,2)],{type:'application/json'});
+    const url=URL.createObjectURL(blob),a=document.createElement('a');
+    a.href=url;a.download='INVENTIX_CONTINGENCIA_REAL_OC_'+oc+'_'+Date.now()+'.json';
+    document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),60000);
+  }catch(err){console.error('Error descarga JSON',err);toast('OC archivada. Descarga JSON desde respaldo general.',true);}
+  if(typeof dScanCode!=='undefined')dScanCode.value='';
+  if(typeof dOC!=='undefined')dOC.value='';
+  if(typeof dStore!=='undefined')dStore.value='';
+  if(typeof dExpected!=='undefined')dExpected.value='';
+  if(typeof dMasterExpected!=='undefined')dMasterExpected.value='';
+  restoreDistributionUI();
+  const info=document.getElementById('dImportStatus');
+  if(info)info.textContent='🚨 OC '+oc+' archivada como ANULADA · NO ENTREGADA. Importa ahora la siguiente OC desde su Excel original.';
+  toast('OC '+oc+' liberada con auditoría. Importa la siguiente OC.');
+  document.getElementById('dImportBtn')?.focus();
+}
+document.getElementById('dPanicRealBtn')?.addEventListener('click',releaseRealDistributionEmergency);
+
 
 // Limpieza quirúrgica solo en SANDBOX: la sesión activa antigua almacena el SKU en
 // lugar de SECUENCIA. Un "reinicio" de cantidades no repara esa estructura.
